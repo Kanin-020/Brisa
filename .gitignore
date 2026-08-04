@@ -1,0 +1,9 @@
+node_modules/
+dist/
+cache/
+ports/
+config.json
+*.log
+.DS_Store
+roms/
+mods/

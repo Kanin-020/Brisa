@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Port Hub</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🕹️</text></svg>" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🕹️</div>
+        <div>
+          <h1>Port Hub</h1>
+          <span class="tagline">Gestor de ports nativos de PC</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span id="platform-chip" class="chip"></span>
+        <button id="btn-refresh" class="btn ghost" title="Re-escaneo">⟳ Refrescar</button>
+      </div>
+    </header>
+
+    <div class="stats">
+      <div class="stat-card"><div class="stat-value" id="stat-roms">0</div><div class="stat-label">ROMs</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-installed">0</div><div class="stat-label">Ports instalados</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-mods">0</div><div class="stat-label">Mods</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-updates">0</div><div class="stat-label">Actualizaciones</div></div>
+    </div>
+
+    <main>
+      <section class="section">
+        <div class="section-head">
+          <h2>📦 Ports</h2>
+          <span id="ports-hint" class="hint"></span>
+        </div>
+        <div id="ports-grid" class="grid"><div class="loading">Cargando…</div></div>
+      </section>
+
+      <section class="section">
+        <div class="section-head">
+          <h2>💾 ROMs detectados</h2>
+          <span id="roms-hint" class="hint"></span>
+        </div>
+        <div id="roms-list" class="roms-list"><div class="loading">Cargando…</div></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      Hecho con ♥ · Los ROMs deben obtenerse legalmente · <span id="cfg-roms-dir"></span>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

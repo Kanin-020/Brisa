@@ -1,0 +1,61 @@
+{
+  "id": "tmc",
+  "name": "Project Picori",
+  "game": "The Legend of Zelda: The Minish Cap",
+  "description": "Native PC port of The Minish Cap built on the zeldaret/tmc decompilation. Requires the original GBA ROM.",
+  "repo": "999sian/tmc",
+  "roms": [
+    {
+      "id": "tmc",
+      "name": "The Minish Cap (GBA)",
+      "patterns": ["baserom.gba", "baserom_eu.gba", "baserom_jp.gba", "*.gba", "*.gbc", "tmc.gba"],
+      "sha1": [
+        "b4bd50e4131b027c334547b4524e2dbbd4227130",
+        "cff199b36ff173fb6faf152653d1bccf87c26fb7",
+        "6c5404a1effb17f481f352181d0f1c61a2765c5d"
+      ],
+      "dest": "baserom.gba"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "tmc-multi-linux-x86_64-v*.tar.gz",
+      "type": "tar.gz",
+      "executable": "tmc_pc"
+    },
+    "linux-arm64": {
+      "pattern": "tmc-multi-linux-arm64-v*.tar.gz",
+      "type": "tar.gz",
+      "executable": "tmc_pc"
+    },
+    "windows-x64": {
+      "pattern": "tmc-multi-windows-x86_64-v*.tar.gz",
+      "type": "tar.gz",
+      "executable": "tmc_pc.exe"
+    },
+    "windows-arm64": {
+      "pattern": "tmc-multi-windows-arm64-v*.tar.gz",
+      "type": "tar.gz",
+      "executable": "tmc_pc.exe"
+    },
+    "macos-arm64": {
+      "pattern": "tmc-multi-macos-arm64-v*.tar.gz",
+      "type": "tar.gz",
+      "executable": "tmc_pc"
+    },
+    "macos-x64": {
+      "pattern": "tmc-multi-macos-x86_64-v*.tar.gz",
+      "type": "tar.gz",
+      "executable": "tmc_pc"
+    },
+    "android": {
+      "pattern": "tmc-multi-android-v*.apk",
+      "type": "apk",
+      "executable": null
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "tmc"
+  }
+}

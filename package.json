@@ -1,0 +1,32 @@
+{
+  "name": "port-hub",
+  "version": "0.1.0",
+  "description": "Compilador y gestor de ports nativos de PC (SoH, 2Ship2Harkinian, DUSKLIGHT, TMC) al estilo EmuDeck, basado en manifiestos.",
+  "license": "MIT",
+  "bin": {
+    "port-hub": "dist/cli.js"
+  },
+  "main": "dist/core/app.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-web.js",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx src/cli.ts",
+    "start": "node dist/cli.js",
+    "serve": "node dist/cli.js serve"
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "commander": "^12.1.0",
+    "tar": "^6.2.1"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/node": "^22.10.1",
+    "@types/tar": "^6.1.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

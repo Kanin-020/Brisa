@@ -1,0 +1,50 @@
+{
+  "id": "2ship",
+  "name": "2Ship2Harkinian",
+  "game": "The Legend of Zelda: Majora's Mask",
+  "description": "Native PC port of Majora's Mask built on the 2Ship2Harkinian framework. Requires a supported NTSC-U dump (1.0 or GameCube).",
+  "repo": "HarbourMasters/2ship2harkinian",
+  "roms": [
+    {
+      "id": "mm",
+      "name": "Majora's Mask (NTSC-U)",
+      "patterns": ["mm.z64", "mm.n64", "*.z64", "*.n64", "*.v64", "*.zip", "*.7z"],
+      "sha1": [
+        "d6133ace5afaa0882cf214cf88daba39e266c078",
+        "9743aa026e9269b339eb0e3044cd5830a440c1fd"
+      ],
+      "dest": "mm.z64"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "2Ship-*-Linux.zip",
+      "type": "zip",
+      "executable": "2ship.appimage"
+    },
+    "linux-arm64": {
+      "pattern": "2Ship-*-Linux.zip",
+      "type": "zip",
+      "executable": "2ship.appimage"
+    },
+    "windows-x64": {
+      "pattern": "2Ship-*-Win64.zip",
+      "type": "zip",
+      "executable": "2ship.exe"
+    },
+    "macos-arm64": {
+      "pattern": "2Ship-*-Mac.zip",
+      "type": "zip",
+      "executable": "2ship.app/Contents/MacOS/2ship"
+    },
+    "macos-x64": {
+      "pattern": "2Ship-*-Mac.zip",
+      "type": "zip",
+      "executable": "2ship.app/Contents/MacOS/2ship"
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "2ship2harkinian"
+  }
+}

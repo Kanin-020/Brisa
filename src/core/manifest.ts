@@ -1,0 +1,107 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+import type { AppConfig } from "./config";
+
+export interface RomRequirement {
+  /** Unique id for this ROM variant (e.g. "oot"). */
+  id: string;
+  /** Human readable name of the required ROM. */
+  name: string;
+  /** Filename patterns matched against files in the roms dir. */
+  patterns: string[];
+  /** Optional list of acceptable SHA1 hashes of the ROM. */
+  sha1: string[];
+  /**
+   * Optional list of acceptable 6-char disc game IDs (e.g. "GZ2E01")
+   * read from the disc image header. Works across .iso/.rvz/.gcz even
+   * though their SHA1 differs due to compression.
+   */
+  gameIds?: string[];
+  /** Relative path inside the port dir where the ROM must be (symlink target). */
+  dest: string;
+  /**
+   * Whether this ROM is mandatory for install. Defaults to true. Set false
+   * for optional second ROMs (e.g. SoH's Master Quest): install still works
+   * without it, and it gets symlinked automatically when present.
+   */
+  required?: boolean;
+}
+
+export interface AssetDef {
+  /** Glob pattern to pick the release asset for this platform. */
+  pattern: string;
+  /** Archive/file kind. */
+  type: "zip" | "tar.gz" | "appimage" | "apk";
+  /** Relative path of the executable inside the extracted archive (null = the asset file itself, e.g. AppImage/APK). */
+  executable: string | null;
+}
+
+export interface ModsConfig {
+  /** Directory inside the port dir where mods live (e.g. "mods"). */
+  dir: string;
+  /** Directory name under the central MODS/ dir (e.g. "soh"). */
+  gameDir: string;
+}
+
+export interface Manifest {
+  id: string;
+  name: string;
+  game: string;
+  description: string;
+  website: string;
+  /** GitHub "owner/repo". */
+  repo: string;
+  /** Platform asset key -> asset definition. Keys like "linux-x64". */
+  assets: Record<string, AssetDef>;
+  roms: RomRequirement[];
+  mods: ModsConfig;
+}
+
+export function loadManifest(cfg: AppConfig, id: string): Manifest | null {
+  // Remote manifests override local ones (fresh registry wins).
+  const dirs = [
+    path.join(cfg.manifestsDir, "remote", `${id}.json`),
+    path.join(cfg.manifestsDir, `${id}.json`),
+  ];
+  for (const file of dirs) {
+    if (!fs.existsSync(file)) continue;
+    try {
+      const m = JSON.parse(fs.readFileSync(file, "utf8")) as Manifest;
+      return normalize(m);
+    } catch (e) {
+      console.error("[manifest] error loading " + file + ": " + e);
+    }
+  }
+  return null;
+}
+
+export function listManifests(cfg: AppConfig): Manifest[] {
+  const out: Manifest[] = [];
+  const seen = new Set<string>();
+  // Remote manifests take priority, so scan them first.
+  const scan = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith(".json")) continue;
+      try {
+        const m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) as Manifest;
+        if (seen.has(m.id)) continue;
+        seen.add(m.id);
+        out.push(normalize(m));
+      } catch {
+        // skip broken manifest
+      }
+    }
+  };
+  if (cfg.registryUrl) scan(path.join(cfg.manifestsDir, "remote"));
+  scan(cfg.manifestsDir);
+  return out.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function normalize(m: Manifest): Manifest {
+  m.roms = m.roms ?? [];
+  m.assets = m.assets ?? {};
+  m.mods = m.mods ?? { dir: "mods", gameDir: m.id };
+  m.mods.gameDir = m.mods.gameDir || m.id;
+  return m;
+}

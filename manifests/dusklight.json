@@ -1,0 +1,58 @@
+{
+  "id": "dusklight",
+  "name": "DUSKLIGHT",
+  "game": "The Legend of Zelda: Twilight Princess",
+  "description": "Native PC port of Twilight Princess built on the decompilation of the GameCube original. Requires a supported NTSC-U (GZ2E01) or PAL (GZ2P01) GameCube dump.",
+  "repo": "TwilitRealm/dusklight",
+  "roms": [
+    {
+      "id": "tp",
+      "name": "Twilight Princess (GameCube)",
+      "patterns": ["tp.iso", "tp.gcz", "*.iso", "*.gcm", "*.rvz", "*.wia", "*.gcz", "*.wbfs", "*.ciso", "*.nkit.iso"],
+      "sha1": [],
+      "gameIds": ["GZ2E01", "GZ2P01"],
+      "dest": "tp.iso"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "Dusklight-*-linux-x86_64.AppImage",
+      "type": "appimage",
+      "executable": null
+    },
+    "linux-arm64": {
+      "pattern": "Dusklight-*-linux-arm64.AppImage",
+      "type": "appimage",
+      "executable": null
+    },
+    "windows-x64": {
+      "pattern": "Dusklight-*-win32-x86_64.zip",
+      "type": "zip",
+      "executable": "dusklight.exe"
+    },
+    "windows-arm64": {
+      "pattern": "Dusklight-*-win32-arm64.zip",
+      "type": "zip",
+      "executable": "dusklight.exe"
+    },
+    "macos-arm64": {
+      "pattern": "Dusklight-*-macos-arm64.zip",
+      "type": "zip",
+      "executable": "Dusklight.app/Contents/MacOS/Dusklight"
+    },
+    "macos-x64": {
+      "pattern": "Dusklight-*-macos-x86_64.zip",
+      "type": "zip",
+      "executable": "Dusklight.app/Contents/MacOS/Dusklight"
+    },
+    "android": {
+      "pattern": "Dusklight-*-android-arm64.apk",
+      "type": "apk",
+      "executable": null
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "dusklight"
+  }
+}
