@@ -5,6 +5,21 @@ import { App } from "../core/app";
 import { projectRoot } from "../core/config";
 import type { RomFile } from "../core/scanner";
 
+// En las builds empaquetadas (desktop/CLI) la UI estática se incrusta en la
+// entrada CLI por scripts/build-desktop.mjs y se expone vía __WEB_ASSETS__.
+const embeddedAssets = (globalThis as Record<string, unknown>).__WEB_ASSETS__ as
+  | Record<string, string>
+  | undefined;
+
+const MIME_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".json": "application/json",
+};
+
 type Handler = (req: http.IncomingMessage, res: http.ServerResponse, body: unknown) => void | Promise<void>;
 
 const routes = new Map<string, Handler>();
@@ -18,7 +33,12 @@ function sendJson(res: http.ServerResponse, status: number, data: unknown) {
   res.end(JSON.stringify(data));
 }
 
-export function startServer(app: App, port: number): http.Server {
+export function startServer(
+  app: App,
+  port: number,
+  onReady?: (url: string) => void,
+  opts: { openBrowser?: boolean } = {},
+): http.Server {
   // ---- API ----
   route("GET", /^\/api\/status$/, async (_req, res) => {
     const { scan, ports } = await app.status();
@@ -152,8 +172,14 @@ export function startServer(app: App, port: number): http.Server {
   });
 
   server.listen(port, () => {
-    const url = `http://localhost:${port}`;
+    // Con port 0 el puerto real lo asigna el SO; se lee de server.address().
+    const addr = server.address();
+    const actualPort = typeof addr === "object" && addr ? addr.port : port;
+    const url = `http://localhost:${actualPort}`;
     console.log(`\n  Port Hub GUI: ${url}\n`);
+    onReady?.(url);
+    // La app de escritorio (Electron) abre su propia ventana y no un navegador.
+    if (opts.openBrowser === false) return;
     // Try to open the browser
     try {
       const { spawn } = require("node:child_process");
@@ -165,7 +191,11 @@ export function startServer(app: App, port: number): http.Server {
             : process.env.WSL_DISTRO_NAME
               ? "wslview"
               : "xdg-open";
-      spawn(opener, [url], { detached: true, stdio: "ignore" }).unref();
+      const child = spawn(opener, [url], { detached: true, stdio: "ignore" });
+      child.on("error", () => {
+        /* opener no disponible (entorno sin GUI) */
+      });
+      child.unref();
     } catch {
       // ignore
     }
@@ -176,23 +206,28 @@ export function startServer(app: App, port: number): http.Server {
 
 function serveStatic(res: http.ServerResponse, pathname: string): void {
   let rel = pathname === "/" ? "/index.html" : pathname;
-  // Try dist/web first (built), then src/web (dev).
+  // Packaged build: serve the UI embedded in the binary first.
+  if (embeddedAssets) {
+    const key = rel.replace(/^\/+/, "");
+    const content = embeddedAssets[key];
+    if (content !== undefined) {
+      const ext = path.extname(key);
+      res.writeHead(200, { "Content-Type": MIME_TYPES[ext] ?? "application/octet-stream" });
+      // Los binarios se incrustan en base64 (prefijo "b64:") desde build-desktop.mjs.
+      res.end(content.startsWith("b64:") ? Buffer.from(content.slice(4), "base64") : content);
+      return;
+    }
+  }
+  // dist/web empaquetado (Electron desktop), luego dist/web y src/web (dev).
   const candidates = [
+    process.env.PORT_HUB_WEB_ROOT ? path.join(process.env.PORT_HUB_WEB_ROOT, rel) : null,
     path.join(projectRoot(), "dist", "web", rel),
     path.join(projectRoot(), "src", "web", rel),
-  ];
+  ].filter((f): f is string => f !== null);
   for (const file of candidates) {
     if (fs.existsSync(file) && fs.statSync(file).isFile()) {
       const ext = path.extname(file);
-      const mime: Record<string, string> = {
-        ".html": "text/html; charset=utf-8",
-        ".js": "text/javascript; charset=utf-8",
-        ".css": "text/css; charset=utf-8",
-        ".svg": "image/svg+xml",
-        ".png": "image/png",
-        ".json": "application/json",
-      };
-      res.writeHead(200, { "Content-Type": mime[ext] ?? "application/octet-stream" });
+      res.writeHead(200, { "Content-Type": MIME_TYPES[ext] ?? "application/octet-stream" });
       fs.createReadStream(file).pipe(res);
       return;
     }

@@ -1,6 +1,6 @@
 {
   "id": "dusklight",
-  "name": "DUSKLIGHT",
+  "name": "Dusklight",
   "game": "The Legend of Zelda: Twilight Princess",
   "description": "Native PC port of Twilight Princess built on the decompilation of the GameCube original. Requires a supported NTSC-U (GZ2E01) or PAL (GZ2P01) GameCube dump.",
   "repo": "TwilitRealm/dusklight",

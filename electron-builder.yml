@@ -1,0 +1,28 @@
+appId: io.porthub.desktop
+productName: Port Hub
+artifactName: Port_Hub-${version}-${arch}.${ext}
+
+directories:
+  output: release
+
+files:
+  - dist/**/*
+  - package.json
+
+extraResources:
+  - from: manifests
+    to: manifests
+  - from: release/gui/cli-entry.cjs
+    to: cli-entry.cjs
+
+linux:
+  target:
+    - AppImage
+  icon: src/web/icon.png
+  category: Utility
+  maintainer: Port Hub
+
+win:
+  target:
+    - zip
+  icon: src/web/icon.png

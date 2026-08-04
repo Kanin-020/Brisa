@@ -1,21 +1,26 @@
 {
   "name": "port-hub",
   "version": "0.1.0",
-  "description": "Compilador y gestor de ports nativos de PC (SoH, 2Ship2Harkinian, DUSKLIGHT, TMC) al estilo EmuDeck, basado en manifiestos.",
+  "description": "Recopilador y gestor de ports nativos de PC (SoH, 2Ship2Harkinian, Dusklight, TMC) al estilo EmuDeck, basado en manifiestos.",
   "license": "MIT",
+  "author": "Kanin",
+  "engines": {
+    "node": ">=18.17"
+  },
   "bin": {
     "port-hub": "dist/cli.js"
   },
-  "main": "dist/core/app.js",
+  "main": "dist/desktop/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-web.js",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
-    "serve": "node dist/cli.js serve"
-  },
-  "engines": {
-    "node": ">=18.17"
+    "serve": "node dist/cli.js serve",
+    "desktop": "npm run build && electron .",
+    "package": "npm run build && node scripts/build-desktop.mjs",
+    "package:linux": "npm run build && node scripts/build-desktop.mjs --only linux",
+    "package:windows": "npm run build && node scripts/build-desktop.mjs --only windows"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
@@ -26,6 +31,9 @@
     "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.10.1",
     "@types/tar": "^6.1.13",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.28.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
