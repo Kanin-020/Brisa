@@ -6,7 +6,7 @@ English
 
 Español
 ---
-**Compilador y gestor de ports nativos de PC** al estilo EmuDeck, basado en manifiestos.
+**Recopilador y gestor de ports nativos de PC** al estilo EmuDeck, basado en manifiestos.
 
 ## Idiomas / Languages
 

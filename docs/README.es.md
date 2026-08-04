@@ -1,10 +1,12 @@
-# Port Hub — Español
+# Port Hub
 
 **Compilador y gestor de ports nativos de PC** al estilo EmuDeck, basado en manifiestos.
 
-## Acerca de Port Hub
+## Acerca de
 
-**Port Hub** es un compilador y gestor de **ports nativos de PC** al estilo EmuDeck, basado en **manifiestos**(archivos JSON). 
+### Qué es
+
+**Port Hub** es un recopilador y gestor de **ports nativos de PC** al estilo EmuDeck, basado en **manifiestos** (archivos JSON).
 
 | Juego | Proyecto | Enlace |
 |--------|----------|--------|
@@ -13,14 +15,11 @@
 | The Legend of Zelda: Twilight Princess | DUSKLIGHT | [GitHub](https://github.com/TwilitRealm/dusklight) |
 | The Legend of Zelda: The Minish Cap | Project Picori | [GitHub](https://github.com/999sian/tmc) |
 
-
 El proyecto es trivialmente extensible a cualquier port que publique releases en GitHub.
 
-Doy especial agradecimiento a cada uno de los equipos de decompilación, sin ellos este proeyecto no sería posible, no olviden dar una estrella a cada uno de los repositorios listados.
+Doy especial agradecimiento a cada uno de los equipos de decompilación, sin ellos este proyecto no sería posible, no olviden dar una estrella a cada uno de los repositorios listados.
 
----
-
-## Características
+### Características
 
 | # | Requisito | Cómo lo hace |
 |---|-----------|--------------|
@@ -31,23 +30,103 @@ Doy especial agradecimiento a cada uno de los equipos de decompilación, sin ell
 | 5 | **Manifiestos** | Cada port es un archivo JSON en `manifests/`. Para añadir un port nuevo solo necesitas: el repo de GitHub, los patrones de nombre/hash de su ROM y los patrones de sus assets por plataforma. |
 | 6 | **GUI web con i18n** | Interfaz web local con selector de idioma **Español / English** (y cualquier idioma que añadas a `src/web/lang/`). |
 
----
-
-## Requisitos
-
-- **Node.js ≥ 18.17** (se usa el `fetch` nativo).
-- Linux, Windows, macOS, Steam Deck o Android (Termux).
-- Los ROMs originales de los juegos (obténlos legalmente, desde tus propios cartuchos/discos).
-
 ## Instalación
 
-```bash
-npm install
-npm run build
-npm link            # opcional: expone el comando `port-hub` globalmente
+### Releases
+
+Descarga el artefacto de la pestaña **Releases** del repositorio:
+
+- **Linux** → `Port_Hub-<versión>-x86_64.AppImage` (no requiere instalación).
+- **Windows** → `Port_Hub-<versión>-win.zip` (portable, descomprimir y ejecutar).
+
+La AppImage es **a la vez app de escritorio y CLI**, según cómo se ejecute:
+
+- **Doble clic** (o `./Port_Hub-*.AppImage` sin argumentos) → abre la ventana nativa (GUI).
+- **Desde la terminal con argumentos** → se comporta como CLI (ver [Uso → CLI](#uso)).
+
+### Carpeta de usuario
+
+Los archivos se guardan en la **carpeta de usuario**: `Carpeta de Usuario/Port-hub` (Linux: `~/Port-hub`). Es la raíz de datos que comparten la GUI y el CLI, y contiene:
+
+| Carpeta | Contenido |
+|---|---|
+| `roms/` | Todos tus ROMs (un solo directorio). |
+| `mods/` | Mods semicentralizados por juego. |
+| `ports/` | Ports instalados (binarios + ejecutables). |
+| `manifests/` | Manifiestos de ports (local + `remote/`). |
+| `cache/` | Hashes, descargas y estado de instalación. |
+| `config.json` | Configuración (rutas, `registryUrl`, puerto). |
+
+### Estructura de carpetas
+
+```
+port-hub/
+├── roms/              ← TODOS tus ROMs viven aquí (un solo directorio)
+│   └── oot.z64
+├── mods/              ← mods semicentralizados
+│   └── soh/
+│       └── Mi Mod/    ← symlink automático → ports/soh/mods/Mi Mod
+├── ports/             ← ports instalados (binarios + ejecutables)
+│   └── soh/
+│       ├── soh.appimage
+│       ├── oot.z64    ← symlink a roms/oot.z64
+│       └── mods/      ← symlinks hacia mods/soh/*
+├── manifests/         ← manifiestos de ports (local + remote/)
+├── cache/             ← hashes, descargas, estado de instalación
+└── config.json        ← configuración (rutas, registryUrl, puerto)
 ```
 
-## Uso rápido
+## Uso
+
+### GUI
+
+La interfaz nativa (Electron) se abre con **doble clic** en la AppImage, o desde la terminal con:
+
+```bash
+port-hub serve          # GUI web en el navegador → http://localhost:7380
+```
+
+Permite ver el estado de ROMs, ports, mods y actualizaciones en tiempo real, e instalar, actualizar, desinstalar y lanzar ports con un clic.
+
+### CLI
+
+El CLI está disponible de dos formas:
+
+- **Directamente con la AppImage** (sin instalar nada):
+
+  ```bash
+  ./Port_Hub-0.1.0-x86_64.AppImage status        # escanea ROMs, ports, mods y actualizaciones
+  ./Port_Hub-0.1.0-x86_64.AppImage install soh   # instala un port
+  ./Port_Hub-0.1.0-x86_64.AppImage --help         # lista todos los comandos
+  ```
+
+- **Como comando global** (desarrollo, requiere Node.js):
+
+  ```bash
+  npm link               # expone el comando `port-hub` globalmente
+  port-hub status
+  ```
+
+### Comandos
+
+| Comando | Descripción |
+|---|---|
+| `port-hub status` | Escaneo completo: ROMs, ports, mods, actualizaciones. |
+| `port-hub scan` | Solo escanea y lista coincidencias ROM↔port. |
+| `port-hub install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
+| `port-hub uninstall <id>` | Elimina el port y su estado. |
+| `port-hub launch <id>` | Ejecuta el port instalado. |
+| `port-hub update [id] [--check]` | Actualiza ports instalados a la última release. |
+| `port-hub mods <id>` | Lista mods centralizados de un port. |
+| `port-hub mods-link <id>` | Enlaza todos los mods del port. |
+| `port-hub mods-unlink <id> [mod]` | Desenlaza mods. |
+| `port-hub registry` | Descarga manifiestos remotos desde `registryUrl`. |
+| `port-hub hash <archivo>` | Calcula el SHA1 (para rellenar manifiestos). |
+| `port-hub config` / `config-set <k> <v>` | Ver/editar configuración. |
+| `port-hub serve` | GUI web local. |
+| `port-hub manifest-test <pattern>` | Depura un patrón glob. |
+
+### Uso rápido
 
 ```bash
 # 1) Pon tus ROMs en roms/
@@ -71,45 +150,37 @@ port-hub update
 port-hub serve          # → http://localhost:7380
 ```
 
-## Estructura de carpetas
+## Desarrollo
 
+### Requisitos
+
+- **Node.js ≥ 18.17** (se usa el `fetch` nativo).
+- Linux, Windows, macOS, Steam Deck o Android (Termux).
+- Los ROMs originales de los juegos (obténlos legalmente, desde tus propios cartuchos/discos).
+
+### Compilación
+
+```bash
+npm install
+npm run build           # compila TypeScript a dist/ y copia la UI web
+npm run typecheck       # verifica tipos sin emitir
+npm run desktop         # build + ejecuta la app de escritorio (Electron)
+npm run package:linux   # build + genera la AppImage en release/
+npm run package:windows # build + genera el .zip portable de Windows
+npm link                # opcional: expone el comando `port-hub` globalmente
 ```
-port-hub/
-├── roms/              ← TODOS tus ROMs viven aquí (un solo directorio)
-│   └── oot.z64
-├── mods/              ← mods semicentralizados
-│   └── soh/
-│       └── Mi Mod/    ← symlink automático → ports/soh/mods/Mi Mod
-├── ports/             ← ports instalados (binarios + ejecutables)
-│   └── soh/
-│       ├── soh.appimage
-│       ├── oot.z64    ← symlink a roms/oot.z64
-│       └── mods/      ← symlinks hacia mods/soh/*
-├── manifests/         ← manifiestos de ports (local + remote/)
-├── cache/             ← hashes, descargas, estado de instalación
-└── config.json        ← configuración (rutas, registryUrl, puerto)
-```
 
-## Comandos
+### Funcionamiento interno
 
-| Comando | Descripción |
-|---|---|
-| `port-hub status` | Escaneo completo: ROMs, ports, mods, actualizaciones. |
-| `port-hub scan` | Solo escanea y lista coincidencias ROM↔port. |
-| `port-hub install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
-| `port-hub uninstall <id>` | Elimina el port y su estado. |
-| `port-hub launch <id>` | Ejecuta el port instalado. |
-| `port-hub update [id] [--check]` | Actualiza ports instalados a la última release. |
-| `port-hub mods <id>` | Lista mods centralizados de un port. |
-| `port-hub mods-link <id>` | Enlaza todos los mods del port. |
-| `port-hub mods-unlink <id> [mod]` | Desenlaza mods. |
-| `port-hub registry` | Descarga manifiestos remotos desde `registryUrl`. |
-| `port-hub hash <archivo>` | Calcula el SHA1 (para rellenar manifiestos). |
-| `port-hub config` / `config-set <k> <v>` | Ver/editar configuración. |
-| `port-hub serve` | GUI web local. |
-| `port-hub manifest-test <pattern>` | Depura un patrón glob. |
+1. **Escaneo**: recorre `roms/`, calcula SHA1 con caché por tamaño+mtime, y para cada manifiesto busca su ROM por nombre (patrones), Game ID (discos GameCube) y/o hash exacto.
+2. **Instalación**: consulta la API de GitHub (`/releases/latest`), elige el asset según `platform.key` (`linux-x64`, `windows-arm64`, `android`, …), lo descarga a `cache/downloads/`, lo extrae en `ports/<id>/` y crea el symlink `ports/<id>/<dest> → roms/<archivo>` para **cada** requisito con ROM presente (multirom: `oot.z64` + `oot-mq.z64`).
+3. **Mods**: `mods/<gameDir>/<mod>` se enlaza a `ports/<id>/<dir>/<mod>`. Se re-enlazan automáticamente tras instalar/actualizar.
+4. **Actualizaciones**: compara el tag de la release instalada con el último de GitHub. En `update` se descarga la nueva versión, se hace backup atómico y se re-enlaza ROM y mods.
+5. **Auto-update del registro**: `registryUrl` permite añadir ports nuevos sin tocar el código, solo con JSON.
 
-## Cómo añadir un port nuevo (en 5 minutos)
+## Crear un manifiesto
+
+### JSON
 
 Crea `manifests/<id>.json`. Es solo **asociación de hashes, urls y nombres**:
 
@@ -142,6 +213,8 @@ Crea `manifests/<id>.json`. Es solo **asociación de hashes, urls y nombres**:
 }
 ```
 
+### Assets
+
 Campos de `assets`:
 
 | Campo | Valor |
@@ -150,11 +223,9 @@ Campos de `assets`:
 | `type` | `zip`, `tar.gz`, `appimage` o `apk`. |
 | `executable` | Ruta del ejecutable dentro del paquete extraído (`null` para AppImage/APK, que se ejecutan tal cual). |
 
-Para verificar el hash de un ROM usa `port-hub hash roms/turom.z64` y pega el resultado en `sha1`. Cuando hay `sha1`, el escáner prioriza la coincidencia **por hash exacto** antes que por nombre — perfecto cuando un mismo nombre de archivo podría servir para dos ports distintos (como `oot.z64` y `mm.z64`).
+### Registry
 
-### Registro remoto (opcional)
-
-Para distribuir manifiestos actualizables:
+Registro remoto opcional para distribuir manifiestos actualizables:
 
 ```bash
 port-hub config-set registryUrl https://raw.githubusercontent.com/tu/repo/main/manifests/index.json
@@ -163,7 +234,11 @@ port-hub registry
 
 `index.json` es un array de `{ "id": "...", "url": "https://.../<id>.json" }`. Los manifiestos remotos se guardan en `manifests/remote/` y tienen prioridad de carga sobre los locales con el mismo `id`.
 
-## Interfaz web (GUI)
+### Hashes
+
+Para verificar el hash de un ROM usa `port-hub hash roms/turom.z64` y pega el resultado en `sha1`. Cuando hay `sha1`, el escáner prioriza la coincidencia **por hash exacto** antes que por nombre — perfecto cuando un mismo nombre de archivo podría servir para dos ports distintos (como `oot.z64` y `mm.z64`).
+
+## Interfaz web
 
 `port-hub serve` arranca una interfaz web local en `http://localhost:7380` con:
 
@@ -171,25 +246,6 @@ port-hub registry
 - Instalar, actualizar, desinstalar y lanzar ports con un clic.
 - Enlazar/desenlazar mods individualmente.
 - **Selector de idioma** (Español / English) en la cabecera. Los idiomas viven en `src/web/lang/*.json` — añade un archivo nuevo y el selector lo mostrará automáticamente.
-
----
-
-## Cómo funciona por debajo
-
-1. **Escaneo**: recorre `roms/`, calcula SHA1 con caché por tamaño+mtime, y para cada manifiesto busca su ROM por nombre (patrones), Game ID (discos GameCube) y/o hash exacto.
-2. **Instalación**: consulta la API de GitHub (`/releases/latest`), elige el asset según `platform.key` (`linux-x64`, `windows-arm64`, `android`, …), lo descarga a `cache/downloads/`, lo extrae en `ports/<id>/` y crea el symlink `ports/<id>/<dest> → roms/<archivo>` para **cada** requisito con ROM presente (multirom: `oot.z64` + `oot-mq.z64`).
-3. **Mods**: `mods/<gameDir>/<mod>` se enlaza a `ports/<id>/<dir>/<mod>`. Se re-enlazan automáticamente tras instalar/actualizar.
-4. **Actualizaciones**: compara el tag de la release instalada con el último de GitHub. En `update` se descarga la nueva versión, se hace backup atómico y se re-enlaza ROM y mods.
-5. **Auto-update del registro**: `registryUrl` permite añadir ports nuevos sin tocar el código, solo con JSON.
-
-## Estado de los ports incluidos
-
-| Port | Juego | Repo | ROM requerido |
-|---|---|---|---|
-| `soh` | Ocarina of Time | `HarbourMasters/Shipwright` | OoT NTSC 1.0 (`.z64`/`.n64`) + Master Quest (opcional) |
-| `2ship2harkinian` | Majora's Mask | `HarbourMasters/2ship2harkinian` | MM NTSC-U 1.0 (`.z64`/`.n64`) |
-| `dusklight` | Twilight Princess | `TwilitRealm/dusklight` | TP NTSC-U/PAL GameCube ISO (`.iso`/`.gcz`) |
-| `tmc` | The Minish Cap | `999sian/tmc` | Minish Cap GBA (`.gba`) |
 
 ## Notas por plataforma
 
