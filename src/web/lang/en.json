@@ -1,0 +1,49 @@
+{
+  "brand.title": "Port Hub",
+  "brand.tagline": "Native PC port manager",
+  "btn.refresh": "⟳ Refresh",
+
+  "stat.roms": "ROMs",
+  "stat.installed": "Installed ports",
+  "stat.mods": "Mods",
+  "stat.updates": "Updates",
+
+  "ports.title": "📦 Ports",
+  "ports.hint": "{0} ports in registry",
+
+  "roms.title": "💾 Detected ROMs",
+  "roms.hint": "{0} ROM↔requirement matches",
+  "roms.empty": "No ROMs yet. Copy them to the ROMs folder.",
+  "roms.byHash": "by hash",
+  "roms.byGameId": "by game ID",
+  "roms.byName": "by name",
+
+  "port.install": "Install",
+  "port.installNoRom": "Install (no ROM)",
+  "port.uninstall": "Uninstall",
+  "port.update": "Update",
+  "port.launch": "▶ Play",
+  "port.romOk": "ROM ✓",
+  "port.romMissing": "ROM ✗",
+  "port.optional": "(optional)",
+
+  "mod.unlink": "Unlink",
+  "mod.link": "Link",
+
+  "toast.installing": "Installing {0}…",
+  "toast.installed": "✓ {0} v{1} installed",
+  "toast.uninstalled": "✓ {0} uninstalled",
+  "toast.updated": "✓ {0} → {1}",
+  "toast.launching": "Launching {0}…",
+  "toast.modUnlinked": "Mod \"{0}\" unlinked",
+  "toast.modLinked": "Mod \"{0}\" linked",
+
+  "footer.madeWith": "Made with ♥",
+  "footer.legal": "ROMs must be obtained legally",
+  "footer.romsDir": "ROMs",
+
+  "loading": "Loading…",
+
+  "lang.en": "English",
+  "lang.es": "Español"
+}

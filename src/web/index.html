@@ -13,48 +13,52 @@
       <div class="brand">
         <div class="logo">🕹️</div>
         <div>
-          <h1>Port Hub</h1>
-          <span class="tagline">Gestor de ports nativos de PC</span>
+          <h1 id="brand-title">Port Hub</h1>
+          <span id="brand-tagline" class="tagline">Gestor de ports nativos de PC</span>
         </div>
       </div>
       <div class="topbar-right">
         <span id="platform-chip" class="chip"></span>
-        <button id="btn-refresh" class="btn ghost" title="Re-escaneo">⟳ Refrescar</button>
+        <div class="locale-selector" id="locale-selector">
+          <!-- Locale buttons rendered dynamically by app.js -->
+        </div>
+        <button id="btn-refresh" class="btn ghost" title="⟳ Refrescar">⟳ Refrescar</button>
       </div>
     </header>
 
     <div class="stats">
-      <div class="stat-card"><div class="stat-value" id="stat-roms">0</div><div class="stat-label">ROMs</div></div>
-      <div class="stat-card"><div class="stat-value" id="stat-installed">0</div><div class="stat-label">Ports instalados</div></div>
-      <div class="stat-card"><div class="stat-value" id="stat-mods">0</div><div class="stat-label">Mods</div></div>
-      <div class="stat-card"><div class="stat-value" id="stat-updates">0</div><div class="stat-label">Actualizaciones</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-roms">0</div><div class="stat-label" id="stat-label-roms">ROMs</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-installed">0</div><div class="stat-label" id="stat-label-installed">Ports instalados</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-mods">0</div><div class="stat-label" id="stat-label-mods">Mods</div></div>
+      <div class="stat-card"><div class="stat-value" id="stat-updates">0</div><div class="stat-label" id="stat-label-updates">Actualizaciones</div></div>
     </div>
 
     <main>
       <section class="section">
         <div class="section-head">
-          <h2>📦 Ports</h2>
+          <h2 id="ports-title">📦 Ports</h2>
           <span id="ports-hint" class="hint"></span>
         </div>
-        <div id="ports-grid" class="grid"><div class="loading">Cargando…</div></div>
+        <div id="ports-grid" class="grid"><div class="loading" id="loading-ports">Cargando…</div></div>
       </section>
 
       <section class="section">
         <div class="section-head">
-          <h2>💾 ROMs detectados</h2>
+          <h2 id="roms-title">💾 ROMs detectados</h2>
           <span id="roms-hint" class="hint"></span>
         </div>
-        <div id="roms-list" class="roms-list"><div class="loading">Cargando…</div></div>
+        <div id="roms-list" class="roms-list"><div class="loading" id="loading-roms">Cargando…</div></div>
       </section>
     </main>
 
     <footer class="footer">
-      Hecho con ♥ · Los ROMs deben obtenerse legalmente · <span id="cfg-roms-dir"></span>
+      <span id="footer-text">Hecho con ♥</span> · <span id="footer-legal">Los ROMs deben obtenerse legalmente</span> · <span id="cfg-roms-dir"></span>
     </footer>
   </div>
 
   <div id="toast" class="toast"></div>
 
+  <script src="/i18n.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

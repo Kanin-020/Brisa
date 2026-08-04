@@ -1,0 +1,49 @@
+{
+  "brand.title": "Port Hub",
+  "brand.tagline": "Gestor de ports nativos de PC",
+  "btn.refresh": "⟳ Refrescar",
+
+  "stat.roms": "ROMs",
+  "stat.installed": "Ports instalados",
+  "stat.mods": "Mods",
+  "stat.updates": "Actualizaciones",
+
+  "ports.title": "📦 Ports",
+  "ports.hint": "{0} ports en el registro",
+
+  "roms.title": "💾 ROMs detectados",
+  "roms.hint": "{0} coincidencias ROM↔requisito",
+  "roms.empty": "No hay ROMs todavía. Cópiálos a la carpeta de ROMs.",
+  "roms.byHash": "por hash",
+  "roms.byGameId": "por game ID",
+  "roms.byName": "por nombre",
+
+  "port.install": "Instalar",
+  "port.installNoRom": "Instalar (sin ROM)",
+  "port.uninstall": "Desinstalar",
+  "port.update": "Actualizar",
+  "port.launch": "▶ Jugar",
+  "port.romOk": "ROM ✓",
+  "port.romMissing": "ROM ✗",
+  "port.optional": "(opcional)",
+
+  "mod.unlink": "Desenlazar",
+  "mod.link": "Enlazar",
+
+  "toast.installing": "Instalando {0}…",
+  "toast.installed": "✓ {0} v{1} instalado",
+  "toast.uninstalled": "✓ {0} desinstalado",
+  "toast.updated": "✓ {0} → {1}",
+  "toast.launching": "Lanzando {0}…",
+  "toast.modUnlinked": "Mod \"{0}\" desenlazado",
+  "toast.modLinked": "Mod \"{0}\" enlazado",
+
+  "footer.madeWith": "Hecho con ♥",
+  "footer.legal": "Los ROMs deben obtenerse legalmente",
+  "footer.romsDir": "ROMs",
+
+  "loading": "Cargando…",
+
+  "lang.en": "English",
+  "lang.es": "Español"
+}

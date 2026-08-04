@@ -1,14 +1,52 @@
-/* Port Hub GUI */
+/* Port Hub GUI — i18n-ready */
 let state = null;
 let busy = new Set();
 
 const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
 const el = (tag, cls, text) => {
   const n = document.createElement(tag);
   if (cls) n.className = cls;
   if (text !== undefined) n.textContent = text;
   return n;
 };
+
+// ── i18n helpers ──
+
+const { t, setLocale, locale, onLocaleChange, localeLabel, availableLocales, ready: i18nReady } = window.__i18n;
+
+/** Re-translate all static UI elements on locale change. */
+function updateStaticText() {
+  document.title = t("brand.title");
+  $("#brand-title").textContent = t("brand.title");
+  $("#brand-tagline").textContent = t("brand.tagline");
+  $("#btn-refresh").textContent = t("btn.refresh");
+  $("#btn-refresh").title = t("btn.refresh");
+
+  $("#stat-label-roms").textContent = t("stat.roms");
+  $("#stat-label-installed").textContent = t("stat.installed");
+  $("#stat-label-mods").textContent = t("stat.mods");
+  $("#stat-label-updates").textContent = t("stat.updates");
+
+  $("#ports-title").textContent = t("ports.title");
+  $("#roms-title").textContent = t("roms.title");
+
+  $("#footer-text").textContent = t("footer.madeWith");
+  $("#footer-legal").textContent = t("footer.legal");
+
+  // Update html lang attribute for accessibility
+  document.documentElement.lang = locale();
+
+  // Update locale buttons active state
+  $$(".locale-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.locale === locale());
+  });
+
+  // Re-render dynamic content if state is available
+  if (state) render();
+}
+
+// ── Toast ──
 
 function toast(msg, kind = "ok") {
   const t = $("#toast");
@@ -18,6 +56,8 @@ function toast(msg, kind = "ok") {
   t._timer = setTimeout(() => t.classList.remove("show"), 3200);
 }
 
+// ── API ──
+
 async function api(path, body) {
   const opts = body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {};
   const res = await fetch(path, opts);
@@ -25,6 +65,36 @@ async function api(path, body) {
   if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
   return data;
 }
+
+// ── Locale switcher ──
+
+function initLocaleSwitcher() {
+  const container = $("#locale-selector");
+  container.innerHTML = "";
+  const locales = availableLocales();
+  locales.forEach((loc, i) => {
+    if (i > 0) {
+      const divider = document.createElement("span");
+      divider.className = "locale-divider";
+      divider.textContent = "|";
+      container.appendChild(divider);
+    }
+    const btn = document.createElement("button");
+    btn.className = "locale-btn";
+    btn.dataset.locale = loc;
+    btn.textContent = localeLabel(loc);
+    btn.addEventListener("click", () => {
+      setLocale(loc);
+    });
+    container.appendChild(btn);
+  });
+  // Subscribe to locale changes
+  onLocaleChange(updateStaticText);
+  // Initial render
+  updateStaticText();
+}
+
+// ── Loader ──
 
 async function load() {
   try {
@@ -35,6 +105,8 @@ async function load() {
   }
 }
 
+// ── Render ──
+
 function render() {
   if (!state) return;
   const { ports, scan, platform } = state;
@@ -44,9 +116,9 @@ function render() {
   $("#stat-installed").textContent = ports.filter((p) => p.installed).length;
   $("#stat-mods").textContent = ports.reduce((a, p) => a + p.mods.length, 0);
   $("#stat-updates").textContent = ports.filter((p) => p.updateAvailable).length;
-  $("#cfg-roms-dir").textContent = `ROMs: ${state.cfg.romsDir}`;
-  $("#ports-hint").textContent = `${ports.length} ports en el registro`;
-  $("#roms-hint").textContent = `${scan.matches.length} coincidencias ROM↔requisito`;
+  $("#cfg-roms-dir").textContent = `${t("footer.romsDir")}: ${state.cfg.romsDir}`;
+  $("#ports-hint").textContent = t("ports.hint", ports.length);
+  $("#roms-hint").textContent = t("roms.hint", scan.matches.length);
 
   renderPorts(ports);
   renderRoms(scan);
@@ -55,6 +127,10 @@ function render() {
 function renderPorts(ports) {
   const grid = $("#ports-grid");
   grid.innerHTML = "";
+  if (ports.length === 0) {
+    grid.appendChild(el("div", "loading", t("loading")));
+    return;
+  }
   for (const p of ports) {
     grid.appendChild(portCard(p));
   }
@@ -88,13 +164,13 @@ function portCard(p) {
   for (const s of p.roms) {
     const romLine = el("div", "rom-line");
     if (s.matched) {
-      romLine.appendChild(el("span", "badge rom-ok", "ROM ✓"));
+      romLine.appendChild(el("span", "badge rom-ok", t("port.romOk")));
       romLine.appendChild(document.createTextNode(`${s.name} — ${s.romName}`));
-      if (s.matchedBy === "hash") romLine.appendChild(el("span", "badge version", "por hash"));
-      if (s.matchedBy === "gameid") romLine.appendChild(el("span", "badge version", "por game ID"));
+      if (s.matchedBy === "hash") romLine.appendChild(el("span", "badge version", t("roms.byHash")));
+      if (s.matchedBy === "gameid") romLine.appendChild(el("span", "badge version", t("roms.byGameId")));
     } else {
-      romLine.appendChild(el("span", "badge rom-missing", "ROM ✗"));
-      romLine.appendChild(document.createTextNode(s.name + (s.required ? "" : " (opcional)")));
+      romLine.appendChild(el("span", "badge rom-missing", t("port.romMissing")));
+      romLine.appendChild(document.createTextNode(s.name + (s.required ? "" : ` ${t("port.optional")}`)));
     }
     card.appendChild(romLine);
   }
@@ -108,7 +184,7 @@ function portCard(p) {
       chip.appendChild(el("span", `dot ${linked ? "linked" : "unlinked"}`));
       chip.appendChild(document.createTextNode(mod));
       const btn = el("button", "", linked ? "✕" : "＋");
-      btn.title = linked ? "Desenlazar" : "Enlazar";
+      btn.title = linked ? t("mod.unlink") : t("mod.link");
       btn.addEventListener("click", () => toggleMod(p, mod, linked));
       chip.appendChild(btn);
       row.appendChild(chip);
@@ -119,21 +195,21 @@ function portCard(p) {
   // Actions
   const actions = el("div", "port-actions");
   if (p.installed) {
-    const upd = el("button", "btn sm", "Actualizar");
+    const upd = el("button", "btn sm", t("port.update"));
     upd.disabled = !p.updateAvailable;
     upd.addEventListener("click", () => doUpdate(p));
     actions.appendChild(upd);
   }
   actions.appendChild(el("div", "spacer"));
   if (p.installed) {
-    const un = el("button", "btn red sm", "Desinstalar");
+    const un = el("button", "btn red sm", t("port.uninstall"));
     un.addEventListener("click", () => doUninstall(p));
     actions.appendChild(un);
-    const launch = el("button", "btn green sm", "▶ Jugar");
+    const launch = el("button", "btn green sm", t("port.launch"));
     launch.addEventListener("click", () => doLaunch(p));
     actions.appendChild(launch);
   } else {
-    const inst = el("button", "btn sm", p.hasRom ? "Instalar" : "Instalar (sin ROM)");
+    const inst = el("button", "btn sm", p.hasRom ? t("port.install") : t("port.installNoRom"));
     inst.addEventListener("click", () => doInstall(p));
     actions.appendChild(inst);
   }
@@ -153,7 +229,7 @@ function renderRoms(scan) {
   const list = $("#roms-list");
   list.innerHTML = "";
   if (scan.roms.length === 0) {
-    list.appendChild(el("div", "loading", "No hay ROMs todavía. Cópiálos a la carpeta de ROMs."));
+    list.appendChild(el("div", "loading", t("roms.empty")));
     return;
   }
   const byName = {};
@@ -194,43 +270,50 @@ async function busyRun(id, fn) {
 
 function doInstall(p) {
   busyRun(p.manifest.id, async () => {
-    toast(`Instalando ${p.manifest.name}…`);
+    toast(t("toast.installing", p.manifest.name));
     const data = await api("/api/install", { id: p.manifest.id });
-    toast(`✓ ${p.manifest.name} v${data.state.version} instalado`, "ok");
+    toast(t("toast.installed", p.manifest.name, data.state.version), "ok");
   });
 }
 
 function doUninstall(p) {
   busyRun(p.manifest.id, async () => {
     await api("/api/uninstall", { id: p.manifest.id });
-    toast(`✓ ${p.manifest.name} desinstalado`, "ok");
+    toast(t("toast.uninstalled", p.manifest.name), "ok");
   });
 }
 
 function doUpdate(p) {
   busyRun(p.manifest.id, async () => {
-    toast(`Actualizando ${p.manifest.name}…`);
+    toast(t("toast.installing", p.manifest.name));
     const data = await api("/api/update", { id: p.manifest.id });
-    toast(`✓ ${p.manifest.name} → ${data.info.latest}`, "ok");
+    toast(t("toast.updated", p.manifest.name, data.info.latest), "ok");
   });
 }
 
 function doLaunch(p) {
   api("/api/status").catch(() => {});
-  toast(`Lanzando ${p.manifest.name}…`, "ok");
-  // The server launches via CLI; here we just notify. Launch endpoint:
+  toast(t("toast.launching", p.manifest.name), "ok");
   fetch(`/api/launch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.manifest.id }) }).catch(() => {});
 }
 
 function toggleMod(p, mod, linked) {
   busyRun(p.manifest.id, async () => {
     await api(linked ? "/api/mods/unlink" : "/api/mods/link", { id: p.manifest.id, mod });
-    toast(linked ? `Mod "${mod}" desenlazado` : `Mod "${mod}" enlazado`, "ok");
+    toast(linked ? t("toast.modUnlinked", mod) : t("toast.modLinked", mod), "ok");
   });
 }
 
-$("#btn-refresh").addEventListener("click", () => load());
-load();
-setInterval(() => {
-  if (busy.size === 0) load();
-}, 8000);
+// ── Init ──
+
+async function init() {
+  await i18nReady();
+  initLocaleSwitcher();
+  $("#btn-refresh").addEventListener("click", () => load());
+  load();
+  setInterval(() => {
+    if (busy.size === 0) load();
+  }, 8000);
+}
+
+init();
