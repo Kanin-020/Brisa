@@ -49,6 +49,17 @@ function updateStaticText() {
   $("#mods-modal-close").title = t("mod.close");
   $("#roms-title").textContent = t("roms.title");
 
+  $("#btn-export-manifests").textContent = t("btn.exportManifests");
+  $("#btn-export-manifests").title = t("btn.exportManifests");
+  $("#btn-import-manifests").textContent = t("btn.importManifests");
+  $("#btn-import-manifests").title = t("btn.importManifests");
+  $("#btn-add-roms").textContent = t("btn.addRoms");
+  $("#btn-add-roms").title = t("btn.addRoms");
+  $("#btn-open-folder").textContent = t("btn.openAppFolder");
+  $("#btn-open-folder").title = t("btn.openAppFolder");
+  $("#drop-title").textContent = t("roms.dropTitle");
+  $("#drop-hint").textContent = t("roms.dropHint");
+
   $("#footer-text").textContent = t("footer.madeWith");
   $("#footer-legal").textContent = t("footer.legal");
 
@@ -324,9 +335,159 @@ function renderRoms(scan) {
     meta.appendChild(hashRow);
     meta.appendChild(el("div", "", fmtSize(r.size)));
     if (byName[r.path]) meta.appendChild(el("div", "badge rom-ok", byName[r.path]));
+    const del = el("button", "copy-btn del-btn", "🗑");
+    del.title = t("roms.delete");
+    del.addEventListener("click", () => deleteRom(r));
+    meta.appendChild(del);
     item.appendChild(meta);
     list.appendChild(item);
   }
+}
+
+// ── ROMs: añadir, borrar, abrir carpeta ──
+
+function initDropZone() {
+  const overlay = $("#drop-overlay");
+  let dragDepth = 0;
+  const hasFiles = (e) => Array.from(e.dataTransfer?.types ?? []).includes("Files");
+
+  window.addEventListener("dragenter", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    overlay.classList.add("show");
+  });
+  window.addEventListener("dragover", (e) => {
+    if (hasFiles(e)) e.preventDefault();
+  });
+  window.addEventListener("dragleave", (e) => {
+    if (dragDepth <= 0) return;
+    dragDepth--;
+    if (dragDepth === 0) overlay.classList.remove("show");
+  });
+  window.addEventListener("drop", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    overlay.classList.remove("show");
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    if (files.length > 0) uploadRoms(files);
+  });
+}
+
+function initRomPicker() {
+  const input = $("#rom-file-input");
+  $("#btn-add-roms").addEventListener("click", () => input.click());
+  input.addEventListener("change", () => {
+    if (input.files && input.files.length > 0) uploadRoms(Array.from(input.files));
+    input.value = "";
+  });
+}
+
+/** Subir un archivo con barra de progreso (XHR permite leer upload.onprogress). */
+function uploadRom(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/roms/upload");
+    xhr.setRequestHeader("Content-Type", "application/octet-stream");
+    xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      let data = {};
+      try {
+        data = JSON.parse(xhr.responseText || "{}");
+      } catch {
+        /* ignore */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+      else reject(new Error(data.error || `HTTP ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("network error"));
+    xhr.send(file);
+  });
+}
+
+async function uploadRoms(files) {
+  let added = 0;
+  let skipped = 0;
+  for (const f of files) {
+    if (!f.name || f.size === 0) continue;
+    try {
+      const data = await uploadRom(f, (pct) => toast(`${t("toast.uploading", f.name)} ${pct}%`));
+      if (data.skipped) skipped++;
+      else added++;
+    } catch (e) {
+      toast(`${f.name}: ${e.message}`, "error", 4000);
+    }
+  }
+  if (added > 0 && skipped > 0) {
+    toast(`${t("toast.romsAdded", added)} · ${t("toast.romsSkipped", skipped)}`, "ok", 5000);
+  } else if (added > 0) {
+    toast(t("toast.romsAdded", added), "ok", 4000);
+  } else if (skipped > 0) {
+    toast(t("toast.romsSkipped", skipped), "warn", 4000);
+  }
+  load();
+}
+
+async function deleteRom(rom) {
+  if (!window.confirm(t("roms.deleteConfirm", rom.name))) return;
+  try {
+    await api("/api/roms/delete", { path: rom.path });
+    toast(t("toast.romDeleted", rom.name), "ok");
+    load();
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+// ── Manifiestos: exportar / importar ──
+
+async function exportManifests() {
+  try {
+    const data = await api("/api/manifests/export");
+    const blob = new Blob([JSON.stringify(data.manifests, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = el("a");
+    a.href = url;
+    a.download = "brisa-manifests.json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    toast(t("toast.manifestsExported", data.manifests.length), "ok");
+  } catch (e) {
+    toast(e.message, "error");
+  }
+}
+
+function initManifestTools() {
+  const fileInput = $("#manifest-file-input");
+  $("#btn-import-manifests").addEventListener("click", () => fileInput.click());
+  $("#btn-export-manifests").addEventListener("click", exportManifests);
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files && fileInput.files[0];
+    fileInput.value = "";
+    if (!file) return;
+    try {
+      const parsed = JSON.parse(await file.text());
+      const payload = Array.isArray(parsed) ? { manifests: parsed } : parsed;
+      const data = await api("/api/manifests/import", payload);
+      const notes = (data.errors?.length ?? 0) + (data.warnings?.length ?? 0);
+      if (data.imported === 0 && data.errors && data.errors.length > 0) {
+        toast(`${t("toast.importError")}: ${data.errors[0]}`, "error", 5000);
+      } else if (notes > 0) {
+        toast(`${t("toast.manifestsImported", data.imported)} · ⚠ ${notes}`, "warn", 5000);
+      } else {
+        toast(t("toast.manifestsImported", data.imported), "ok");
+      }
+      load();
+    } catch (e) {
+      toast(`${t("toast.importError")}: ${e.message}`, "error", 5000);
+    }
+  });
 }
 
 function fmtSize(n) {
@@ -465,6 +626,12 @@ async function init() {
   initLocaleSwitcher();
   initPortsTools();
   initModsModal();
+  initDropZone();
+  initRomPicker();
+  initManifestTools();
+  $("#btn-open-folder").addEventListener("click", () => {
+    api("/api/open-folder", {}).catch((e) => toast(e.message, "error"));
+  });
   $("#btn-refresh").addEventListener("click", () => load());
   load();
   setInterval(() => {

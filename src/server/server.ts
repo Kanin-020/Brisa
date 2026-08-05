@@ -151,6 +151,64 @@ export function startServer(
     }
   });
 
+  // Subida de ROMs: el cuerpo se lee como binario (posiblemente de varios GB),
+  // así que NO pasa por readJson — se gestiona antes del bucle de rutas
+  // (ver el handler de POST en el createServer de abajo).
+
+  route("POST", /^\/api\/roms\/delete$/, async (_req, res, body) => {
+    const p = (body as { path?: string })?.path;
+    if (!p) return sendJson(res, 400, { error: "missing path" });
+    try {
+      app.deleteRom(p);
+      sendJson(res, 200, { ok: true });
+    } catch (e) {
+      sendJson(res, 400, { error: (e as Error).message });
+    }
+  });
+
+  route("POST", /^\/api\/open-folder$/, async (_req, res, body) => {
+    const dir = (body as { dir?: string })?.dir;
+    try {
+      const ok = await app.openFolder(dir as "root" | "roms" | "mods" | "manifests" | "ports");
+      sendJson(res, 200, { ok });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
+  route("GET", /^\/api\/manifests\/export$/, async (_req, res) => {
+    try {
+      sendJson(res, 200, { manifests: app.exportManifests() });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
+  route("POST", /^\/api\/manifests\/import$/, async (_req, res, body) => {
+    let raw: unknown[];
+    if (Array.isArray(body)) {
+      raw = body;
+    } else if (
+      body &&
+      typeof body === "object" &&
+      typeof (body as { id?: unknown }).id === "string"
+    ) {
+      // Un único manifiesto (archivo JSON suelto) también es válido.
+      raw = [body];
+    } else {
+      raw = (body as { manifests?: unknown[] })?.manifests ?? [];
+    }
+    if (raw.length === 0) {
+      return sendJson(res, 400, { error: "expected an array of manifests" });
+    }
+    try {
+      const result = app.importManifests(raw);
+      sendJson(res, 200, { ok: true, ...result });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
   // ---- Server ----
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
@@ -159,6 +217,26 @@ export function startServer(
     // Static files
     if (!url.pathname.startsWith("/api/")) {
       serveStatic(res, url.pathname);
+      return;
+    }
+
+    // Upload de ROM: flujo binario directo a disco (sin buffering en RAM).
+    if (url.pathname === "/api/roms/upload" && method === "POST") {
+      try {
+        const rawName = req.headers["x-filename"];
+        let name = "rom.bin";
+        if (rawName) {
+          try {
+            name = decodeURIComponent(String(rawName));
+          } catch {
+            name = "rom.bin"; // cabecera malformada
+          }
+        }
+        const result = await app.saveRomFile(name, req);
+        sendJson(res, 200, result);
+      } catch (e) {
+        sendJson(res, 400, { error: (e as Error).message });
+      }
       return;
     }
 
