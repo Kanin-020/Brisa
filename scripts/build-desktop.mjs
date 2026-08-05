@@ -36,7 +36,19 @@ const ONLY = onlyIdx >= 0 ? args[onlyIdx + 1] : "all";
 const step = (msg) => console.log(`\n[build-desktop] ${msg}`);
 
 function run(cmd, cargs, opts = {}) {
-  execFileSync(cmd, cargs, { stdio: "inherit", cwd: ROOT, ...opts });
+  if (process.platform === "win32" && cmd.endsWith(".cmd")) {
+    execFileSync("cmd.exe", ["/c", cmd, ...cargs], {
+      stdio: "inherit",
+      cwd: ROOT,
+      ...opts,
+    });
+  } else {
+    execFileSync(cmd, cargs, {
+      stdio: "inherit",
+      cwd: ROOT,
+      ...opts,
+    });
+  }
 }
 
 const TEXT_DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -123,7 +135,12 @@ async function runBuilder() {
     }
   }
   step(`2/3 Ejecutando electron-builder (${targets.join(" ")})…`);
-  const builder = path.join(ROOT, "node_modules", ".bin", "electron-builder");
+  const builder = path.join(
+    ROOT,
+    "node_modules",
+    ".bin",
+    process.platform === "win32" ? "electron-builder.cmd" : "electron-builder",
+  );
   run(builder, targets);
 }
 
