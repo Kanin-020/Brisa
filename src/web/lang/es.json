@@ -27,6 +27,7 @@
   "port.installNoRom": "Instalar (sin ROM)",
   "port.uninstall": "Desinstalar",
   "port.update": "Actualizar",
+  "port.updateAndPlay": "Actualizar y jugar",
   "port.launch": "▶ Jugar",
   "port.romOk": "ROM ✓",
   "port.romMissing": "ROM ✗",
@@ -44,6 +45,7 @@
   "toast.updated": "✓ {0} → {1}",
   "toast.launching": "Lanzando {0}…",
   "toast.copied": "✓ Hash copiado al portapapeles",
+  "toast.updateAvailable": "⚠ {0}: hay versión nueva {2} (instalada: {1}). Haz clic para actualizar",
   "toast.modUnlinked": "Mod \"{0}\" desenlazado",
   "toast.modLinked": "Mod \"{0}\" enlazado",
 

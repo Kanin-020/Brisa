@@ -66,12 +66,17 @@ function updateStaticText() {
 
 // ── Toast ──
 
-function toast(msg, kind = "ok") {
+function toast(msg, kind = "ok", duration = 3200, onClick = null) {
   const t = $("#toast");
   t.textContent = msg;
   t.className = `toast show ${kind}`;
+  t.classList.toggle("clickable", !!onClick);
+  t.onclick = onClick;
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => t.classList.remove("show"), 3200);
+  t._timer = setTimeout(() => {
+    t.classList.remove("show");
+    t.onclick = null;
+  }, duration);
 }
 
 // ── API ──
@@ -226,6 +231,11 @@ function portCard(p) {
     upd.disabled = !p.updateAvailable;
     upd.addEventListener("click", () => doUpdate(p));
     actions.appendChild(upd);
+    if (p.updateAvailable) {
+      const up = el("button", "btn warn sm", t("port.updateAndPlay"));
+      up.addEventListener("click", () => doUpdateAndLaunch(p));
+      actions.appendChild(up);
+    }
   }
   actions.appendChild(el("div", "spacer"));
   if (p.installed) {
@@ -379,10 +389,31 @@ function doUpdate(p) {
   });
 }
 
+function launchPort(p) {
+  fetch(`/api/launch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.manifest.id }) }).catch(() => {});
+}
+
+function doUpdateAndLaunch(p) {
+  busyRun(p.manifest.id, async () => {
+    toast(t("toast.installing", p.manifest.name));
+    const data = await api("/api/update", { id: p.manifest.id });
+    toast(`${t("toast.updated", p.manifest.name, data.info.latest)} · ${t("toast.launching", p.manifest.name)}`, "ok");
+    launchPort(p);
+  });
+}
+
 function doLaunch(p) {
   api("/api/status").catch(() => {});
   toast(t("toast.launching", p.manifest.name), "ok");
-  fetch(`/api/launch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.manifest.id }) }).catch(() => {});
+  launchPort(p);
+  // Auto update check: warn with a clickable toast if a new version is available
+  api("/api/check-update", { id: p.manifest.id })
+    .then(({ info }) => {
+      if (info && info.available) {
+        toast(t("toast.updateAvailable", info.name, info.installed, info.latest), "warn", 9000, () => doUpdate(p));
+      }
+    })
+    .catch(() => {});
 }
 
 function toggleMod(p, mod, linked) {

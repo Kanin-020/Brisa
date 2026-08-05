@@ -83,6 +83,18 @@ export function startServer(
     }
   });
 
+  route("POST", /^\/api\/check-update$/, async (req, res, body) => {
+    const id = (body as { id?: string })?.id;
+    if (!id) return sendJson(res, 400, { error: "missing id" });
+    try {
+      // Cached check (non-force): hits the GitHub API at most once per 30 min per port.
+      const info = await app.checkUpdate(id);
+      sendJson(res, 200, { info });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
   route("POST", /^\/api\/launch$/, async (req, res, body) => {
     const id = (body as { id?: string })?.id;
     if (!id) return sendJson(res, 400, { error: "missing id" });

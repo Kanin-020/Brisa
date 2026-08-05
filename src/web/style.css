@@ -78,6 +78,8 @@ body {
 .btn.ghost:hover { background: var(--card-hover); }
 .btn.green { background: var(--green); }
 .btn.green:hover { filter: brightness(1.1); }
+.btn.warn { background: var(--yellow); color: #0d1117; }
+.btn.warn:hover { filter: brightness(1.15); }
 .btn.red { background: transparent; color: var(--red); border: 1px solid var(--red); }
 .btn.red:hover { background: rgba(248, 81, 73, 0.12); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
@@ -257,6 +259,9 @@ body.modal-open { overflow: hidden; }
 .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 .toast.error { border-color: var(--red); }
 .toast.ok { border-color: var(--green); }
+.toast.warn { border-color: var(--yellow); }
+.toast.clickable { cursor: pointer; }
+.toast.clickable:hover { border-color: var(--yellow); filter: brightness(1.1); }
 
 @media (max-width: 640px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
