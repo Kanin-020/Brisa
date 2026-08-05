@@ -1,7 +1,7 @@
 {
   "name": "brisa",
   "version": "0.1.0",
-  "description": "Recopilador y gestor de ports nativos de PC (SoH, 2Ship2Harkinian, Dusklight, TMC) al estilo EmuDeck, basado en manifiestos.",
+  "description": "Recopilador y gestor de ports nativos de PC al estilo EmuDeck, basado en manifiestos.",
   "license": "MIT",
   "author": "Kanin",
   "engines": {

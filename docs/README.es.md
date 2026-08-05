@@ -12,8 +12,13 @@
 |--------|----------|--------|
 | The Legend of Zelda: Ocarina of Time | Ship of Harkinian (SoH) | [GitHub](https://github.com/HarbourMasters/Shipwright) |
 | The Legend of Zelda: Majora's Mask | 2Ship2Harkinian (2S2H) | [GitHub](https://github.com/HarbourMasters/2ship2harkinian) |
-| The Legend of Zelda: Twilight Princess | DUSKLIGHT | [GitHub](https://github.com/TwilitRealm/dusklight) |
+| The Legend of Zelda: Twilight Princess | Dusklight | [GitHub](https://github.com/TwilitRealm/dusklight) |
 | The Legend of Zelda: The Minish Cap | Project Picori | [GitHub](https://github.com/999sian/tmc) |
+| Star Fox 64 | Starship | [Github](https://github.com/harbourmasters/starship) |
+| Super Mario 64 |  Ghostship | [Github](https://github.com/HarbourMasters/Ghostship) |
+| Super Mario 64 |  sm64coopdx | [Github](https://github.com/coop-deluxe/sm64coopdx) |
+| Mario Kart 64 | SpaghettiKart | [Github](https://github.com/HarbourMasters/SpaghettiKart) |
+| Banjo Kazooie | Lighthouse | [Github](https://github.com/HarbourMasters/Lighthouse) |
 
 El proyecto es trivialmente extensible a cualquier port que publique releases en GitHub.
 
