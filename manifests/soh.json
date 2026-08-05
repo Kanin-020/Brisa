@@ -2,7 +2,7 @@
   "id": "soh",
   "name": "Ship of Harkinian",
   "game": "The Legend of Zelda: Ocarina of Time",
-  "description": "Native PC port of Ocarina of Time built on the decompilation of the original game. Requiere la ROM original (NTSC 1.0 o cualquier versión soportada). Opcional: la ROM de Master Quest para jugar también OoT MQ.",
+  "description": "Native PC port of Ocarina of Time built on the decompilation of the original game.",
   "repo": "HarbourMasters/Shipwright",
   "roms": [
     {

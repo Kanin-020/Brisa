@@ -1,0 +1,35 @@
+{
+  "id": "spaghettikart",
+  "name": "SpaghettiKart",
+  "game": "Mario Kart 64",
+  "description": "Native PC port of Mario Kart 64 built on the decompilation of the original game.",
+  "repo": "HarbourMasters/SpaghettiKart",
+  "roms": [
+    {
+      "id": "mk64",
+      "name": "Mario Kart 64",
+      "patterns": ["*.z64", "*.n64", "*.v64", "mk64.z64", "mk.n64", "mk.v64"],
+      "sha1": [
+        "579c48e211ae952530ffc8738709f078d5dd215e"
+      ],
+      "gameIds": [],
+      "dest": "mk64.z64"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "*-linux.zip",
+      "type": "zip",
+      "executable": "spaghetti.appimage"
+    },
+    "windows-x64": {
+      "pattern": "*-windows.zip",
+      "type": "zip",
+      "executable": "Spaghettify.exe"
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "spaghettikart"
+  }
+}

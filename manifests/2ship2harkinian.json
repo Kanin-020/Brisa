@@ -2,7 +2,7 @@
   "id": "2ship2harkinian",
   "name": "2Ship2Harkinian",
   "game": "The Legend of Zelda: Majora's Mask",
-  "description": "Native PC port of Majora's Mask built on the 2Ship2Harkinian framework. Requires a supported NTSC-U dump (1.0 or GameCube).",
+  "description": "Native PC port of Majora's Mask built on the 2Ship2Harkinian framework.",
   "repo": "HarbourMasters/2ship2harkinian",
   "roms": [
     {

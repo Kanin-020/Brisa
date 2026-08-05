@@ -1,0 +1,38 @@
+{
+  "id": "lighthouse",
+  "name": "Lighthouse",
+  "game": "Banjo Kazooie",
+  "description": "Native PC port of Banjo Kazooie built on the decompilation of the original game.",
+  "repo": "HarbourMasters/Lighthouse",
+  "roms": [
+    {
+      "id": "bk64",
+      "name": "Banjo Kazooie",
+      "patterns": ["*.z64", "*.n64", "*.v64", "bk.z64", "bk.n64", "bk.v64"],
+      "sha1": [
+        "1fe1632098865f639e22c11b9a81ee8f29c75d7a",
+        "ded6ee166e740ad1bc810fd678a84b48e245ab80",
+        "90726d7e7cd5bf6cdfd38f45c9acbf4d45bd9fd8",
+        "bb359a75941df74bf7290212c89fbc6e2c5601fe"
+      ],
+      "gameIds": [],
+      "dest": "bk64.z64"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "*-Linux.zip",
+      "type": "zip",
+      "executable": "lighthouse.appimage"
+    },
+    "windows-x64": {
+      "pattern": "*-Win64.zip",
+      "type": "zip",
+      "executable": "Lighthouse.exe"
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "lighthouse"
+  }
+}

@@ -2,7 +2,7 @@
   "id": "tmc",
   "name": "Project Picori",
   "game": "The Legend of Zelda: The Minish Cap",
-  "description": "Native PC port of The Minish Cap built on the zeldaret/tmc decompilation. Requires the original GBA ROM.",
+  "description": "Native PC port of The Minish Cap built on the zeldaret/tmc decompilation.",
   "repo": "999sian/tmc",
   "roms": [
     {
