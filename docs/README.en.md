@@ -41,12 +41,12 @@ Special thanks to each of the decompilation teams — without them this project 
 
 Download the artifact from the **Releases** tab of the repository:
 
-- **Linux** → `Port_Hub-<version>-x86_64.AppImage` (no installation required).
-- **Windows** → `Port_Hub-<version>-win.zip` (portable, unzip and run).
+- **Linux** → `Brisa-<version>-x86_64.AppImage` (no installation required).
+- **Windows** → `Brisa-<version>-win.zip` (portable, unzip and run).
 
 The AppImage is **both a desktop app and a CLI**, depending on how you launch it:
 
-- **Double-click** (or `./Port_Hub-*.AppImage` with no arguments) → opens the native window (GUI).
+- **Double-click** (or `./Brisa-*.AppImage` with no arguments) → opens the native window (GUI).
 - **From the terminal with arguments** → behaves as a CLI (see [Usage → CLI](#usage)).
 
 ### User folder
@@ -100,9 +100,9 @@ The CLI is available in two ways:
 - **Directly from the AppImage** (nothing to install):
 
   ```bash
-  ./Port_Hub-0.1.0-x86_64.AppImage status        # scan ROMs, ports, mods and updates
-  ./Port_Hub-0.1.0-x86_64.AppImage install soh   # install a port
-  ./Port_Hub-0.1.0-x86_64.AppImage --help         # list all commands
+  ./Brisa-0.1.0-x86_64.AppImage status        # scan ROMs, ports, mods and updates
+  ./Brisa-0.1.0-x86_64.AppImage install soh   # install a port
+  ./Brisa-0.1.0-x86_64.AppImage --help         # list all commands
   ```
 
 - **As a global command** (development, requires Node.js):

@@ -310,7 +310,7 @@ function serveStatic(res: http.ServerResponse, pathname: string): void {
   }
   // dist/web empaquetado (Electron desktop), luego dist/web y src/web (dev).
   const candidates = [
-    process.env.PORT_HUB_WEB_ROOT ? path.join(process.env.PORT_HUB_WEB_ROOT, rel) : null,
+    process.env.BRISA_WEB_ROOT ? path.join(process.env.BRISA_WEB_ROOT, rel) : null,
     path.join(projectRoot(), "dist", "web", rel),
     path.join(projectRoot(), "src", "web", rel),
   ].filter((f): f is string => f !== null);
