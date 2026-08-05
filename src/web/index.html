@@ -33,28 +33,59 @@
       <div class="stat-card"><div class="stat-value" id="stat-updates">0</div><div class="stat-label" id="stat-label-updates">Actualizaciones</div></div>
     </div>
 
+    <div class="tabs-row">
+      <nav class="tabs" id="main-tabs" role="tablist">
+        <button class="tab-btn active" data-tab="installed" role="tab" aria-selected="true">
+          <span class="tab-label" id="tab-label-installed"></span>
+          <span class="tab-count" id="tab-count-installed"></span>
+        </button>
+        <button class="tab-btn" data-tab="available" role="tab" aria-selected="false">
+          <span class="tab-label" id="tab-label-available"></span>
+          <span class="tab-count" id="tab-count-available"></span>
+        </button>
+        <button class="tab-btn" data-tab="roms" role="tab" aria-selected="false">
+          <span class="tab-label" id="tab-label-roms"></span>
+          <span class="tab-count" id="tab-count-roms"></span>
+        </button>
+      </nav>
+      <div class="tabs-actions">
+        <button id="btn-export-manifests" class="btn ghost sm" title="">⬆</button>
+        <button id="btn-import-manifests" class="btn ghost sm" title="">⬇</button>
+        <input id="manifest-file-input" type="file" accept=".json,application/json" hidden />
+      </div>
+    </div>
+
     <main>
-      <section class="section">
+      <section class="section tab-pane active" data-tab="installed" role="tabpanel" aria-labelledby="tab-label-installed">
         <div class="section-head">
-          <h2 id="ports-title">📦 Ports</h2>
-          <span id="ports-hint" class="hint"></span>
+          <span id="ports-hint-installed" class="hint"></span>
           <div class="section-tools">
-            <button id="btn-export-manifests" class="btn ghost sm" title="">⬆</button>
-            <button id="btn-import-manifests" class="btn ghost sm" title="">⬇</button>
-            <input id="manifest-file-input" type="file" accept=".json,application/json" hidden />
-            <input id="ports-search" class="search-input" type="search" placeholder="Buscar…" autocomplete="off" spellcheck="false" />
-            <div class="view-toggle" id="ports-view-toggle">
+            <input id="ports-search-installed" class="search-input" type="search" placeholder="Buscar…" autocomplete="off" spellcheck="false" />
+            <div class="view-toggle" id="ports-view-toggle-installed">
               <button class="view-btn active" data-view="cards" title="Vista tarjetas">▦</button>
               <button class="view-btn" data-view="list" title="Vista lista">☰</button>
             </div>
           </div>
         </div>
-        <div id="ports-grid" class="grid"><div class="loading" id="loading-ports">Cargando…</div></div>
+        <div id="ports-grid-installed" class="grid"><div class="loading">Cargando…</div></div>
       </section>
 
-      <section class="section">
+      <section class="section tab-pane" data-tab="available" role="tabpanel" aria-labelledby="tab-label-available">
         <div class="section-head">
-          <h2 id="roms-title">💾 ROMs detectados</h2>
+          <span id="ports-hint-available" class="hint"></span>
+          <div class="section-tools">
+            <input id="ports-search-available" class="search-input" type="search" placeholder="Buscar…" autocomplete="off" spellcheck="false" />
+            <div class="view-toggle" id="ports-view-toggle-available">
+              <button class="view-btn active" data-view="cards" title="Vista tarjetas">▦</button>
+              <button class="view-btn" data-view="list" title="Vista lista">☰</button>
+            </div>
+          </div>
+        </div>
+        <div id="ports-grid-available" class="grid"><div class="loading">Cargando…</div></div>
+      </section>
+
+      <section class="section tab-pane" data-tab="roms" role="tabpanel" aria-labelledby="tab-label-roms">
+        <div class="section-head">
           <span id="roms-hint" class="hint"></span>
           <div class="section-tools">
             <button id="btn-add-roms" class="btn ghost sm" title="">＋</button>
@@ -66,7 +97,7 @@
             </div>
           </div>
         </div>
-        <div id="roms-list" class="roms-grid"><div class="loading" id="loading-roms">Cargando…</div></div>
+        <div id="roms-list" class="roms-grid"><div class="loading">Cargando…</div></div>
       </section>
     </main>
 

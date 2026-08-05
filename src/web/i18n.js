@@ -28,12 +28,17 @@
     "stat.installed": "Installed ports",
     "stat.mods": "Mods",
     "stat.updates": "Updates",
-    "ports.title": "📦 Ports",
+    "tabs.installed": "Installed ports",
+    "tabs.available": "Available ports",
+    "tabs.roms": "ROMs",
     "ports.searchPlaceholder": "Search game or port…",
     "ports.empty": "No ports found",
+    "ports.emptyInstalled": "No installed ports yet",
+    "ports.emptyAvailable": "All ports are installed",
+    "ports.hintInstalled": "{0} installed",
+    "ports.hintAvailable": "{0} available",
     "ports.viewCards": "Card view",
     "ports.viewList": "List view",
-    "roms.title": "💾 Detected ROMs",
     "roms.delete": "Delete ROM",
     "roms.deleteConfirm": "Delete \"{0}\" from the ROMs folder? This cannot be undone.",
     "roms.dropTitle": "Drop ROMs here",
@@ -125,7 +130,7 @@
    * Translate a key. Accepts optional interpolation arguments.
    *
    *   t("brand.title")              → "Brisa"
-   *   t("ports.hint", 5)            → "5 ports in registry"
+   *   t("ports.hintInstalled", 5)  → "5 installed"
    *   t("toast.installed", "SoH", "1.2.3") → "✓ SoH v1.2.3 installed"
    */
   function t(key, ...args) {

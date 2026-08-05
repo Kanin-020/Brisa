@@ -126,6 +126,33 @@ body {
 .view-btn:hover { color: var(--text); }
 .view-btn.active { background: var(--accent-2); color: #fff; }
 
+/* Tabs (Ports instalados / Ports disponibles / ROMs) */
+.tabs-row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; }
+.tabs {
+  display: flex; gap: 4px; flex-wrap: wrap;
+  background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 4px;
+}
+.tab-btn {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 9px;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all 0.15s ease;
+}
+.tab-btn:hover { color: var(--text); background: var(--card-hover); }
+.tab-btn.active { background: var(--accent-2); color: #fff; }
+.tab-count {
+  font-size: 10px; font-weight: 700; line-height: 1;
+  background: var(--card-hover); border-radius: 999px; padding: 3px 7px;
+}
+.tab-btn.active .tab-count { background: rgba(255, 255, 255, 0.22); }
+.tabs-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.tab-pane { display: none; }
+.tab-pane.active { display: block; animation: tab-fade 0.18s ease; }
+@keyframes tab-fade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
 /* Port cards */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
 .port-card {

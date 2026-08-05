@@ -5,9 +5,11 @@ let busy = new Set();
 const MAX_MODS_INLINE = 3;
 
 let allPorts = [];
-let searchQuery = "";
+let installedQuery = "";
+let availableQuery = "";
 let viewMode = "cards";
 let romsViewMode = "cards";
+let activeTab = "installed";
 let modsModalPort = null;
 try {
   viewMode = localStorage.getItem("brisa-ports-view") === "list" ? "list" : "cards";
@@ -16,6 +18,12 @@ try {
 }
 try {
   romsViewMode = localStorage.getItem("brisa-roms-view") === "list" ? "list" : "cards";
+} catch {
+  /* localStorage may be unavailable */
+}
+try {
+  const savedTab = localStorage.getItem("brisa-active-tab");
+  if (savedTab === "installed" || savedTab === "available" || savedTab === "roms") activeTab = savedTab;
 } catch {
   /* localStorage may be unavailable */
 }
@@ -58,8 +66,11 @@ function updateStaticText() {
   $("#stat-label-mods").textContent = t("stat.mods");
   $("#stat-label-updates").textContent = t("stat.updates");
 
-  $("#ports-title").textContent = t("ports.title");
-  $("#ports-search").placeholder = t("ports.searchPlaceholder");
+  $("#tab-label-installed").textContent = t("tabs.installed");
+  $("#tab-label-available").textContent = t("tabs.available");
+  $("#tab-label-roms").textContent = t("tabs.roms");
+  $("#ports-search-installed").placeholder = t("ports.searchPlaceholder");
+  $("#ports-search-available").placeholder = t("ports.searchPlaceholder");
   $$(".view-btn").forEach((btn) => {
     const isRoms = viewBtnIsRoms(btn);
     btn.title =
@@ -69,7 +80,6 @@ function updateStaticText() {
   });
   syncViewActive();
   $("#mods-modal-close").title = t("mod.close");
-  $("#roms-title").textContent = t("roms.title");
 
   $("#btn-export-manifests").textContent = t("btn.exportManifests");
   $("#btn-export-manifests").title = t("btn.exportManifests");
@@ -173,8 +183,15 @@ function render() {
   $("#stat-mods").textContent = ports.reduce((a, p) => a + p.mods.length, 0);
   $("#stat-updates").textContent = ports.filter((p) => p.updateAvailable).length;
   $("#cfg-roms-dir").textContent = `${t("footer.romsDir")}: ${state.cfg.romsDir}`;
-  $("#ports-hint").textContent = t("ports.hint", ports.length);
   $("#roms-hint").textContent = t("roms.hint", scan.matches.length);
+
+  const installed = ports.filter((p) => p.installed);
+  const available = ports.filter((p) => !p.installed);
+  $("#ports-hint-installed").textContent = t("ports.hintInstalled", installed.length);
+  $("#ports-hint-available").textContent = t("ports.hintAvailable", available.length);
+  $("#tab-count-installed").textContent = installed.length;
+  $("#tab-count-available").textContent = available.length;
+  $("#tab-count-roms").textContent = scan.roms.length;
 
   allPorts = ports;
   renderPorts();
@@ -189,15 +206,21 @@ function render() {
 }
 
 function renderPorts() {
-  const grid = $("#ports-grid");
+  if (!state) return;
+  renderPortsList("#ports-grid-installed", allPorts.filter((p) => p.installed), installedQuery, t("ports.emptyInstalled"));
+  renderPortsList("#ports-grid-available", allPorts.filter((p) => !p.installed), availableQuery, t("ports.emptyAvailable"));
+}
+
+function renderPortsList(sel, list, query, emptyMsg) {
+  const grid = $(sel);
   grid.classList.toggle("list", viewMode === "list");
   grid.innerHTML = "";
-  const query = searchQuery.toLowerCase();
-  const filtered = query
-    ? allPorts.filter((p) => `${p.manifest.name} ${p.manifest.game}`.toLowerCase().includes(query))
-    : allPorts;
+  const q = query.toLowerCase();
+  const filtered = q
+    ? list.filter((p) => `${p.manifest.name} ${p.manifest.game}`.toLowerCase().includes(q))
+    : list;
   if (filtered.length === 0) {
-    grid.appendChild(el("div", "loading", query ? t("ports.empty") : t("loading")));
+    grid.appendChild(el("div", "loading", q ? t("ports.empty") : emptyMsg));
     return;
   }
   for (const p of filtered) {
@@ -661,11 +684,37 @@ function toggleMod(p, mod, linked) {
 // ── Init ──
 
 function initPortsTools() {
-  const search = $("#ports-search");
-  search.addEventListener("input", () => {
-    searchQuery = search.value.trim();
+  $("#ports-search-installed").addEventListener("input", (e) => {
+    installedQuery = e.target.value.trim();
     renderPorts();
   });
+  $("#ports-search-available").addEventListener("input", (e) => {
+    availableQuery = e.target.value.trim();
+    renderPorts();
+  });
+}
+
+/** Cambia la pestaña activa (installed / available / roms) y la persiste. */
+function switchTab(tab) {
+  activeTab = tab;
+  try {
+    localStorage.setItem("brisa-active-tab", tab);
+  } catch {
+    /* ignore */
+  }
+  $$(".tab-btn").forEach((b) => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", String(on));
+  });
+  $$(".tab-pane").forEach((p) => p.classList.toggle("active", p.dataset.tab === tab));
+}
+
+function initTabs() {
+  $$(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+  switchTab(activeTab);
 }
 
 /** Toggle tarjetas/lista para ports y ROMs (persistido en localStorage). */
@@ -706,6 +755,7 @@ function initModsModal() {
 async function init() {
   await i18nReady();
   initLocaleSwitcher();
+  initTabs();
   initPortsTools();
   initViewToggles();
   initModsModal();
