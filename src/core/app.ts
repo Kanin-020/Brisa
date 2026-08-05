@@ -7,6 +7,7 @@ import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unli
 import { scanRoms, matchRomPath, type RomMatch, type ScanResult, type RomFile } from "./scanner";
 import { readState, listStates, writeState } from "./state";
 import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
+import { checkSelfUpdate, applySelfUpdate, type SelfUpdateInfo } from "./selfupdate";
 import { detectPlatform } from "./platform";
 
 export interface RomSlotStatus {
@@ -68,7 +69,7 @@ export class App {
     return matchRomPath(this.cfg, file);
   }
 
-  async status(): Promise<{ scan: ScanResult; ports: PortStatus[] }> {
+  async status(): Promise<{ scan: ScanResult; ports: PortStatus[]; self: SelfUpdateInfo | null }> {
     const manifests = this.manifests();
     syncModsFolders(this.cfg, manifests);
     const scan = await this.scan();
@@ -112,7 +113,8 @@ export class App {
         platformSupported: !!resolveAssetForPlatform(m),
       });
     }
-    return { scan, ports };
+    const self = await checkSelfUpdate(this.cfg);
+    return { scan, ports, self };
   }
 
   async install(
@@ -142,6 +144,18 @@ export class App {
     const m = this.manifest(id);
     if (!m) throw new Error(`Port not found: ${id}`);
     return applyUpdate(this.cfg, m);
+  }
+
+  /** Estado de actualización de la propia app (Brisa), cacheado 30 min. */
+  async selfUpdateInfo(force = false): Promise<SelfUpdateInfo | null> {
+    return checkSelfUpdate(this.cfg, force);
+  }
+
+  /** Descarga y aplica la nueva AppImage de Brisa (solo Linux AppImage). */
+  async selfUpdate(
+    onProgress?: (stage: string, done: number, total: number) => void,
+  ): Promise<SelfUpdateInfo> {
+    return applySelfUpdate(this.cfg, (done, total) => onProgress?.("download", done, total));
   }
 
   async checkUpdate(id: string, force = false): Promise<UpdateInfo | null> {

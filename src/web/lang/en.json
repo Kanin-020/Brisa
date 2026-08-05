@@ -51,6 +51,14 @@
   "mod.modalTitle": "Mods of {0}",
   "mod.close": "Close",
 
+  "self.version": "Brisa v{0}",
+  "self.updateBtn": "⬆ Update Brisa v{0}",
+  "self.updateAvailable": "New Brisa version available: v{0}",
+
+  "toast.selfAvailable": "⬆ Brisa v{0} available. Click to update",
+  "toast.selfUpdating": "Downloading Brisa v{0}…",
+  "toast.selfUpdated": "✓ Brisa v{0} ready. The app will close and reopen automatically.",
+
   "toast.installing": "Installing {0}…",
   "toast.installed": "✓ {0} v{1} installed",
   "toast.uninstalled": "✓ {0} uninstalled",

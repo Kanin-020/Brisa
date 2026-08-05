@@ -34,5 +34,6 @@
   "mods": {
     "dir": "mods",
     "gameDir": "lighthouse"
-  }
+  },
+  "preserve": ["saves/**", "settings.json"]
 }

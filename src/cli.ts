@@ -6,7 +6,10 @@ import * as path from "node:path";
 import { spawn } from "node:child_process";
 import { App } from "./core/app";
 import { projectRoot, saveConfig } from "./core/config";
+import { cleanLaunchEnv } from "./core/env";
 import { sha1File } from "./core/hash";
+import { appVersion } from "./core/version";
+import type { SelfUpdateInfo } from "./core/selfupdate";
 import { resolveExecutable, portDir, relinkRom } from "./core/installer";
 import type { Manifest, RomRequirement } from "./core/manifest";
 import { patternSpecificity, type RomFile } from "./core/scanner";
@@ -47,9 +50,16 @@ function looksLikePath(p: string): boolean {
 }
 
 /** Spawn the game executable. With --wait the CLI stays alive until the game
- *  exits (needed so Steam tracks the shortcut as running). */
+ *  exits (needed so Steam tracks the shortcut as running). El entorno se
+ *  limpia de las variables de Steam (LD_PRELOAD, STEAM_COMPAT_*, STEAM_RUNTIME)
+ *  que crashean los binarios nativos. */
 async function spawnPort(exe: string, wait: boolean): Promise<void> {
-  const child = spawn(exe, [], { cwd: path.dirname(exe), detached: !wait, stdio: wait ? "inherit" : "ignore" });
+  const child = spawn(exe, [], {
+    cwd: path.dirname(exe),
+    detached: !wait,
+    stdio: wait ? "inherit" : "ignore",
+    env: cleanLaunchEnv(),
+  });
   child.on("error", (err) => {
     console.error(`No se pudo lanzar ${exe}: ${err.message}`);
   });
@@ -80,12 +90,30 @@ function collectRomExtensions(manifests: Manifest[]): string[] {
 /** SRM template variable that expands to the game title. */
 const TITLE_VAR = "${title}";
 
+/**
+ * Script de lanzamiento para SRM/Steam: sin las variables de Steam
+ * (LD_PRELOAD, STEAM_COMPAT_*, STEAM_RUNTIME) los binarios nativos de los
+ * ports crashean al tratar de ejecutarse. Steam lanza el shortcut como un
+ * proceso, no vía shell, así que los `unset` solo pueden vivir en un script.
+ */
+function srmWrapperScript(brisaBin: string): string {
+  return `#!/bin/sh
+# Generado por 'brisa srm-config' — no editar. Regenera el parser si mueves
+# la AppImage de Brisa de sitio.
+unset LD_PRELOAD
+unset STEAM_COMPAT_DATA_PATH
+unset STEAM_COMPAT_CLIENT_INSTALL_PATH
+unset STEAM_RUNTIME
+exec ${JSON.stringify(brisaBin)} "$@"
+`;
+}
+
 const program = new Command();
 
 program
   .name("brisa")
   .description("Compilador y gestor de ports nativos de PC (SoH, 2Ship2Harkinian, DUSKLIGHT, TMC) basado en manifiestos.")
-  .version("0.1.0");
+  .version(appVersion());
 
 program
   .command("status")
@@ -342,6 +370,43 @@ program
   });
 
 program
+  .command("self-update")
+  .description("Comprueba y aplica la actualización de la propia app Brisa (AppImage de Linux).")
+  .option("--check", "solo comprobar, no actualizar")
+  .action(async (opts: { check?: boolean }) => {
+    let info: SelfUpdateInfo | null = null;
+    try {
+      info = await app.selfUpdateInfo(true);
+    } catch (e) {
+      console.error(`No se pudo consultar GitHub: ${(e as Error).message}`);
+      process.exit(1);
+    }
+    if (!info) {
+      console.error("No hay selfRepo configurado. Usa: brisa config-set selfRepo <owner/repo>");
+      process.exit(1);
+    }
+    console.log(`Brisa v${info.current} (${info.supported ? "AppImage" : "dev/CLI"})`);
+    if (!info.available) {
+      if (!info.latest || info.latest === "?") {
+        console.log("No se pudo comprobar la última versión (revisa selfRepo o la conexión a GitHub).");
+      } else {
+        console.log(`✓ Ya estás en la última versión (${info.latest}).`);
+      }
+      return;
+    }
+    console.log(`⬆ Nueva versión disponible: ${info.latest}`);
+    if (opts.check) return;
+    if (!info.supported) {
+      console.error("El auto-update solo funciona desde la AppImage de Linux.");
+      console.error("  Descárgala desde: https://github.com/" + app.cfg.selfRepo + "/releases/latest");
+      process.exit(1);
+    }
+    console.log(`Descargando ${info.assetName}…`);
+    const applied = await app.selfUpdate(progress);
+    console.log(`✓ Brisa v${applied.latest} descargada. La app se cerrará y se relanzará sola.`);
+  });
+
+program
   .command("registry")
   .description("Actualiza los manifiestos remotos desde registryUrl (config.json).")
   .action(async () => {
@@ -368,6 +433,8 @@ program
           registryUrl: app.cfg.registryUrl || "(sin configurar)",
           serverPort: app.cfg.serverPort,
           autoCheckUpdates: app.cfg.autoCheckUpdates,
+          selfRepo: app.cfg.selfRepo,
+          selfAssetPattern: app.cfg.selfAssetPattern || "(automático)",
         },
         null,
         2,
@@ -383,6 +450,8 @@ program
     if (key === "registryUrl") cfg.registryUrl = value;
     else if (key === "serverPort") cfg.serverPort = parseInt(value, 10) || 7380;
     else if (key === "autoCheckUpdates") cfg.autoCheckUpdates = value === "true";
+    else if (key === "selfRepo") cfg.selfRepo = value;
+    else if (key === "selfAssetPattern") cfg.selfAssetPattern = value;
     else if (key === "romsDir" || key === "modsDir" || key === "portsDir" || key === "manifestsDir") {
       (cfg as unknown as Record<string, string>)[key] = path.resolve(projectRoot(), value);
     } else {
@@ -433,15 +502,28 @@ program
       process.exit(1);
     }
     const exeBase = path.basename(process.execPath);
-    const exe =
+    const brisaBin =
       /\.appimage$/i.test(process.execPath) ||
       (/\.exe$/i.test(process.execPath) && !/node|electron/i.test(exeBase))
         ? process.execPath
         : "";
+    const file = path.resolve(outFile ?? "brisa-srm.json");
+    // En Linux el parser apunta a un script que hace los `unset` de las
+    // variables de Steam (LD_PRELOAD, STEAM_COMPAT_*, STEAM_RUNTIME) antes de
+    // ejecutar Brisa: Steam no lanza shortcuts vía shell, así que los unsets
+    // solo funcionan desde un script. Sin esto, los ports nativos crashean.
+    let executablePath = brisaBin;
+    let wrapperPath = "";
+    if (brisaBin && process.platform !== "win32") {
+      wrapperPath = path.join(path.dirname(file), "brisa-srm-launch.sh");
+      fs.writeFileSync(wrapperPath, srmWrapperScript(brisaBin));
+      fs.chmodSync(wrapperPath, 0o755);
+      executablePath = wrapperPath;
+    }
     const config = {
       parserType: "Glob",
       configTitle: "Brisa (Ports nativos PC)",
-      executableModifier: '"${exePath}"',
+      executableModifier: "",
       romDirectory: romsDir,
       steamDirectory: "${steamdirglobal}",
       startInDirectory: "",
@@ -459,7 +541,7 @@ program
         limitToGroups: [],
       },
       fuzzyMatch: { replaceDiacritics: true, removeCharacters: true, removeBrackets: true },
-      executable: { path: exe, shortcutPassthrough: false, appendArgsToExecutable: true },
+      executable: { path: executablePath, shortcutPassthrough: false, appendArgsToExecutable: true },
       presetVersion: 19,
       imageProviderAPIs: {
         sgdb: {
@@ -489,22 +571,28 @@ program
       drmProtect: false,
       steamCategories: ["Brisa"],
     };
-    const file = path.resolve(outFile ?? "brisa-srm.json");
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(config, null, 2) + "\n");
     console.log(`✓ Configuración SRM generada en: ${file}`);
     console.log(`  ROMs:       ${romsDir}`);
     console.log(`  Glob:       ${TITLE_VAR}@(${exts.join("|")})`);
-    console.log(
-      `  Ejecutable: ${exe || "(vacío — rellénalo en SRM con la ruta a la AppImage de Brisa)"}`,
-    );
+    if (wrapperPath) {
+      console.log(`  Ejecutable: ${wrapperPath}`);
+      console.log(`    ↳ limpia las variables de Steam (unset LD_PRELOAD / STEAM_COMPAT_* / STEAM_RUNTIME)`);
+      console.log(`      y lanza: ${brisaBin}`);
+    } else {
+      console.log(
+        `  Ejecutable: ${executablePath || "(vacío — rellénalo en SRM con la ruta a la AppImage de Brisa)"}`,
+      );
+    }
     console.log("");
     console.log("Cómo usarla en Steam ROM Manager:");
     console.log("  1) Importa el JSON (botón Import en la página de Parsers) o cópialo a");
     console.log("     ~/.config/steam-rom-manager/userData/configurations/ y reinicia SRM.");
-    console.log("  2) En el parser: verifica la ruta del ejecutable (AppImage de Brisa) y el directorio de ROMs.");
+    console.log("  2) En el parser: verifica la ruta del ejecutable (el script brisa-srm-launch.sh en Linux) y el directorio de ROMs.");
     console.log("  3) Preview y Save. Cada ROM generará un acceso directo que ejecuta: brisa launch \"<ROM>\"");
-    console.log("     Brisa detecta el port por hash / Game ID / nombre y lo lanza.");
+    console.log("     El script limpia el entorno de Steam antes de lanzar Brisa, y Brisa detecta");
+    console.log("     el port por hash / Game ID / nombre para abrirlo con el ROM correcto.");
   });
 
 program.parseAsync(process.argv);

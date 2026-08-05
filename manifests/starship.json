@@ -32,5 +32,6 @@
   "mods": {
     "dir": "mods",
     "gameDir": "starship"
-  }
+  },
+  "preserve": ["saves/**", "settings.json"]
 }

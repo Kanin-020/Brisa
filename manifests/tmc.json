@@ -57,5 +57,6 @@
   "mods": {
     "dir": "mods",
     "gameDir": "tmc"
-  }
+  },
+  "preserve": ["saves/**", "settings.json"]
 }

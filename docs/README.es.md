@@ -31,7 +31,7 @@ Doy especial agradecimiento a cada uno de los equipos de decompilación, sin ell
 | 1 | **Un solo directorio de ROMs** | Todos los ROMs viven en `roms/`. Al instalar un port, Brisa crea el **symlink** con el nombre exacto que el juego espera (`oot.z64`, `mm.z64`, `tp.iso`, `baserom.gba`) dentro de su carpeta. Los ports **multirom** (SoH: base + Master Quest) enlazan una ROM por requisito automáticamente. |
 | 2 | **Escaneo automático al abrir** | `brisa status` (y la GUI web) escanean `roms/`, calculan **SHA1** (con caché), leen el **Game ID** de los discos de GameCube (dusklight), asocian cada ROM a su port por nombre *y* por hash, y te dice qué ports puedes instalar. |
 | 3 | **Mods semicentralizados** | Los mods viven en `mods/<juego>/<mod>`. Brisa crea symlinks hacia `ports/<port>/mods/<mod>`, exactamente donde el port los lee. Añadir/quitar un mod = crear/borrar una carpeta en `mods/`. |
-| 4 | **Auto update** | Comprueba el último release de GitHub de cada port instalado y lo actualiza (`update`, botón en GUI). También puede refrescar un registro remoto de manifiestos. |
+| 4 | **Auto update** | Comprueba el último release de GitHub de cada port instalado y lo actualiza (`update`, botón en GUI). La **propia app** también se auto-actualiza: detecta la última AppImage en GitHub, la descarga, reemplaza y relanza sola (`self-update` o el botón de la GUI). |
 | 5 | **Manifiestos** | Cada port es un archivo JSON en `manifests/`. Para añadir un port nuevo solo necesitas: el repo de GitHub, los patrones de nombre/hash de su ROM y los patrones de sus assets por plataforma. |
 | 6 | **GUI web con i18n** | Interfaz web local con selector de idioma **Español / English** (y cualquier idioma que añadas a `src/web/lang/`). |
 
@@ -123,6 +123,7 @@ El CLI está disponible de dos formas:
 | `brisa launch <id | ROM> [--wait]` | Ejecuta un port por id (ej. `soh`) o directamente un archivo ROM (ruta): detecta el port automáticamente. `--wait` espera a que el juego termine (útil desde Steam). |
 | `brisa srm-config [archivo] [--roms-dir <dir>]` | Genera un parser JSON para Steam ROM Manager. |
 | `brisa update [id] [--check]` | Actualiza ports instalados a la última release. |
+| `brisa self-update [--check]` | Actualiza la propia app Brisa (AppImage de Linux): descarga la última release, la instala y se relanza sola. |
 | `brisa mods <id>` | Lista mods centralizados de un port. |
 | `brisa mods-link <id>` | Enlaza todos los mods del port. |
 | `brisa mods-unlink <id> [mod]` | Desenlaza mods. |
@@ -169,6 +170,8 @@ brisa srm-config --roms-dir ~/Emulation/roms/n64   # si tus ROMs están en otra 
 
 El archivo generado incluye todas las extensiones de ROM de los ports (`.z64`, `.n64`, `.v64`, `.iso`, `.rvz`, `.gcz`, `.gba`, `.gbc`…) y usa el comando `brisa launch --wait "<ROM>"`.
 
+> **Por qué un script de lanzamiento**: al ejecutar un port desde Steam, el juego hereda variables de Steam (`LD_PRELOAD`, `STEAM_COMPAT_DATA_PATH`, `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `STEAM_RUNTIME`) que **crasean los binarios nativos**. Steam no lanza el shortcut vía shell, así que los `unset` solo pueden vivir en un script: `brisa srm-config` genera `brisa-srm-launch.sh` (junto al JSON) que limpia esas variables y luego ejecuta tu AppImage de Brisa, y el parser apunta a ese script como ejecutable. Si mueves la AppImage de sitio, regenera el parser.
+
 ### 2. Importa en Steam ROM Manager
 
 - Abre SRM → página de **Parsers** → botón **Import** y sube el JSON, o
@@ -213,7 +216,7 @@ npm link                # opcional: expone el comando `brisa` globalmente
 1. **Escaneo**: recorre `roms/`, calcula SHA1 con caché por tamaño+mtime, y para cada manifiesto busca su ROM por nombre (patrones), Game ID (discos GameCube) y/o hash exacto.
 2. **Instalación**: consulta la API de GitHub (`/releases/latest`), elige el asset según `platform.key` (`linux-x64`, `windows-arm64`, `android`, …), lo descarga a `cache/downloads/`, lo extrae en `ports/<id>/` y crea el symlink `ports/<id>/<dest> → roms/<archivo>` para **cada** requisito con ROM presente (multirom: `oot.z64` + `oot-mq.z64`).
 3. **Mods**: `mods/<gameDir>/<mod>` se enlaza a `ports/<id>/<dir>/<mod>`. Se re-enlazan automáticamente tras instalar/actualizar.
-4. **Actualizaciones**: compara el tag de la release instalada con el último de GitHub. En `update` se descarga la nueva versión, se hace backup atómico y se re-enlaza ROM y mods.
+4. **Actualizaciones**: compara el tag de la release instalada con el último de GitHub. En `update` se descarga la nueva versión, se hace backup atómico y se re-enlaza ROM y mods. **Los saves y configuraciones dentro del port se conservan**: se restauran todos los archivos que la nueva versión no trae, y los marcados con `preserve` en el manifiesto ganan sobre el default de la release.
 5. **Auto-update del registro**: `registryUrl` permite añadir ports nuevos sin tocar el código, solo con JSON.
 
 ## Crear un manifiesto
@@ -247,7 +250,9 @@ Crea `manifests/<id>.json`. Es solo **asociación de hashes, urls y nombres**:
     "android":     { "pattern": "MiPort-*.apk",               "type": "apk",     "executable": null }
   },
 
-  "mods": { "dir": "mods", "gameDir": "miport" }
+  "mods": { "dir": "mods", "gameDir": "miport" },
+
+  "preserve": ["saves/**", "settings.json"]  // opcional: datos de usuario que sobreviven a las actualizaciones
 }
 ```
 
@@ -275,6 +280,14 @@ brisa registry
 ### Hashes
 
 Para verificar el hash de un ROM usa `brisa hash roms/turom.z64` y pega el resultado en `sha1`. Cuando hay `sha1`, el escáner prioriza la coincidencia **por hash exacto** antes que por nombre — perfecto cuando un mismo nombre de archivo podría servir para dos ports distintos (como `oot.z64` y `mm.z64`).
+
+### Preservar saves y configuraciones (`preserve`)
+
+Al actualizar un port, Brisa **restaura por defecto** todo archivo del port anterior que la nueva release no traiga (saves, configs, mods enlazados, symlinks de ROM). Para los archivos que **sí** vienen en la release (configs por defecto) y deben ganar los del usuario, lista patrones glob en `preserve`:
+
+```json
+"preserve": ["saves/**", "settings.json", "userdata/**"]
+```
 
 ## Interfaz web
 

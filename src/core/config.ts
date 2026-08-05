@@ -16,6 +16,10 @@ export interface AppConfig {
   githubToken: string;
   serverPort: number;
   autoCheckUpdates: boolean;
+  /** GitHub "owner/repo" de la propia app Brisa (para el auto-update del AppImage). */
+  selfRepo: string;
+  /** Patrón glob del asset AppImage de Brisa (vacío = derivado de la plataforma). */
+  selfAssetPattern: string;
 }
 
 const CONFIG_FILE = "config.json";
@@ -43,6 +47,8 @@ export function defaultConfig(): AppConfig {
     githubToken: process.env.GITHUB_TOKEN ?? "",
     serverPort: 7380,
     autoCheckUpdates: true,
+    selfRepo: "Kanin-020/port-hub",
+    selfAssetPattern: "",
   };
 }
 
@@ -61,6 +67,8 @@ export function loadConfig(): AppConfig {
       if (raw.githubToken !== undefined) cfg.githubToken = raw.githubToken;
       if (raw.serverPort !== undefined) cfg.serverPort = raw.serverPort;
       if (raw.autoCheckUpdates !== undefined) cfg.autoCheckUpdates = raw.autoCheckUpdates;
+      if (raw.selfRepo !== undefined) cfg.selfRepo = raw.selfRepo;
+      if (raw.selfAssetPattern !== undefined) cfg.selfAssetPattern = raw.selfAssetPattern;
       cfg.stateDir = path.join(cfg.cacheDir, "state");
     }
   } catch {
@@ -86,6 +94,8 @@ export function saveConfig(cfg: AppConfig): void {
     registryUrl: cfg.registryUrl,
     serverPort: cfg.serverPort,
     autoCheckUpdates: cfg.autoCheckUpdates,
+    selfRepo: cfg.selfRepo,
+    selfAssetPattern: cfg.selfAssetPattern,
   };
   fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
 }

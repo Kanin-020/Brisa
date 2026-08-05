@@ -31,5 +31,6 @@
   "mods": {
     "dir": "mods",
     "gameDir": "spaghettikart"
-  }
+  },
+  "preserve": ["saves/**", "settings.json"]
 }

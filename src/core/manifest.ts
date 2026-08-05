@@ -63,6 +63,15 @@ export interface Manifest {
   assets: Record<string, AssetDef>;
   roms: RomRequirement[];
   mods: ModsConfig;
+  /**
+   * Glob patterns (rutas relativas, p. ej. "saves/**", "settings.json") de
+   * datos de usuario (saves, configuraciones) dentro del dir del port que
+   * deben sobrevivir a reinstalaciones y actualizaciones. Además de esto, el
+   * instalador restaura por defecto todo archivo del port anterior que no
+   * exista en la nueva release; `preserve` sirve para los archivos que SÍ
+   * vienen en la release (configs por defecto) y deben ganar los del usuario.
+   */
+  preserve?: string[];
 }
 
 export function loadManifest(cfg: AppConfig, id: string): Manifest | null {
@@ -111,5 +120,6 @@ function normalize(m: Manifest): Manifest {
   m.assets = m.assets ?? {};
   m.mods = m.mods ?? { dir: "mods", gameDir: m.id };
   m.mods.gameDir = m.mods.gameDir || m.id;
+  m.preserve = m.preserve ?? [];
   return m;
 }

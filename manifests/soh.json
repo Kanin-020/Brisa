@@ -73,5 +73,6 @@
   "mods": {
     "dir": "mods",
     "gameDir": "soh"
-  }
+  },
+  "preserve": ["saves/**", "settings.json"]
 }

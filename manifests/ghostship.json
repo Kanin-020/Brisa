@@ -33,5 +33,6 @@
   "mods": {
     "dir": "mods",
     "gameDir": "ghostship"
-  }
+  },
+  "preserve": ["saves/**", "ghostship.cfg.json"]
 }

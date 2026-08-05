@@ -5,6 +5,7 @@ import * as tar from "tar";
 import type { AppConfig } from "./config";
 import { download, downloadPath } from "./download";
 import { getLatestRelease, pickAsset, type ReleaseInfo } from "./github";
+import { matchGlob } from "./glob";
 import type { AssetDef, Manifest } from "./manifest";
 import { detectPlatform } from "./platform";
 import type { RomFile } from "./scanner";
@@ -136,6 +137,8 @@ export async function installPort(
     if (fs.existsSync(backup)) fs.renameSync(backup, dir);
     throw e;
   }
+  // Restaurar saves/configs del port anterior antes de descartar el backup.
+  preserveUserData(backup, dir, m);
   if (fs.existsSync(backup)) fs.rmSync(backup, { recursive: true, force: true });
 
   // Resolve the executable: for appimage/apk the asset file itself is the executable.
@@ -215,6 +218,59 @@ export function relinkRom(cfg: AppConfig, m: Manifest, reqId: string, romPath: s
     state.romLinked = romsLinked[m.roms[0]?.id ?? reqId] ?? state.romLinked;
     writeState(cfg, state);
   }
+}
+
+/**
+ * Después de extraer la nueva versión, restaura desde el backup los datos de
+ * usuario del port anterior para que las actualizaciones NO borren saves ni
+ * configuraciones:
+ *   - Todo archivo/enlace del port anterior que no exista en la nueva release
+ *     (saves, configs, mods enlazados, symlinks de ROMs) se copia/enlaza de
+ *     vuelta.
+ *   - Los archivos que SÍ vienen en la nueva release (configs por defecto)
+ *     solo se restauran si coinciden con los patrones `preserve` del
+ *     manifiesto: ahí gana la configuración del usuario sobre el default.
+ */
+export function preserveUserData(backup: string, dir: string, m: Manifest): void {
+  if (!fs.existsSync(backup)) return;
+  const patterns = m.preserve ?? [];
+  const destExists = (rel: string) => fs.existsSync(path.join(dir, rel));
+  // Un archivo se restaura si la nueva release no lo trae, o si el manifiesto
+  // lo marca en `preserve` (entonces el del usuario pisa el default).
+  const keep = (rel: string) =>
+    destExists(rel) ? patterns.some((p) => matchGlob(p, rel)) : true;
+
+  const walk = (src: string, rel: string) => {
+    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+      const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+      const srcFull = path.join(src, entry.name);
+      const destFull = path.join(dir, relPath);
+      if (entry.isDirectory()) {
+        // Solo se baja si el directorio puede contener algo restaurable.
+        const mayContain =
+          !destExists(relPath) ||
+          patterns.some((p) => p === relPath || p.startsWith(relPath + "/"));
+        if (mayContain) {
+          fs.mkdirSync(destFull, { recursive: true });
+          walk(srcFull, relPath);
+        }
+      } else if (entry.isSymbolicLink()) {
+        if (keep(relPath)) {
+          fs.mkdirSync(path.dirname(destFull), { recursive: true });
+          if (destExists(relPath)) fs.rmSync(destFull, { force: true });
+          try {
+            fs.symlinkSync(fs.readlinkSync(srcFull), destFull);
+          } catch {
+            // enlace roto o sin permisos: ignorar
+          }
+        }
+      } else if (keep(relPath)) {
+        fs.mkdirSync(path.dirname(destFull), { recursive: true });
+        fs.copyFileSync(srcFull, destFull);
+      }
+    }
+  };
+  walk(backup, "");
 }
 
 /** chmod +x on unix so spawn works (fixes EACCES on appimage/apk/binaries). */

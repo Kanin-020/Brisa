@@ -4,6 +4,7 @@ import * as path from "node:path";
 import AdmZip from "adm-zip";
 import { App } from "../core/app";
 import { projectRoot } from "../core/config";
+import { cleanLaunchEnv } from "../core/env";
 import type { RomFile } from "../core/scanner";
 
 // En las builds empaquetadas (desktop/CLI) la UI estática se incrusta en la
@@ -38,12 +39,16 @@ export function startServer(
   app: App,
   port: number,
   onReady?: (url: string) => void,
-  opts: { openBrowser?: boolean } = {},
+  opts: {
+    openBrowser?: boolean;
+    /** Se llama tras aplicar un self-update (la app de escritorio lo usa para salir y relanzarse). */
+    onSelfUpdate?: () => void;
+  } = {},
 ): http.Server {
   // ---- API ----
   route("GET", /^\/api\/status$/, async (_req, res) => {
-    const { scan, ports } = await app.status();
-    sendJson(res, 200, { scan, ports, platform: app.platform, cfg: { romsDir: app.cfg.romsDir, modsDir: app.cfg.modsDir, portsDir: app.cfg.portsDir } });
+    const { scan, ports, self } = await app.status();
+    sendJson(res, 200, { scan, ports, self, platform: app.platform, cfg: { romsDir: app.cfg.romsDir, modsDir: app.cfg.modsDir, portsDir: app.cfg.portsDir } });
   });
 
   route("POST", /^\/api\/install$/, async (req, res, body) => {
@@ -103,7 +108,8 @@ export function startServer(
     if (!exe) return sendJson(res, 404, { error: "port not installed" });
     try {
       const { spawn } = require("node:child_process");
-      const child = spawn(exe, [], { cwd: path.dirname(exe), detached: true, stdio: "ignore" });
+      // Entorno sin las variables de Steam que crashean los binarios nativos.
+      const child = spawn(exe, [], { cwd: path.dirname(exe), detached: true, stdio: "ignore", env: cleanLaunchEnv() });
       child.on("error", (err: Error) => {
         console.error(`[launch] ${exe}: ${err.message}`);
       });
@@ -141,6 +147,31 @@ export function startServer(
     if (!id) return sendJson(res, 400, { error: "missing id" });
     app.relinkMods(id);
     sendJson(res, 200, { ok: true });
+  });
+
+  route("POST", /^\/api\/self-update\/check$/, async (_req, res) => {
+    try {
+      const info = await app.selfUpdateInfo(false);
+      sendJson(res, 200, { info });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
+  route("POST", /^\/api\/self-update$/, async (_req, res) => {
+    try {
+      const info = await app.selfUpdate((stage, done, total) => {
+        // Sin progreso en la GUI por ahora: la descarga se reporta al terminar.
+        void stage;
+        void done;
+        void total;
+      });
+      sendJson(res, 200, { info });
+      // La app de escritorio se cierra para que el updater la reemplace.
+      setTimeout(() => opts.onSelfUpdate?.(), 1000);
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
   });
 
   route("POST", /^\/api\/registry$/, async (_req, res) => {

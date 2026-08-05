@@ -11,6 +11,7 @@ let viewMode = "cards";
 let romsViewMode = "cards";
 let activeTab = "installed";
 let modsModalPort = null;
+let selfToastShown = false;
 try {
   viewMode = localStorage.getItem("brisa-ports-view") === "list" ? "list" : "cards";
 } catch {
@@ -178,6 +179,7 @@ function render() {
   const { ports, scan, platform } = state;
 
   $("#platform-chip").textContent = `Plataforma: ${platform.key}`;
+  renderSelfUpdate(state.self);
   $("#stat-roms").textContent = scan.roms.length;
   $("#stat-installed").textContent = ports.filter((p) => p.installed).length;
   $("#stat-mods").textContent = ports.reduce((a, p) => a + p.mods.length, 0);
@@ -355,6 +357,46 @@ function closeModsModal() {
 /** Abre la carpeta central de mods del port (MODS/<gameDir>) en el gestor de archivos. */
 function openPortModsFolder(p) {
   api("/api/open-mods-folder", { id: p.manifest.id }).catch((e) => toast(e.message, "error"));
+}
+
+/** Chip de versión + botón de auto-update de la propia app (si hay release nueva). */
+function renderSelfUpdate(self) {
+  const chip = $("#app-version");
+  const btn = $("#btn-self-update");
+  if (!self) {
+    chip.textContent = "";
+    btn.hidden = true;
+    return;
+  }
+  chip.textContent = t("self.version", self.current);
+  const show = self.available && self.supported;
+  btn.hidden = !show;
+  btn.disabled = false;
+  if (show) {
+    btn.textContent = t("self.updateBtn", self.latest);
+    btn.title = t("self.updateAvailable", self.latest);
+    btn.dataset.latest = self.latest;
+    if (!selfToastShown) {
+      selfToastShown = true;
+      toast(t("toast.selfAvailable", self.latest), "warn", 9000, doSelfUpdate);
+    }
+  }
+}
+
+/** Descarga y aplica la nueva AppImage de Brisa (la app se cierra y relanza sola). */
+async function doSelfUpdate() {
+  const btn = $("#btn-self-update");
+  if (!btn.hidden && btn.disabled) return;
+  btn.disabled = true;
+  const latest = btn.dataset.latest ?? "";
+  toast(t("toast.selfUpdating", latest), "ok", 6000);
+  try {
+    const data = await api("/api/self-update");
+    toast(t("toast.selfUpdated", data.info.latest), "ok", 9000);
+  } catch (e) {
+    btn.disabled = false;
+    toast(e.message, "error", 6000);
+  }
 }
 
 function renderRoms(scan) {
@@ -766,6 +808,7 @@ async function init() {
     api("/api/open-folder", {}).catch((e) => toast(e.message, "error"));
   });
   $("#btn-refresh").addEventListener("click", () => load());
+  $("#btn-self-update").addEventListener("click", doSelfUpdate);
   load();
   setInterval(() => {
     if (busy.size === 0) load();

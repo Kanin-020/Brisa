@@ -31,7 +31,7 @@ Special thanks to each of the decompilation teams — without them this project 
 | 1 | **A single ROM directory** | All ROMs live in `roms/`. When installing a port, Brisa creates the **symlink** with the exact name the game expects (`oot.z64`, `mm.z64`, `tp.iso`, `baserom.gba`) inside its folder. **Multi-ROM** ports (SoH: base + Master Quest) link one ROM per requirement automatically. |
 | 2 | **Automatic scan on open** | `brisa status` (and the web GUI) scan `roms/`, compute **SHA1** (with caching), read the **Game ID** of GameCube discs (dusklight), match each ROM to its port by name *and* by hash, and tell you which ports you can install. |
 | 3 | **Semi-centralized mods** | Mods live in `mods/<game>/<mod>`. Brisa creates symlinks to `ports/<port>/mods/<mod>`, exactly where the port reads them. Adding/removing a mod = creating/deleting a folder in `mods/`. |
-| 4 | **Auto update** | Checks the latest GitHub release of each installed port and updates it (`update`, GUI button). It can also refresh a remote manifest registry. |
+| 4 | **Auto update** | Checks the latest GitHub release of each installed port and updates it (`update`, GUI button). The **app itself** also self-updates: it detects the latest AppImage on GitHub, downloads it, replaces itself and relaunches on its own (`self-update` or the GUI button). |
 | 5 | **Manifests** | Each port is a JSON file in `manifests/`. To add a new port you only need: the GitHub repo, the name/hash patterns of its ROM and its per-platform asset patterns. |
 | 6 | **i18n web GUI** | Local web interface with a **Español / English** language switcher (plus any language you add to `src/web/lang/`). |
 
@@ -123,6 +123,7 @@ The CLI is available in two ways:
 | `brisa launch <id | ROM> [--wait]` | Run a port by id (e.g. `soh`) or directly a ROM file (path): the port is detected automatically. `--wait` waits for the game to exit (useful from Steam). |
 | `brisa srm-config [file] [--roms-dir <dir>]` | Generate a parser JSON for Steam ROM Manager. |
 | `brisa update [id] [--check]` | Update installed ports to the latest release. |
+| `brisa self-update [--check]` | Update the Brisa app itself (Linux AppImage): downloads the latest release, installs it and relaunches on its own. |
 | `brisa mods <id>` | List centralized mods of a port. |
 | `brisa mods-link <id>` | Link all mods of the port. |
 | `brisa mods-unlink <id> [mod]` | Unlink mods. |
@@ -169,6 +170,8 @@ brisa srm-config --roms-dir ~/Emulation/roms/n64   # if your ROMs live in anothe
 
 The generated file includes all ROM extensions from the ports (`.z64`, `.n64`, `.v64`, `.iso`, `.rvz`, `.gcz`, `.gba`, `.gbc`…) and uses the command `brisa launch --wait "<ROM>"`.
 
+> **Why a launcher script**: when you run a port from Steam, the game inherits Steam environment variables (`LD_PRELOAD`, `STEAM_COMPAT_DATA_PATH`, `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `STEAM_RUNTIME`) that **crash native binaries**. Steam does not run shortcuts through a shell, so the `unset` commands can only live in a script: `brisa srm-config` generates `brisa-srm-launch.sh` (next to the JSON) that clears those variables and then executes your Brisa AppImage, and the parser points to that script as its executable. If you move the AppImage, regenerate the parser.
+
 ### 2. Import into Steam ROM Manager
 
 - Open SRM → **Parsers** page → **Import** button and upload the JSON, or
@@ -213,7 +216,7 @@ npm link                # optional: exposes the `brisa` command globally
 1. **Scan**: walks `roms/`, computes SHA1 with a size+mtime cache, and for each manifest looks up its ROM by name (patterns), Game ID (GameCube discs) and/or exact hash.
 2. **Install**: queries the GitHub API (`/releases/latest`), picks the asset by `platform.key` (`linux-x64`, `windows-arm64`, `android`, …), downloads it to `cache/downloads/`, extracts it to `ports/<id>/` and creates the symlink `ports/<id>/<dest> → roms/<file>` for **each** requirement with a present ROM (multi-ROM: `oot.z64` + `oot-mq.z64`).
 3. **Mods**: `mods/<gameDir>/<mod>` is linked to `ports/<id>/<dir>/<mod>`. They are re-linked automatically after install/update.
-4. **Updates**: compares the installed release tag with the latest on GitHub. On `update` it downloads the new version, makes an atomic backup and re-links ROM and mods.
+4. **Updates**: compares the installed release tag with the latest on GitHub. On `update` it downloads the new version, makes an atomic backup and re-links ROM and mods. **Saves and configs inside the port are kept**: every file the new release does not ship is restored, and files matched by the manifest `preserve` patterns win over the release defaults.
 5. **Registry auto-update**: `registryUrl` allows adding new ports without touching code, JSON only.
 
 ## Creating a manifest
@@ -247,7 +250,9 @@ Create `manifests/<id>.json`. It is just **hash, URL and name association**:
     "android":     { "pattern": "MyPort-*.apk",              "type": "apk",     "executable": null }
   },
 
-  "mods": { "dir": "mods", "gameDir": "myport" }
+  "mods": { "dir": "mods", "gameDir": "myport" },
+
+  "preserve": ["saves/**", "settings.json"]  // optional: user data that survives updates
 }
 ```
 
@@ -275,6 +280,14 @@ brisa registry
 ### Hashes
 
 To verify a ROM's hash use `brisa hash roms/yourrom.z64` and paste the result into `sha1`. When `sha1` is present, the scanner prioritizes **exact hash match** over name — perfect when the same filename could serve two different ports (like `oot.z64` and `mm.z64`).
+
+### Preserving saves and configs (`preserve`)
+
+When updating a port, Brisa **restores by default** every file of the previous install that the new release does not ship (saves, configs, linked mods, ROM symlinks). For files that **are** shipped by the release (default configs) where the user's copy must win, list glob patterns in `preserve`:
+
+```json
+"preserve": ["saves/**", "settings.json", "userdata/**"]
+```
 
 ## Web interface
 
