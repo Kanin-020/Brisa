@@ -35,7 +35,7 @@ async function progress(stage: string, done: number, total: number) {
 const program = new Command();
 
 program
-  .name("port-hub")
+  .name("brisa")
   .description("Compilador y gestor de ports nativos de PC (SoH, 2Ship2Harkinian, DUSKLIGHT, TMC) basado en manifiestos.")
   .version("0.1.0");
 
@@ -44,7 +44,7 @@ program
   .description("Escanea los ROMs, muestra ports disponibles/instalados, mods y actualizaciones.")
   .action(async () => {
     const { scan, ports } = await app.status();
-    console.log(`\n== Port Hub (${detectPlatform().key}) ==\n`);
+    console.log(`\n== Brisa (${detectPlatform().key}) ==\n`);
     console.log(`ROMs encontrados (${scan.roms.length}):`);
     for (const r of scan.roms) console.log(`  ${r.name}  ${bytes(r.size)}  [sha1 ${r.sha1.slice(0, 8)}…]`);
     if (scan.roms.length === 0) console.log("  (vacío) — copia tus ROMs a:", app.cfg.romsDir);
@@ -223,7 +223,7 @@ program
   .description("Actualiza los manifiestos remotos desde registryUrl (config.json).")
   .action(async () => {
     if (!app.cfg.registryUrl) {
-      console.error("No hay registryUrl configurada. Edita config.json o usa: port-hub config-set registryUrl <url>");
+      console.error("No hay registryUrl configurada. Edita config.json o usa: brisa config-set registryUrl <url>");
       process.exit(1);
     }
     const n = await app.refreshRegistry();

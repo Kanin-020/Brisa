@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // ---------------------------------------------------------------------------
-// Packaging script for the Port Hub desktop app (Electron).
+// Packaging script for the Brisa desktop app (Electron).
 //
 // Resultado: un único artefacto que es a la vez app de escritorio y CLI:
 //   - Doble clic  -> ventana nativa (Electron), sin navegador ni puerto visible.
-//   - Con args    -> comportamiento CLI (port-hub install soh, serve, …) vía
+//   - Con args    -> comportamiento CLI (brisa install soh, serve, …) vía
 //                    ELECTRON_RUN_AS_NODE sobre una entrada CLI autocontenida
 //                    (src/desktop/main.ts hace el despacho).
 //
@@ -66,7 +66,7 @@ function collectDir(dir, base, out = {}) {
 
 async function bundleCliEntry() {
   step("1/3 Empaquetando entrada CLI (con assets web embebidos)…");
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "port-hub-desktop-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "brisa-desktop-"));
   try {
     const assets = collectDir(path.join(DIST, "web"), "");
     fs.writeFileSync(

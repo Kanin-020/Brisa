@@ -13,7 +13,7 @@ export async function download(
   onProgress?: ProgressFn,
 ): Promise<void> {
   const res = await fetch(url, {
-    headers: { "User-Agent": "port-hub", Accept: "application/octet-stream" },
+    headers: { "User-Agent": "brisa", Accept: "application/octet-stream" },
     redirect: "follow",
   });
   if (!res.ok || !res.body) {

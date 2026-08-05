@@ -1,4 +1,4 @@
-# Port Hub
+# Brisa
 
 **Compilador y gestor de ports nativos de PC** al estilo EmuDeck, basado en manifiestos.
 
@@ -6,7 +6,7 @@
 
 ### Qué es
 
-**Port Hub** es un recopilador y gestor de **ports nativos de PC** al estilo EmuDeck, basado en **manifiestos** (archivos JSON).
+**Brisa** es un recopilador y gestor de **ports nativos de PC** al estilo EmuDeck, basado en **manifiestos** (archivos JSON).
 
 | Juego | Proyecto | Enlace |
 |--------|----------|--------|
@@ -23,9 +23,9 @@ Doy especial agradecimiento a cada uno de los equipos de decompilación, sin ell
 
 | # | Requisito | Cómo lo hace |
 |---|-----------|--------------|
-| 1 | **Un solo directorio de ROMs** | Todos los ROMs viven en `roms/`. Al instalar un port, Port Hub crea el **symlink** con el nombre exacto que el juego espera (`oot.z64`, `mm.z64`, `tp.iso`, `baserom.gba`) dentro de su carpeta. Los ports **multirom** (SoH: base + Master Quest) enlazan una ROM por requisito automáticamente. |
-| 2 | **Escaneo automático al abrir** | `port-hub status` (y la GUI web) escanean `roms/`, calculan **SHA1** (con caché), leen el **Game ID** de los discos de GameCube (dusklight), asocian cada ROM a su port por nombre *y* por hash, y te dice qué ports puedes instalar. |
-| 3 | **Mods semicentralizados** | Los mods viven en `mods/<juego>/<mod>`. Port Hub crea symlinks hacia `ports/<port>/mods/<mod>`, exactamente donde el port los lee. Añadir/quitar un mod = crear/borrar una carpeta en `mods/`. |
+| 1 | **Un solo directorio de ROMs** | Todos los ROMs viven en `roms/`. Al instalar un port, Brisa crea el **symlink** con el nombre exacto que el juego espera (`oot.z64`, `mm.z64`, `tp.iso`, `baserom.gba`) dentro de su carpeta. Los ports **multirom** (SoH: base + Master Quest) enlazan una ROM por requisito automáticamente. |
+| 2 | **Escaneo automático al abrir** | `brisa status` (y la GUI web) escanean `roms/`, calculan **SHA1** (con caché), leen el **Game ID** de los discos de GameCube (dusklight), asocian cada ROM a su port por nombre *y* por hash, y te dice qué ports puedes instalar. |
+| 3 | **Mods semicentralizados** | Los mods viven en `mods/<juego>/<mod>`. Brisa crea symlinks hacia `ports/<port>/mods/<mod>`, exactamente donde el port los lee. Añadir/quitar un mod = crear/borrar una carpeta en `mods/`. |
 | 4 | **Auto update** | Comprueba el último release de GitHub de cada port instalado y lo actualiza (`update`, botón en GUI). También puede refrescar un registro remoto de manifiestos. |
 | 5 | **Manifiestos** | Cada port es un archivo JSON en `manifests/`. Para añadir un port nuevo solo necesitas: el repo de GitHub, los patrones de nombre/hash de su ROM y los patrones de sus assets por plataforma. |
 | 6 | **GUI web con i18n** | Interfaz web local con selector de idioma **Español / English** (y cualquier idioma que añadas a `src/web/lang/`). |
@@ -46,7 +46,7 @@ La AppImage es **a la vez app de escritorio y CLI**, según cómo se ejecute:
 
 ### Carpeta de usuario
 
-Los archivos se guardan en la **carpeta de usuario**: `Carpeta de Usuario/Port-hub` (Linux: `~/Port-hub`). Es la raíz de datos que comparten la GUI y el CLI, y contiene:
+Los archivos se guardan en la **carpeta de usuario**: `Carpeta de Usuario/Brisa` (Linux: `~/Brisa`). Es la raíz de datos que comparten la GUI y el CLI, y contiene:
 
 | Carpeta | Contenido |
 |---|---|
@@ -60,7 +60,7 @@ Los archivos se guardan en la **carpeta de usuario**: `Carpeta de Usuario/Port-h
 ### Estructura de carpetas
 
 ```
-port-hub/
+brisa/
 ├── roms/              ← TODOS tus ROMs viven aquí (un solo directorio)
 │   └── oot.z64
 ├── mods/              ← mods semicentralizados
@@ -83,7 +83,7 @@ port-hub/
 La interfaz nativa (Electron) se abre con **doble clic** en la AppImage, o desde la terminal con:
 
 ```bash
-port-hub serve          # GUI web en el navegador → http://localhost:7380
+brisa serve          # GUI web en el navegador → http://localhost:7380
 ```
 
 Permite ver el estado de ROMs, ports, mods y actualizaciones en tiempo real, e instalar, actualizar, desinstalar y lanzar ports con un clic.
@@ -103,28 +103,28 @@ El CLI está disponible de dos formas:
 - **Como comando global** (desarrollo, requiere Node.js):
 
   ```bash
-  npm link               # expone el comando `port-hub` globalmente
-  port-hub status
+  npm link               # expone el comando `brisa` globalmente
+  brisa status
   ```
 
 ### Comandos
 
 | Comando | Descripción |
 |---|---|
-| `port-hub status` | Escaneo completo: ROMs, ports, mods, actualizaciones. |
-| `port-hub scan` | Solo escanea y lista coincidencias ROM↔port. |
-| `port-hub install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
-| `port-hub uninstall <id>` | Elimina el port y su estado. |
-| `port-hub launch <id>` | Ejecuta el port instalado. |
-| `port-hub update [id] [--check]` | Actualiza ports instalados a la última release. |
-| `port-hub mods <id>` | Lista mods centralizados de un port. |
-| `port-hub mods-link <id>` | Enlaza todos los mods del port. |
-| `port-hub mods-unlink <id> [mod]` | Desenlaza mods. |
-| `port-hub registry` | Descarga manifiestos remotos desde `registryUrl`. |
-| `port-hub hash <archivo>` | Calcula el SHA1 (para rellenar manifiestos). |
-| `port-hub config` / `config-set <k> <v>` | Ver/editar configuración. |
-| `port-hub serve` | GUI web local. |
-| `port-hub manifest-test <pattern>` | Depura un patrón glob. |
+| `brisa status` | Escaneo completo: ROMs, ports, mods, actualizaciones. |
+| `brisa scan` | Solo escanea y lista coincidencias ROM↔port. |
+| `brisa install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
+| `brisa uninstall <id>` | Elimina el port y su estado. |
+| `brisa launch <id>` | Ejecuta el port instalado. |
+| `brisa update [id] [--check]` | Actualiza ports instalados a la última release. |
+| `brisa mods <id>` | Lista mods centralizados de un port. |
+| `brisa mods-link <id>` | Enlaza todos los mods del port. |
+| `brisa mods-unlink <id> [mod]` | Desenlaza mods. |
+| `brisa registry` | Descarga manifiestos remotos desde `registryUrl`. |
+| `brisa hash <archivo>` | Calcula el SHA1 (para rellenar manifiestos). |
+| `brisa config` / `config-set <k> <v>` | Ver/editar configuración. |
+| `brisa serve` | GUI web local. |
+| `brisa manifest-test <pattern>` | Depura un patrón glob. |
 
 ### Uso rápido
 
@@ -133,21 +133,21 @@ El CLI está disponible de dos formas:
 cp "Ocarina of Time.z64" roms/
 
 # 2) Escanea: detecta ROMs, hashes y qué ports se pueden instalar
-port-hub status
+brisa status
 
 # 3) Instala un port (descarga el release correcto para tu plataforma,
 #    lo extrae en ports/soh/ y crea el symlink del ROM)
-port-hub install soh
+brisa install soh
 
 # 4) Mods: crea carpetas en mods/soh/ y enlázalas
 mkdir -p "mods/soh/Mi Mod"
-port-hub mods-link soh
+brisa mods-link soh
 
 # 5) Actualiza todos los ports instalados
-port-hub update
+brisa update
 
 # 6) Interfaz web (GUI local)
-port-hub serve          # → http://localhost:7380
+brisa serve          # → http://localhost:7380
 ```
 
 ## Desarrollo
@@ -167,7 +167,7 @@ npm run typecheck       # verifica tipos sin emitir
 npm run desktop         # build + ejecuta la app de escritorio (Electron)
 npm run package:linux   # build + genera la AppImage en release/
 npm run package:windows # build + genera el .zip portable de Windows
-npm link                # opcional: expone el comando `port-hub` globalmente
+npm link                # opcional: expone el comando `brisa` globalmente
 ```
 
 ### Funcionamiento interno
@@ -228,19 +228,19 @@ Campos de `assets`:
 Registro remoto opcional para distribuir manifiestos actualizables:
 
 ```bash
-port-hub config-set registryUrl https://raw.githubusercontent.com/tu/repo/main/manifests/index.json
-port-hub registry
+brisa config-set registryUrl https://raw.githubusercontent.com/tu/repo/main/manifests/index.json
+brisa registry
 ```
 
 `index.json` es un array de `{ "id": "...", "url": "https://.../<id>.json" }`. Los manifiestos remotos se guardan en `manifests/remote/` y tienen prioridad de carga sobre los locales con el mismo `id`.
 
 ### Hashes
 
-Para verificar el hash de un ROM usa `port-hub hash roms/turom.z64` y pega el resultado en `sha1`. Cuando hay `sha1`, el escáner prioriza la coincidencia **por hash exacto** antes que por nombre — perfecto cuando un mismo nombre de archivo podría servir para dos ports distintos (como `oot.z64` y `mm.z64`).
+Para verificar el hash de un ROM usa `brisa hash roms/turom.z64` y pega el resultado en `sha1`. Cuando hay `sha1`, el escáner prioriza la coincidencia **por hash exacto** antes que por nombre — perfecto cuando un mismo nombre de archivo podría servir para dos ports distintos (como `oot.z64` y `mm.z64`).
 
 ## Interfaz web
 
-`port-hub serve` arranca una interfaz web local en `http://localhost:7380` con:
+`brisa serve` arranca una interfaz web local en `http://localhost:7380` con:
 
 - Estado de ROMs, ports, mods y actualizaciones en tiempo real (auto-refresco).
 - Instalar, actualizar, desinstalar y lanzar ports con un clic.
@@ -250,9 +250,9 @@ Para verificar el hash de un ROM usa `port-hub hash roms/turom.z64` y pega el re
 ## Notas por plataforma
 
 - **Android**: los ports con asset `apk` se descargan a `ports/<id>/` (para instalar el APK manualmente o con tu gestor). La detección de Android funciona bajo **Termux** (`TERMUX_VERSION`).
-- **Windows**: los symlinks pueden requerir modo desarrollador; si fallan, Port Hub copia el archivo como respaldo.
+- **Windows**: los symlinks pueden requerir modo desarrollador; si fallan, Brisa copia el archivo como respaldo.
 - **macOS**: los `.app` se lanzan desde `Contents/MacOS/`.
 
 ## Aviso legal
 
-Port Hub no incluye ni descarga ROMs. Los ports nativos requieren el juego original, del que debes poseer una copia legal. Todo el software gestionado es open source (decompilaciones).
+Brisa no incluye ni descarga ROMs. Los ports nativos requieren el juego original, del que debes poseer una copia legal. Todo el software gestionado es open source (decompilaciones).

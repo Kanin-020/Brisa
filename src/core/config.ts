@@ -22,7 +22,7 @@ const CONFIG_FILE = "config.json";
 
 export function projectRoot(): string {
   // Las builds empaquetadas (AppImage/.exe) redirigen la raíz de datos de
-  // usuario con PORT_HUB_ROOT (src/desktop/main.ts la establece en $HOME/Port-hub).
+  // usuario con PORT_HUB_ROOT (src/desktop/main.ts la establece en $HOME/Brisa).
   if (process.env.PORT_HUB_ROOT) return path.resolve(process.env.PORT_HUB_ROOT);
   // dist/core/config.js  -> up 2 is project root
   // src/core/config.ts   -> up 2 is project root (tsx dev)

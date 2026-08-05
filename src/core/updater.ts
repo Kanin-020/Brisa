@@ -110,14 +110,14 @@ export async function applyUpdate(cfg: AppConfig, m: Manifest): Promise<UpdateIn
  */
 export async function refreshRemoteManifests(cfg: AppConfig): Promise<number> {
   if (!cfg.registryUrl) return 0;
-  const res = await fetch(cfg.registryUrl, { headers: { "User-Agent": "port-hub" } });
+  const res = await fetch(cfg.registryUrl, { headers: { "User-Agent": "brisa" } });
   if (!res.ok) throw new Error(`Registry fetch failed: HTTP ${res.status}`);
   const data = (await res.json()) as Array<{ id: string; url: string }>;
   const dir = path.join(cfg.manifestsDir, "remote");
   fs.mkdirSync(dir, { recursive: true });
   let count = 0;
   for (const entry of data) {
-    const r = await fetch(entry.url, { headers: { "User-Agent": "port-hub" } });
+    const r = await fetch(entry.url, { headers: { "User-Agent": "brisa" } });
     if (!r.ok) continue;
     const text = await r.text();
     fs.writeFileSync(path.join(dir, `${entry.id}.json`), text);

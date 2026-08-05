@@ -2,7 +2,7 @@ import { app, BrowserWindowConstructorOptions } from "electron";
 import path from "node:path";
 
 export const config: Readonly<BrowserWindowConstructorOptions> = {
-  title: "Port Hub",
+  title: "Brisa",
   width: 1240,
   height: 820,
   minWidth: 940,

@@ -1,6 +1,6 @@
-appId: io.porthub.desktop
-productName: Port Hub
-artifactName: Port_Hub-${version}-${arch}.${ext}
+appId: io.brisa.desktop
+productName: Brisa
+artifactName: Brisa-${arch}.${ext}
 
 directories:
   output: release
@@ -20,7 +20,7 @@ linux:
     - AppImage
   icon: src/web/icon.png
   category: Utility
-  maintainer: Port Hub
+  maintainer: Brisa
 
 win:
   target:

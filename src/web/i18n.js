@@ -1,5 +1,5 @@
 /**
- * i18n — Frontend translation module for Port Hub.
+ * i18n — Frontend translation module for Brisa.
  *
  * Translations live in src/web/lang/<locale>.json (served as /lang/<locale>.json).
  * To add a new language:
@@ -13,11 +13,11 @@
 (function () {
   "use strict";
 
-  const STORAGE_KEY = "port-hub-locale";
+  const STORAGE_KEY = "brisa-locale";
 
   /** Minimal fallback if en.json fails to load. */
   const FALLBACK_EN = {
-    "brand.title": "Port Hub",
+    "brand.title": "Brisa",
     "brand.tagline": "Native PC port manager",
     "btn.refresh": "⟳ Refresh",
     "stat.roms": "ROMs",
@@ -94,7 +94,7 @@
   /**
    * Translate a key. Accepts optional interpolation arguments.
    *
-   *   t("brand.title")              → "Port Hub"
+   *   t("brand.title")              → "Brisa"
    *   t("ports.hint", 5)            → "5 ports in registry"
    *   t("toast.installed", "SoH", "1.2.3") → "✓ SoH v1.2.3 installed"
    */

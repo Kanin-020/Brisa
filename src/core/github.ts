@@ -18,7 +18,7 @@ export async function getLatestRelease(cfg: AppConfig, repo: string): Promise<Re
   const url = `https://api.github.com/repos/${repo}/releases/latest`;
   const res = await fetch(url, {
     headers: {
-      "User-Agent": "port-hub",
+      "User-Agent": "brisa",
       ...(cfg.githubToken ? { Authorization: `Bearer ${cfg.githubToken}` } : {}),
     },
   });

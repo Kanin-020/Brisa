@@ -1,4 +1,4 @@
-/* Port Hub GUI — i18n-ready */
+/* Brisa GUI — i18n-ready */
 let state = null;
 let busy = new Set();
 

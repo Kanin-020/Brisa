@@ -176,7 +176,7 @@ export function startServer(
     const addr = server.address();
     const actualPort = typeof addr === "object" && addr ? addr.port : port;
     const url = `http://localhost:${actualPort}`;
-    console.log(`\n  Port Hub GUI: ${url}\n`);
+    console.log(`\n  Brisa GUI: ${url}\n`);
     onReady?.(url);
     // La app de escritorio (Electron) abre su propia ventana y no un navegador.
     if (opts.openBrowser === false) return;
