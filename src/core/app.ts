@@ -2,7 +2,7 @@ import { loadConfig, ensureDirs, type AppConfig } from "./config";
 import { isInstalled, installPort, launchExecutable, uninstallPort, resolveAssetForPlatform } from "./installer";
 import { listManifests, loadManifest, type Manifest } from "./manifest";
 import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unlinkAllMods, isModLinked, syncModsFolders } from "./mods";
-import { scanRoms, type RomMatch, type ScanResult, type RomFile } from "./scanner";
+import { scanRoms, matchRomPath, type RomMatch, type ScanResult, type RomFile } from "./scanner";
 import { readState, listStates } from "./state";
 import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
 import { detectPlatform } from "./platform";
@@ -56,6 +56,14 @@ export class App {
 
   async scan(): Promise<ScanResult> {
     return scanRoms(this.cfg);
+  }
+
+  /**
+   * Resolve an arbitrary ROM file (e.g. the path Steam ROM Manager passes
+   * to `launch`) to the port(s) that can play it, sorted by reliability.
+   */
+  async resolveRom(file: string): Promise<RomMatch[]> {
+    return matchRomPath(this.cfg, file);
   }
 
   async status(): Promise<{ scan: ScanResult; ports: PortStatus[] }> {

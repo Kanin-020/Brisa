@@ -120,7 +120,8 @@ El CLI está disponible de dos formas:
 | `brisa scan` | Solo escanea y lista coincidencias ROM↔port. |
 | `brisa install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
 | `brisa uninstall <id>` | Elimina el port y su estado. |
-| `brisa launch <id>` | Ejecuta el port instalado. |
+| `brisa launch <id | ROM> [--wait]` | Ejecuta un port por id (ej. `soh`) o directamente un archivo ROM (ruta): detecta el port automáticamente. `--wait` espera a que el juego termine (útil desde Steam). |
+| `brisa srm-config [archivo] [--roms-dir <dir>]` | Genera un parser JSON para Steam ROM Manager. |
 | `brisa update [id] [--check]` | Actualiza ports instalados a la última release. |
 | `brisa mods <id>` | Lista mods centralizados de un port. |
 | `brisa mods-link <id>` | Enlaza todos los mods del port. |
@@ -154,6 +155,38 @@ brisa update
 # 6) Interfaz web (GUI local)
 brisa serve          # → http://localhost:7380
 ```
+
+## Steam ROM Manager (SRM)
+
+Brisa funciona directamente con **Steam ROM Manager**: cada ROM que SRM añade a Steam se lanza con `brisa launch "<ROM>"` y Brisa detecta automáticamente a qué port pertenece (**por hash exacto, Game ID o nombre**), re-enlaza ese ROM al port y lo arranca. Así `appimage launch /ruta/oot.z64` sustituye a `appimage launch soh`.
+
+### 1. Genera el parser
+
+```bash
+brisa srm-config                                   # crea brisa-srm.json en la carpeta actual
+brisa srm-config --roms-dir ~/Emulation/roms/n64   # si tus ROMs están en otra carpeta
+```
+
+El archivo generado incluye todas las extensiones de ROM de los ports (`.z64`, `.n64`, `.v64`, `.iso`, `.rvz`, `.gcz`, `.gba`, `.gbc`…) y usa el comando `brisa launch --wait "<ROM>"`.
+
+### 2. Importa en Steam ROM Manager
+
+- Abre SRM → página de **Parsers** → botón **Import** y sube el JSON, o
+- copia el archivo a `~/.config/steam-rom-manager/userData/configurations/` y reinicia SRM.
+
+Comprueba en el parser: la ruta del **ejecutable** (tu AppImage de Brisa) y el **directorio de ROMs**.
+
+### 3. Preview y Save
+
+SRM escaneará el directorio y añadirá cada ROM como juego de Steam. Al pulsar **Jugar** se ejecutará `brisa launch "<ROM>"`:
+
+- `--wait` mantiene el proceso vivo mientras el juego corre, para que Steam lo marque como *en ejecución*.
+- Si el port correspondiente no está instalado, se te indica el comando `brisa install <id>`.
+- Si lanzas la ROM de Master Quest (o la base) de SoH, Brisa re-enlaza esa ROM exacta al port antes de arrancar.
+
+### Alternativa manual (sin generar JSON)
+
+Crea un parser tipo **Glob** en SRM: ejecutable = tu AppImage de Brisa, argumentos = `launch --wait "${filePath}"` y extensiones `.z64 .n64 .v64 .iso .rvz .gcz .gba .gbc`.
 
 ## Desarrollo
 
