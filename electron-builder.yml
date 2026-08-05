@@ -28,5 +28,5 @@ linux:
 
 win:
   target:
-    - zip
+    - nsis
   icon: src/web/icon.ico

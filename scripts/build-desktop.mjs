@@ -131,7 +131,7 @@ async function runBuilder() {
         process.exit(1);
       }
     } else {
-      targets.push("--win", "zip");
+      targets.push("--win", "nsis");
     }
   }
   step(`2/3 Ejecutando electron-builder (${targets.join(" ")})…`);
