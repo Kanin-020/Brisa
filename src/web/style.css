@@ -184,14 +184,8 @@ body {
 }
 .mod-chip button:hover { color: var(--text); }
 .mods-open-btn { font-size: 11px; padding: 4px 10px; }
+.mods-add-btn { font-size: 11px; padding: 4px 10px; }
 .mod-row-modal { flex-wrap: wrap; }
-.mods-empty {
-  font-size: 11px; color: var(--text-dim); line-height: 1.5;
-  padding: 6px 10px; border: 1px dashed var(--border); border-radius: 8px;
-}
-.mods-empty code {
-  font-family: ui-monospace, monospace; color: var(--accent); font-size: 10px;
-}
 
 /* Mods modal */
 .modal-overlay {
@@ -229,8 +223,29 @@ body.modal-open { overflow: hidden; }
 }
 .progress .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--purple)); transition: width 0.2s ease; }
 
-/* ROMs list */
-.roms-list { display: flex; flex-direction: column; gap: 8px; }
+/* ROMs — vista tarjetas / lista */
+.roms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.roms-grid.list { grid-template-columns: 1fr; gap: 8px; }
+.rom-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  position: relative; overflow: hidden;
+}
+.rom-card::before {
+  content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--green), var(--accent));
+  opacity: 0; transition: opacity 0.2s ease;
+}
+.rom-card:hover { transform: translateY(-3px); border-color: #3d444d; box-shadow: var(--shadow); }
+.rom-card:hover::before { opacity: 1; }
+.rom-card-head { display: flex; align-items: center; gap: 10px; }
+.rom-card .rom-name { flex: 1; }
+.rom-card .rom-meta { align-items: flex-start; text-align: left; }
+.rom-card .rom-hash-row { justify-content: flex-start; }
+.rom-size { font-size: 12px; color: var(--text-dim); }
+.rom-card-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.rom-card-foot .spacer { flex: 1; }
 .rom-item {
   display: flex; align-items: center; gap: 14px;
   background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;
@@ -302,6 +317,7 @@ body.modal-open { overflow: hidden; }
 @media (max-width: 640px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .grid { grid-template-columns: 1fr; }
+  .roms-grid { grid-template-columns: 1fr; }
   .section-tools { margin-left: 0; width: 100%; }
   .search-input { flex: 1; width: auto; min-width: 0; }
 }

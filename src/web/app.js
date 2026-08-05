@@ -7,9 +7,15 @@ const MAX_MODS_INLINE = 3;
 let allPorts = [];
 let searchQuery = "";
 let viewMode = "cards";
+let romsViewMode = "cards";
 let modsModalPort = null;
 try {
   viewMode = localStorage.getItem("brisa-ports-view") === "list" ? "list" : "cards";
+} catch {
+  /* localStorage may be unavailable */
+}
+try {
+  romsViewMode = localStorage.getItem("brisa-roms-view") === "list" ? "list" : "cards";
 } catch {
   /* localStorage may be unavailable */
 }
@@ -27,6 +33,18 @@ const el = (tag, cls, text) => {
 
 const { t, setLocale, locale, onLocaleChange, localeLabel, availableLocales, ready: i18nReady } = window.__i18n;
 
+/** True si el botón de vista pertenece al toggle de ROMs. */
+function viewBtnIsRoms(btn) {
+  return btn.closest(".view-toggle")?.id === "roms-view-toggle";
+}
+
+/** Sincroniza la clase .active de ambos toggles con el modo actual. */
+function syncViewActive() {
+  $$(".view-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.view === (viewBtnIsRoms(btn) ? romsViewMode : viewMode));
+  });
+}
+
 /** Re-translate all static UI elements on locale change. */
 function updateStaticText() {
   document.title = t("brand.title");
@@ -43,9 +61,13 @@ function updateStaticText() {
   $("#ports-title").textContent = t("ports.title");
   $("#ports-search").placeholder = t("ports.searchPlaceholder");
   $$(".view-btn").forEach((btn) => {
-    btn.title = btn.dataset.view === "list" ? t("ports.viewList") : t("ports.viewCards");
-    btn.classList.toggle("active", btn.dataset.view === viewMode);
+    const isRoms = viewBtnIsRoms(btn);
+    btn.title =
+      btn.dataset.view === "list"
+        ? t(isRoms ? "roms.viewList" : "ports.viewList")
+        : t(isRoms ? "roms.viewCards" : "ports.viewCards");
   });
+  syncViewActive();
   $("#mods-modal-close").title = t("mod.close");
   $("#roms-title").textContent = t("roms.title");
 
@@ -222,23 +244,22 @@ function portCard(p) {
     card.appendChild(romLine);
   }
 
-  // Mods — capped at MAX_MODS_INLINE chips; "Abrir mods" opens a modal with all of them
+  // Mods — chips capped at MAX_MODS_INLINE; "Añadir mods" opens the port's mods folder
+  const modsRow = el("div", "mod-row");
   if (p.mods.length > 0) {
-    const row = el("div", "mod-row");
     const visible = p.mods.length > MAX_MODS_INLINE ? p.mods.slice(0, MAX_MODS_INLINE) : p.mods;
-    for (const mod of visible) row.appendChild(modChip(p, mod));
+    for (const mod of visible) modsRow.appendChild(modChip(p, mod));
     if (p.mods.length > MAX_MODS_INLINE) {
       const openBtn = el("button", "btn ghost sm mods-open-btn", t("mod.openAll", p.mods.length));
       openBtn.addEventListener("click", () => openModsModal(p));
-      row.appendChild(openBtn);
+      modsRow.appendChild(openBtn);
     }
-    card.appendChild(row);
-  } else if (p.installed) {
-    const hint = el("div", "mods-empty");
-    hint.appendChild(document.createTextNode(`${t("mod.empty")}: `));
-    hint.appendChild(el("code", "", p.modsRoot));
-    card.appendChild(hint);
   }
+  const addModsBtn = el("button", "btn ghost sm mods-add-btn", t("mod.addMods"));
+  addModsBtn.title = t("mod.addModsHint", p.modsRoot);
+  addModsBtn.addEventListener("click", () => openPortModsFolder(p));
+  modsRow.appendChild(addModsBtn);
+  card.appendChild(modsRow);
 
   // Actions
   const actions = el("div", "port-actions");
@@ -308,8 +329,14 @@ function closeModsModal() {
   document.body.classList.remove("modal-open");
 }
 
+/** Abre la carpeta central de mods del port (MODS/<gameDir>) en el gestor de archivos. */
+function openPortModsFolder(p) {
+  api("/api/open-mods-folder", { id: p.manifest.id }).catch((e) => toast(e.message, "error"));
+}
+
 function renderRoms(scan) {
   const list = $("#roms-list");
+  list.classList.toggle("list", romsViewMode === "list");
   list.innerHTML = "";
   if (scan.roms.length === 0) {
     list.appendChild(el("div", "loading", t("roms.empty")));
@@ -321,27 +348,58 @@ function renderRoms(scan) {
     byName[mm.rom.path] = multi ? `${mm.manifest.name} · ${mm.requirement.name}` : mm.manifest.name;
   }
   for (const r of scan.roms) {
-    const item = el("div", "rom-item");
-    item.appendChild(el("div", "rom-icon", "💾"));
-    const name = el("div", "rom-name", r.name);
-    item.appendChild(name);
-    const meta = el("div", "rom-meta");
-    const hashRow = el("div", "rom-hash-row");
-    hashRow.appendChild(el("span", "rom-hash", `sha1 ${r.sha1.slice(0, 16)}…`));
-    const copyBtn = el("button", "copy-btn", "⧉");
-    copyBtn.title = t("roms.copyHash");
-    copyBtn.addEventListener("click", () => copyHash(r.sha1));
-    hashRow.appendChild(copyBtn);
-    meta.appendChild(hashRow);
-    meta.appendChild(el("div", "", fmtSize(r.size)));
-    if (byName[r.path]) meta.appendChild(el("div", "badge rom-ok", byName[r.path]));
-    const del = el("button", "copy-btn del-btn", "🗑");
-    del.title = t("roms.delete");
-    del.addEventListener("click", () => deleteRom(r));
-    meta.appendChild(del);
-    item.appendChild(meta);
-    list.appendChild(item);
+    list.appendChild(romsViewMode === "cards" ? romCard(r, byName[r.path]) : romListItem(r, byName[r.path]));
   }
+}
+
+function romHashRow(r) {
+  const hashRow = el("div", "rom-hash-row");
+  hashRow.appendChild(el("span", "rom-hash", `sha1 ${r.sha1.slice(0, 16)}…`));
+  const copyBtn = el("button", "copy-btn", "⧉");
+  copyBtn.title = t("roms.copyHash");
+  copyBtn.addEventListener("click", () => copyHash(r.sha1));
+  hashRow.appendChild(copyBtn);
+  return hashRow;
+}
+
+function romDeleteBtn(r) {
+  const del = el("button", "copy-btn del-btn", "🗑");
+  del.title = t("roms.delete");
+  del.addEventListener("click", () => deleteRom(r));
+  return del;
+}
+
+/** Vista de tarjetas: icono, nombre, hash, tamaño y acciones. */
+function romCard(r, matchedBy) {
+  const card = el("div", "rom-card");
+  const head = el("div", "rom-card-head");
+  head.appendChild(el("div", "rom-icon", "💾"));
+  head.appendChild(el("div", "rom-name", r.name));
+  card.appendChild(head);
+  const meta = el("div", "rom-meta");
+  meta.appendChild(romHashRow(r));
+  meta.appendChild(el("div", "rom-size", fmtSize(r.size)));
+  card.appendChild(meta);
+  const foot = el("div", "rom-card-foot");
+  if (matchedBy) foot.appendChild(el("div", "badge rom-ok", matchedBy));
+  foot.appendChild(el("div", "spacer"));
+  foot.appendChild(romDeleteBtn(r));
+  card.appendChild(foot);
+  return card;
+}
+
+/** Vista de lista: la fila compacta de siempre. */
+function romListItem(r, matchedBy) {
+  const item = el("div", "rom-item");
+  item.appendChild(el("div", "rom-icon", "💾"));
+  item.appendChild(el("div", "rom-name", r.name));
+  const meta = el("div", "rom-meta");
+  meta.appendChild(romHashRow(r));
+  meta.appendChild(el("div", "", fmtSize(r.size)));
+  if (matchedBy) meta.appendChild(el("div", "badge rom-ok", matchedBy));
+  meta.appendChild(romDeleteBtn(r));
+  item.appendChild(meta);
+  return item;
 }
 
 // ── ROMs: añadir, borrar, abrir carpeta ──
@@ -608,16 +666,29 @@ function initPortsTools() {
     searchQuery = search.value.trim();
     renderPorts();
   });
-  $$(".view-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      viewMode = btn.dataset.view;
-      try {
-        localStorage.setItem("brisa-ports-view", viewMode);
-      } catch {
-        /* ignore */
-      }
-      $$(".view-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === viewMode));
-      renderPorts();
+}
+
+/** Toggle tarjetas/lista para ports y ROMs (persistido en localStorage). */
+function initViewToggles() {
+  $$(".view-toggle").forEach((toggle) => {
+    const isRoms = toggle.id === "roms-view-toggle";
+    toggle.querySelectorAll(".view-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.dataset.view;
+        if (isRoms) romsViewMode = mode;
+        else viewMode = mode;
+        try {
+          localStorage.setItem(isRoms ? "brisa-roms-view" : "brisa-ports-view", mode);
+        } catch {
+          /* ignore */
+        }
+        syncViewActive();
+        if (isRoms) {
+          if (state) renderRoms(state.scan);
+        } else {
+          renderPorts();
+        }
+      });
     });
   });
 }
@@ -636,6 +707,7 @@ async function init() {
   await i18nReady();
   initLocaleSwitcher();
   initPortsTools();
+  initViewToggles();
   initModsModal();
   initDropZone();
   initRomPicker();

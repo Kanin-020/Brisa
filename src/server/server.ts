@@ -177,6 +177,18 @@ export function startServer(
     }
   });
 
+  route("POST", /^\/api\/open-mods-folder$/, async (_req, res, body) => {
+    const id = (body as { id?: string })?.id;
+    if (!id) return sendJson(res, 400, { error: "missing id" });
+    if (!app.manifest(id)) return sendJson(res, 404, { error: "port not found" });
+    try {
+      const ok = await app.openPortModsFolder(id);
+      sendJson(res, 200, { ok });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
   // Exporta todos los manifiestos como un ZIP con un <id>.json por port
   // (descomprimible directamente sobre la carpeta manifests/).
   route("GET", /^\/api\/manifests\/export$/, async (_req, res) => {

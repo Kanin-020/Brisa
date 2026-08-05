@@ -60,9 +60,13 @@
             <button id="btn-add-roms" class="btn ghost sm" title="">＋</button>
             <button id="btn-open-folder" class="btn ghost sm" title="">🗀</button>
             <input id="rom-file-input" type="file" multiple hidden />
+            <div class="view-toggle" id="roms-view-toggle">
+              <button class="view-btn active" data-view="cards" title="Vista tarjetas">▦</button>
+              <button class="view-btn" data-view="list" title="Vista lista">☰</button>
+            </div>
           </div>
         </div>
-        <div id="roms-list" class="roms-list"><div class="loading" id="loading-roms">Cargando…</div></div>
+        <div id="roms-list" class="roms-grid"><div class="loading" id="loading-roms">Cargando…</div></div>
       </section>
     </main>
 

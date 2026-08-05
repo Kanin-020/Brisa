@@ -21,6 +21,8 @@
   "roms.byHash": "by hash",
   "roms.byGameId": "by game ID",
   "roms.byName": "by name",
+  "roms.viewCards": "Card view",
+  "roms.viewList": "List view",
   "roms.copyHash": "Copy hash",
   "roms.delete": "Delete ROM",
   "roms.deleteConfirm": "Delete \"{0}\" from the ROMs folder? This cannot be undone.",
@@ -39,8 +41,9 @@
 
   "mod.unlink": "Unlink",
   "mod.link": "Link",
-  "mod.empty": "No mods. Drop your mods in",
   "mod.openAll": "Open mods ({0})",
+  "mod.addMods": "＋ Add mods",
+  "mod.addModsHint": "Open mods folder: {0}",
   "mod.modalTitle": "Mods of {0}",
   "mod.close": "Close",
 

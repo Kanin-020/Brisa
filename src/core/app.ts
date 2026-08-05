@@ -379,6 +379,21 @@ export class App {
     else if (dir === "mods") target = this.cfg.modsDir;
     else if (dir === "manifests") target = this.cfg.manifestsDir;
     else if (dir === "ports") target = this.cfg.portsDir;
+    return this.openPath(target);
+  }
+
+  /**
+   * Open the central mods folder of a port (MODS/<gameDir>), creating it
+   * if it does not exist yet.
+   */
+  async openPortModsFolder(id: string): Promise<boolean> {
+    const m = this.manifest(id);
+    if (!m) throw new Error(`Port not found: ${id}`);
+    return this.openPath(centralModsRoot(this.cfg, m));
+  }
+
+  /** Opens an arbitrary path in the OS file manager (Electron or platform opener). */
+  private async openPath(target: string): Promise<boolean> {
     fs.mkdirSync(target, { recursive: true });
 
     // Desktop (proceso principal de Electron): usar shell.openPath.
