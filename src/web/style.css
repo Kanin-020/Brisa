@@ -97,9 +97,32 @@ body {
 
 /* Sections */
 .section { margin-bottom: 36px; }
-.section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
 .section-head h2 { font-size: 18px; }
 .hint { color: var(--text-dim); font-size: 12px; }
+.section-tools { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+/* Search input */
+.search-input {
+  background: var(--bg-soft); border: 1px solid var(--border); color: var(--text);
+  font-size: 13px; padding: 7px 12px; border-radius: 10px; outline: none; width: 230px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.search-input::placeholder { color: var(--text-dim); }
+.search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15); }
+
+/* View toggle (cards / list) */
+.view-toggle {
+  display: flex; gap: 2px; background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: 10px; padding: 3px;
+}
+.view-btn {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 13px; line-height: 1; padding: 5px 9px; border-radius: 7px;
+  transition: all 0.15s ease;
+}
+.view-btn:hover { color: var(--text); }
+.view-btn.active { background: var(--accent-2); color: #fff; }
 
 /* Port cards */
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
@@ -118,6 +141,17 @@ body {
 .port-card:hover::before { opacity: 1; }
 .port-card.installed { border-color: rgba(63, 185, 80, 0.45); }
 .port-card.installed::before { opacity: 1; }
+
+/* List view for ports */
+.grid.list { grid-template-columns: 1fr; }
+.grid.list .port-card {
+  flex-direction: row; flex-wrap: wrap; align-items: center;
+  row-gap: 8px; column-gap: 18px;
+}
+.grid.list .port-top { flex: 0 0 240px; }
+.grid.list .port-desc { flex: 1 1 280px; min-height: 0; }
+.grid.list .mod-row { flex: 1 1 260px; }
+.grid.list .port-actions { flex: 1 1 100%; margin-top: 2px; }
 
 .port-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .port-title { font-size: 16px; font-weight: 700; }
@@ -147,6 +181,36 @@ body {
   background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 0;
 }
 .mod-chip button:hover { color: var(--text); }
+.mods-open-btn { font-size: 11px; padding: 4px 10px; }
+.mod-row-modal { flex-wrap: wrap; }
+
+/* Mods modal */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px);
+  display: grid; place-items: center; padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+}
+.modal-overlay.show { opacity: 1; pointer-events: auto; }
+.modal {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); width: min(600px, 100%);
+  max-height: 80vh; display: flex; flex-direction: column;
+  transform: translateY(10px) scale(0.98); transition: transform 0.2s ease;
+}
+.modal-overlay.show .modal { transform: none; }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--border);
+}
+.modal-head h3 { font-size: 15px; font-weight: 700; }
+.modal-close {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 14px; padding: 5px 9px; border-radius: 8px; transition: all 0.15s ease;
+}
+.modal-close:hover { color: var(--text); background: var(--card-hover); }
+.modal-body { padding: 16px 18px; overflow-y: auto; }
+body.modal-open { overflow: hidden; }
 
 .port-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .port-actions .spacer { flex: 1; }
@@ -167,7 +231,15 @@ body {
 .rom-icon { font-size: 22px; }
 .rom-name { font-weight: 600; font-size: 14px; flex: 1; word-break: break-all; }
 .rom-meta { color: var(--text-dim); font-size: 12px; text-align: right; }
+.rom-hash-row { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
 .rom-hash { font-family: ui-monospace, monospace; font-size: 11px; color: var(--text-dim); }
+.copy-btn {
+  background: none; border: none; cursor: pointer; color: var(--text-dim);
+  font-size: 12px; line-height: 1; padding: 3px 6px; border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.copy-btn:hover { color: var(--accent); background: rgba(88, 166, 255, 0.12); transform: scale(1.1); }
+.copy-btn:active { transform: scale(0.95); }
 
 .loading { color: var(--text-dim); padding: 20px; text-align: center; }
 
@@ -189,4 +261,6 @@ body {
 @media (max-width: 640px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
   .grid { grid-template-columns: 1fr; }
+  .section-tools { margin-left: 0; width: 100%; }
+  .search-input { flex: 1; width: auto; min-width: 0; }
 }

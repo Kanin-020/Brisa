@@ -38,6 +38,13 @@
         <div class="section-head">
           <h2 id="ports-title">📦 Ports</h2>
           <span id="ports-hint" class="hint"></span>
+          <div class="section-tools">
+            <input id="ports-search" class="search-input" type="search" placeholder="Buscar…" autocomplete="off" spellcheck="false" />
+            <div class="view-toggle" id="ports-view-toggle">
+              <button class="view-btn active" data-view="cards" title="Vista tarjetas">▦</button>
+              <button class="view-btn" data-view="list" title="Vista lista">☰</button>
+            </div>
+          </div>
         </div>
         <div id="ports-grid" class="grid"><div class="loading" id="loading-ports">Cargando…</div></div>
       </section>
@@ -54,6 +61,16 @@
     <footer class="footer">
       <span id="footer-text">Hecho con ♥</span> · <span id="footer-legal">Los ROMs deben obtenerse legalmente</span> · <span id="cfg-roms-dir"></span>
     </footer>
+  </div>
+
+  <div id="mods-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-head">
+        <h3 id="mods-modal-title"></h3>
+        <button id="mods-modal-close" class="modal-close" title="Cerrar">✕</button>
+      </div>
+      <div id="mods-modal-body" class="modal-body"></div>
+    </div>
   </div>
 
   <div id="toast" class="toast"></div>

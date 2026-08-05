@@ -10,6 +10,10 @@
 
   "ports.title": "📦 Ports",
   "ports.hint": "{0} ports in registry",
+  "ports.searchPlaceholder": "Search game or port…",
+  "ports.empty": "No ports found",
+  "ports.viewCards": "Card view",
+  "ports.viewList": "List view",
 
   "roms.title": "💾 Detected ROMs",
   "roms.hint": "{0} ROM↔requirement matches",
@@ -17,6 +21,7 @@
   "roms.byHash": "by hash",
   "roms.byGameId": "by game ID",
   "roms.byName": "by name",
+  "roms.copyHash": "Copy hash",
 
   "port.install": "Install",
   "port.installNoRom": "Install (no ROM)",
@@ -29,12 +34,16 @@
 
   "mod.unlink": "Unlink",
   "mod.link": "Link",
+  "mod.openAll": "Open mods ({0})",
+  "mod.modalTitle": "Mods of {0}",
+  "mod.close": "Close",
 
   "toast.installing": "Installing {0}…",
   "toast.installed": "✓ {0} v{1} installed",
   "toast.uninstalled": "✓ {0} uninstalled",
   "toast.updated": "✓ {0} → {1}",
   "toast.launching": "Launching {0}…",
+  "toast.copied": "✓ Hash copied to clipboard",
   "toast.modUnlinked": "Mod \"{0}\" unlinked",
   "toast.modLinked": "Mod \"{0}\" linked",
 

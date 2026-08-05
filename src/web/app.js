@@ -2,6 +2,18 @@
 let state = null;
 let busy = new Set();
 
+const MAX_MODS_INLINE = 3;
+
+let allPorts = [];
+let searchQuery = "";
+let viewMode = "cards";
+let modsModalPort = null;
+try {
+  viewMode = localStorage.getItem("brisa-ports-view") === "list" ? "list" : "cards";
+} catch {
+  /* localStorage may be unavailable */
+}
+
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const el = (tag, cls, text) => {
@@ -29,6 +41,12 @@ function updateStaticText() {
   $("#stat-label-updates").textContent = t("stat.updates");
 
   $("#ports-title").textContent = t("ports.title");
+  $("#ports-search").placeholder = t("ports.searchPlaceholder");
+  $$(".view-btn").forEach((btn) => {
+    btn.title = btn.dataset.view === "list" ? t("ports.viewList") : t("ports.viewCards");
+    btn.classList.toggle("active", btn.dataset.view === viewMode);
+  });
+  $("#mods-modal-close").title = t("mod.close");
   $("#roms-title").textContent = t("roms.title");
 
   $("#footer-text").textContent = t("footer.madeWith");
@@ -120,18 +138,31 @@ function render() {
   $("#ports-hint").textContent = t("ports.hint", ports.length);
   $("#roms-hint").textContent = t("roms.hint", scan.matches.length);
 
-  renderPorts(ports);
+  allPorts = ports;
+  renderPorts();
   renderRoms(scan);
+
+  // Re-open the mods modal if it was open (e.g. after a re-render/refresh)
+  if (modsModalPort) {
+    const p = allPorts.find((x) => x.manifest.id === modsModalPort);
+    if (p) openModsModal(p);
+    else closeModsModal();
+  }
 }
 
-function renderPorts(ports) {
+function renderPorts() {
   const grid = $("#ports-grid");
+  grid.classList.toggle("list", viewMode === "list");
   grid.innerHTML = "";
-  if (ports.length === 0) {
-    grid.appendChild(el("div", "loading", t("loading")));
+  const query = searchQuery.toLowerCase();
+  const filtered = query
+    ? allPorts.filter((p) => `${p.manifest.name} ${p.manifest.game}`.toLowerCase().includes(query))
+    : allPorts;
+  if (filtered.length === 0) {
+    grid.appendChild(el("div", "loading", query ? t("ports.empty") : t("loading")));
     return;
   }
-  for (const p of ports) {
+  for (const p of filtered) {
     grid.appendChild(portCard(p));
   }
 }
@@ -175,19 +206,15 @@ function portCard(p) {
     card.appendChild(romLine);
   }
 
-  // Mods
+  // Mods — capped at MAX_MODS_INLINE chips; "Abrir mods" opens a modal with all of them
   if (p.mods.length > 0) {
     const row = el("div", "mod-row");
-    for (const mod of p.mods) {
-      const linked = p.linkedMods.includes(mod);
-      const chip = el("span", "mod-chip");
-      chip.appendChild(el("span", `dot ${linked ? "linked" : "unlinked"}`));
-      chip.appendChild(document.createTextNode(mod));
-      const btn = el("button", "", linked ? "✕" : "＋");
-      btn.title = linked ? t("mod.unlink") : t("mod.link");
-      btn.addEventListener("click", () => toggleMod(p, mod, linked));
-      chip.appendChild(btn);
-      row.appendChild(chip);
+    const visible = p.mods.length > MAX_MODS_INLINE ? p.mods.slice(0, MAX_MODS_INLINE) : p.mods;
+    for (const mod of visible) row.appendChild(modChip(p, mod));
+    if (p.mods.length > MAX_MODS_INLINE) {
+      const openBtn = el("button", "btn ghost sm mods-open-btn", t("mod.openAll", p.mods.length));
+      openBtn.addEventListener("click", () => openModsModal(p));
+      row.appendChild(openBtn);
     }
     card.appendChild(row);
   }
@@ -225,6 +252,36 @@ function portCard(p) {
   return card;
 }
 
+function modChip(p, mod) {
+  const linked = p.linkedMods.includes(mod);
+  const chip = el("span", "mod-chip");
+  chip.appendChild(el("span", `dot ${linked ? "linked" : "unlinked"}`));
+  chip.appendChild(document.createTextNode(mod));
+  const btn = el("button", "", linked ? "✕" : "＋");
+  btn.title = linked ? t("mod.unlink") : t("mod.link");
+  btn.addEventListener("click", () => toggleMod(p, mod, linked));
+  chip.appendChild(btn);
+  return chip;
+}
+
+function openModsModal(p) {
+  modsModalPort = p.manifest.id;
+  $("#mods-modal-title").textContent = t("mod.modalTitle", p.manifest.name);
+  const body = $("#mods-modal-body");
+  body.innerHTML = "";
+  const row = el("div", "mod-row mod-row-modal");
+  for (const mod of p.mods) row.appendChild(modChip(p, mod));
+  body.appendChild(row);
+  $("#mods-modal").classList.add("show");
+  document.body.classList.add("modal-open");
+}
+
+function closeModsModal() {
+  modsModalPort = null;
+  $("#mods-modal").classList.remove("show");
+  document.body.classList.remove("modal-open");
+}
+
 function renderRoms(scan) {
   const list = $("#roms-list");
   list.innerHTML = "";
@@ -243,7 +300,13 @@ function renderRoms(scan) {
     const name = el("div", "rom-name", r.name);
     item.appendChild(name);
     const meta = el("div", "rom-meta");
-    meta.appendChild(el("div", "rom-hash", `sha1 ${r.sha1.slice(0, 16)}…`));
+    const hashRow = el("div", "rom-hash-row");
+    hashRow.appendChild(el("span", "rom-hash", `sha1 ${r.sha1.slice(0, 16)}…`));
+    const copyBtn = el("button", "copy-btn", "⧉");
+    copyBtn.title = t("roms.copyHash");
+    copyBtn.addEventListener("click", () => copyHash(r.sha1));
+    hashRow.appendChild(copyBtn);
+    meta.appendChild(hashRow);
     meta.appendChild(el("div", "", fmtSize(r.size)));
     if (byName[r.path]) meta.appendChild(el("div", "badge rom-ok", byName[r.path]));
     item.appendChild(meta);
@@ -255,6 +318,31 @@ function fmtSize(n) {
   if (n < 1024) return `${n} B`;
   if (n < 1048576) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1048576).toFixed(1)} MB`;
+}
+
+function copyHash(hash) {
+  const done = () => toast(t("toast.copied"), "ok");
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(hash).then(done).catch(() => legacyCopy(hash, done));
+  } else {
+    legacyCopy(hash, done);
+  }
+}
+
+function legacyCopy(text, done) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } catch {
+    /* ignore */
+  }
+  document.body.removeChild(ta);
+  done();
 }
 
 async function busyRun(id, fn) {
@@ -306,9 +394,41 @@ function toggleMod(p, mod, linked) {
 
 // ── Init ──
 
+function initPortsTools() {
+  const search = $("#ports-search");
+  search.addEventListener("input", () => {
+    searchQuery = search.value.trim();
+    renderPorts();
+  });
+  $$(".view-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      viewMode = btn.dataset.view;
+      try {
+        localStorage.setItem("brisa-ports-view", viewMode);
+      } catch {
+        /* ignore */
+      }
+      $$(".view-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === viewMode));
+      renderPorts();
+    });
+  });
+}
+
+function initModsModal() {
+  $("#mods-modal-close").addEventListener("click", closeModsModal);
+  $("#mods-modal").addEventListener("click", (e) => {
+    if (e.target === $("#mods-modal")) closeModsModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && $("#mods-modal").classList.contains("show")) closeModsModal();
+  });
+}
+
 async function init() {
   await i18nReady();
   initLocaleSwitcher();
+  initPortsTools();
+  initModsModal();
   $("#btn-refresh").addEventListener("click", () => load());
   load();
   setInterval(() => {
