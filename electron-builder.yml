@@ -1,6 +1,6 @@
 appId: io.brisa.desktop
 productName: Brisa
-artifactName: Brisa-${arch}.${ext}
+artifactName: Brisa-${os}-${arch}.${ext}
 
 directories:
   output: release
@@ -14,6 +14,10 @@ extraResources:
     to: manifests
   - from: release/gui/cli-entry.cjs
     to: cli-entry.cjs
+  - from: src/web/icon.png
+    to: icon.png
+  - from: src/web/icon.icon
+    to: icon.ico
 
 linux:
   target:
@@ -25,4 +29,4 @@ linux:
 win:
   target:
     - zip
-  icon: src/web/icon.png
+  icon: src/web/icon.ico

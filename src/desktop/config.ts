@@ -10,7 +10,7 @@ export const config: Readonly<BrowserWindowConstructorOptions> = {
   show: false,
   autoHideMenuBar: true,
   icon: app.isPackaged
-    ? undefined
+    ? path.join(process.resourcesPath, "icon.png")
     : path.join(app.getAppPath(), "src", "web", "icon.png"),
   webPreferences: {
     contextIsolation: true,
