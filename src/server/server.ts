@@ -1,6 +1,7 @@
 import * as http from "node:http";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import AdmZip from "adm-zip";
 import { App } from "../core/app";
 import { projectRoot } from "../core/config";
 import type { RomFile } from "../core/scanner";
@@ -176,9 +177,25 @@ export function startServer(
     }
   });
 
+  // Exporta todos los manifiestos como un ZIP con un <id>.json por port
+  // (descomprimible directamente sobre la carpeta manifests/).
   route("GET", /^\/api\/manifests\/export$/, async (_req, res) => {
     try {
-      sendJson(res, 200, { manifests: app.exportManifests() });
+      const manifests = app.exportManifests();
+      const zip = new AdmZip();
+      for (const m of manifests) {
+        // Sanea el id igual que en la importación para evitar nombres de
+        // entrada inseguros o no válidos en el ZIP.
+        const safeId = m.id.replace(/[^A-Za-z0-9._-]/g, "_");
+        zip.addFile(`${safeId}.json`, Buffer.from(JSON.stringify(m, null, 2) + "\n", "utf8"));
+      }
+      const buf = zip.toBuffer();
+      res.writeHead(200, {
+        "Content-Type": "application/zip",
+        "Content-Disposition": 'attachment; filename="brisa-manifests.zip"',
+        "X-Manifest-Count": String(manifests.length),
+      });
+      res.end(buf);
     } catch (e) {
       sendJson(res, 500, { error: (e as Error).message });
     }

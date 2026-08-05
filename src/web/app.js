@@ -447,17 +447,28 @@ async function deleteRom(rom) {
 
 async function exportManifests() {
   try {
-    const data = await api("/api/manifests/export");
-    const blob = new Blob([JSON.stringify(data.manifests, null, 2)], { type: "application/json" });
+    const res = await fetch("/api/manifests/export");
+    if (!res.ok) {
+      let msg = `HTTP ${res.status}`;
+      try {
+        const data = await res.json();
+        msg = data.error || msg;
+      } catch {
+        /* ignore */
+      }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const count = Number(res.headers.get("X-Manifest-Count") ?? 0);
     const url = URL.createObjectURL(blob);
     const a = el("a");
     a.href = url;
-    a.download = "brisa-manifests.json";
+    a.download = "brisa-manifests.zip";
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    toast(t("toast.manifestsExported", data.manifests.length), "ok");
+    toast(t("toast.manifestsExported", count), "ok");
   } catch (e) {
     toast(e.message, "error");
   }

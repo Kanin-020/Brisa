@@ -49,7 +49,7 @@
     "toast.romsAdded": "✓ {0} ROMs added",
     "toast.romsSkipped": "⏭ {0} already exist (unchanged)",
     "toast.romDeleted": "✓ {0} deleted",
-    "toast.manifestsExported": "✓ {0} manifests exported",
+    "toast.manifestsExported": "✓ {0} manifests exported (.zip)",
     "toast.manifestsImported": "✓ {0} manifests imported",
     "toast.importError": "Import error",
     "toast.updateAvailable": "⚠ {0}: new version {2} available (installed: {1}). Click to update",

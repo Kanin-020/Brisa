@@ -57,7 +57,7 @@
   "toast.romsAdded": "✓ {0} ROMs añadidos",
   "toast.romsSkipped": "⏭ {0} ya existían (sin cambios)",
   "toast.romDeleted": "✓ {0} eliminado",
-  "toast.manifestsExported": "✓ {0} manifiestos exportados",
+  "toast.manifestsExported": "✓ {0} manifiestos exportados (.zip)",
   "toast.manifestsImported": "✓ {0} manifiestos importados",
   "toast.importError": "Error al importar",
 
