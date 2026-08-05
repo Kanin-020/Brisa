@@ -1,11 +1,16 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+/**
+ * Seeds/copies the bundled manifests (from the AppImage resources) into the
+ * user data dir. Runs on every packaged launch so manifest fixes and new
+ * manifests ship with app updates: bundled files overwrite the existing ones,
+ * while extra user-added manifests are left untouched.
+ */
 export function seedManifests(src: string, root: string): void {
   try {
     const dest = path.join(root, "manifests");
     if (!fs.existsSync(src)) return;
-    if (fs.existsSync(dest) && fs.readdirSync(dest).length > 0) return;
     fs.mkdirSync(dest, { recursive: true });
     fs.cpSync(src, dest, { recursive: true });
   } catch (err) {

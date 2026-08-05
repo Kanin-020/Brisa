@@ -53,6 +53,11 @@
   },
   "mods": {
     "dir": "mods",
-    "gameDir": "dusklight"
+    "gameDir": "dusklight",
+    "linkRoot": {
+      "linux": "~/.local/share/TwilitRealm/Dusklight/texture_replacements",
+      "windows": "%APPDATA%/TwilitRealm/Dusklight/texture_replacements",
+      "macos": "~/Library/Application Support/TwilitRealm/Dusklight/texture_replacements"
+    }
   }
 }

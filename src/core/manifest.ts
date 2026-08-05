@@ -41,6 +41,15 @@ export interface ModsConfig {
   dir: string;
   /** Directory name under the central MODS/ dir (e.g. "soh"). */
   gameDir: string;
+  /**
+   * Optional destination where mods are symlinked, instead of <portDir>/<dir>.
+   * Needed for ports that read user data from the OS data dir (e.g. Dusklight:
+   * ~/.local/share/TwilitRealm/Dusklight/texture_replacements).
+   * A plain string applies to all platforms; an object maps OS family
+   * (linux|windows|macos|android) to a path. Supports "~" (home dir) and
+   * %ENV_VAR% expansion (e.g. %APPDATA%).
+   */
+  linkRoot?: string | Record<string, string>;
 }
 
 export interface Manifest {
@@ -48,7 +57,6 @@ export interface Manifest {
   name: string;
   game: string;
   description: string;
-  website: string;
   /** GitHub "owner/repo". */
   repo: string;
   /** Platform asset key -> asset definition. Keys like "linux-x64". */
