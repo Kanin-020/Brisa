@@ -185,6 +185,13 @@ body {
 .mod-chip button:hover { color: var(--text); }
 .mods-open-btn { font-size: 11px; padding: 4px 10px; }
 .mod-row-modal { flex-wrap: wrap; }
+.mods-empty {
+  font-size: 11px; color: var(--text-dim); line-height: 1.5;
+  padding: 6px 10px; border: 1px dashed var(--border); border-radius: 8px;
+}
+.mods-empty code {
+  font-family: ui-monospace, monospace; color: var(--accent); font-size: 10px;
+}
 
 /* Mods modal */
 .modal-overlay {

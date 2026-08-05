@@ -32,6 +32,7 @@
     "roms.title": "💾 Detected ROMs",
     "roms.copyHash": "Copy hash",
     "port.updateAndPlay": "Update and play",
+    "mod.empty": "No mods. Drop your mods in",
     "mod.openAll": "Open mods ({0})",
     "mod.modalTitle": "Mods of {0}",
     "mod.close": "Close",

@@ -35,6 +35,7 @@
 
   "mod.unlink": "Desenlazar",
   "mod.link": "Enlazar",
+  "mod.empty": "Sin mods. Coloca tus mods en",
   "mod.openAll": "Abrir mods ({0})",
   "mod.modalTitle": "Mods de {0}",
   "mod.close": "Cerrar",

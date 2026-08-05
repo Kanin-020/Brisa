@@ -73,3 +73,28 @@ export function unlinkAllMods(cfg: AppConfig, m: Manifest): void {
 function isInstalledDir(cfg: AppConfig, m: Manifest): boolean {
   return fs.existsSync(portDir(cfg, m.id)) && fs.existsSync(path.join(cfg.stateDir, `${m.id}.json`));
 }
+
+/**
+ * Keeps MODS/<gameDir> folders in sync with the installed ports:
+ * creates the folder for installed ports and removes the empty
+ * folders of uninstalled ones. Folders that contain user mods are
+ * never deleted.
+ */
+export function syncModsFolders(cfg: AppConfig, manifests: Manifest[]): void {
+  for (const m of manifests) {
+    const root = centralModsRoot(cfg, m);
+    if (isInstalledDir(cfg, m)) {
+      fs.mkdirSync(root, { recursive: true });
+    } else if (fs.existsSync(root) && isEmptyDir(root)) {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  }
+}
+
+function isEmptyDir(dir: string): boolean {
+  try {
+    return fs.readdirSync(dir).length === 0;
+  } catch {
+    return false;
+  }
+}

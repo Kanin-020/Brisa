@@ -222,6 +222,11 @@ function portCard(p) {
       row.appendChild(openBtn);
     }
     card.appendChild(row);
+  } else if (p.installed) {
+    const hint = el("div", "mods-empty");
+    hint.appendChild(document.createTextNode(`${t("mod.empty")}: `));
+    hint.appendChild(el("code", "", p.modsRoot));
+    card.appendChild(hint);
   }
 
   // Actions

@@ -1,7 +1,7 @@
 import { loadConfig, ensureDirs, type AppConfig } from "./config";
 import { isInstalled, installPort, launchExecutable, uninstallPort, resolveAssetForPlatform } from "./installer";
 import { listManifests, loadManifest, type Manifest } from "./manifest";
-import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unlinkAllMods, isModLinked } from "./mods";
+import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unlinkAllMods, isModLinked, syncModsFolders } from "./mods";
 import { scanRoms, type RomMatch, type ScanResult, type RomFile } from "./scanner";
 import { readState, listStates } from "./state";
 import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
@@ -59,6 +59,8 @@ export class App {
   }
 
   async status(): Promise<{ scan: ScanResult; ports: PortStatus[] }> {
+    const manifests = this.manifests();
+    syncModsFolders(this.cfg, manifests);
     const scan = await this.scan();
     const reqMatches = new Map<string, Map<string, RomMatch>>();
     for (const mm of scan.matches) {
@@ -70,7 +72,7 @@ export class App {
       byReq.set(mm.requirement.id, mm);
     }
     const ports: PortStatus[] = [];
-    for (const m of this.manifests()) {
+    for (const m of manifests) {
       const state = readState(this.cfg, m.id);
       const byReq = reqMatches.get(m.id) ?? new Map<string, RomMatch>();
       const roms: RomSlotStatus[] = m.roms.map((req) => {
@@ -110,13 +112,16 @@ export class App {
   ) {
     const m = this.manifest(id);
     if (!m) throw new Error(`Port not found: ${id}`);
-    return installPort(this.cfg, m, { ...opts, onProgress });
+    const state = await installPort(this.cfg, m, { ...opts, onProgress });
+    syncModsFolders(this.cfg, this.manifests());
+    return state;
   }
 
   uninstall(id: string) {
     const m = this.manifest(id);
     if (m) unlinkAllMods(this.cfg, m);
     uninstallPort(this.cfg, id);
+    syncModsFolders(this.cfg, this.manifests());
   }
 
   launch(id: string): string | null {
