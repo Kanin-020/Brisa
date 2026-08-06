@@ -178,7 +178,7 @@ export async function installPort(
   };
   writeState(cfg, state);
   // Launcher de Steam: se crea/actualiza con el port (también tras un update).
-  writeLauncher(cfg, m, state);
+  writeLauncher(cfg, state);
   return state;
 }
 

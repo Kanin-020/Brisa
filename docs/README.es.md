@@ -58,6 +58,7 @@ Los archivos se guardan en la **carpeta de usuario**: `Carpeta de Usuario/Brisa`
 | `roms/` | Todos tus ROMs (un solo directorio). |
 | `mods/` | Mods semicentralizados por juego. |
 | `ports/` | Ports instalados (binarios + ejecutables). |
+| `image/` | La AppImage de la propia Brisa (copia que se hace en su primera ejecución) + el ayudante `image/imagen` que usan los launchers de Steam. |
 | `manifests/` | Manifiestos de ports (local + `remote/`). |
 | `cache/` | Hashes, descargas y estado de instalación. |
 | `config.json` | Configuración (rutas, `registryUrl`, puerto). |
@@ -76,6 +77,7 @@ brisa/
 │       ├── soh.appimage
 │       ├── oot.z64    ← symlink a roms/oot.z64
 │       └── mods/      ← symlinks hacia mods/soh/*
+├── image/             ← AppImage de Brisa (copia) + ayudante image/imagen
 ├── manifests/         ← manifiestos de ports (local + remote/)
 ├── cache/             ← hashes, descargas, estado de instalación
 └── config.json        ← configuración (rutas, registryUrl, puerto)
@@ -121,7 +123,7 @@ El CLI está disponible de dos formas:
 | `brisa install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
 | `brisa uninstall <id>` | Elimina el port y su estado. |
 | `brisa launch <id | ROM> [--wait]` | Ejecuta un port por id (ej. `soh`) o directamente un archivo ROM (ruta): detecta el port automáticamente. `--wait` espera a que el juego termine (útil desde Steam). |
-| `brisa srm-config [--out <dir>]` | Genera un launcher `.sh` por port instalado (cd al dir del port + ejecutar su imagen) para añadirlos a Steam como juegos no-Steam. |
+| `brisa srm-config [--out <dir>]` | Genera un launcher `.sh` por port instalado (que usa el CLI de Brisa: `update` + `launch` del port) para añadirlos a Steam como juegos no-Steam. |
 | `brisa update [id] [--check]` | Actualiza ports instalados a la última release. |
 | `brisa self-update [--check]` | Actualiza la propia app Brisa (AppImage de Linux): descarga la última release, la instala y se relanza sola. |
 | `brisa mods <id>` | Lista mods centralizados de un port. |
@@ -177,16 +179,21 @@ launchers/
 └── …
 ```
 
-Cada launcher hace exactamente dos cosas: `cd` a la carpeta del port y ejecutar su imagen directamente:
+Cada launcher limpia las variables de Steam y ejecuta el **CLI de la propia Brisa** (su AppImage copiada en `image/`) para actualizar y lanzar el port:
 
 ```sh
 unset LD_PRELOAD
 unset STEAM_COMPAT_DATA_PATH
 unset STEAM_COMPAT_CLIENT_INSTALL_PATH
 unset STEAM_RUNTIME
-cd "/home/user/Brisa/ports/soh"
-exec ./soh.appimage
+"/home/user/Brisa/image/Brisa-0.3.3-x86_64.AppImage" update soh || exit 1
+"/home/user/Brisa/image/Brisa-0.3.3-x86_64.AppImage" launch soh --wait || exit 1
 ```
+
+- El launcher referencia **directamente la AppImage de Brisa en `image/`** (el nombre incluye la versión; si falta la copia —p. ej. en desarrollo— se usa el ayudante `image/imagen` como respaldo).
+- **`update <port>`** ejecuta `brisa update <port>`: comprueba en GitHub si el port tiene versión nueva y, si la hay, la descarga e instala antes de jugar.
+- **`launch <port> --wait`** ejecuta `brisa launch <port> --wait`: lanza el juego y mantiene el proceso vivo hasta que cierra, para que Steam lo muestre como «en ejecución».
+- **La AppImage de Brisa se copia a `image/` en su primera ejecución** (solo la AppImage de Linux; el archivo original no se toca, y las copias de versiones anteriores se limpian). Si borras la copia, se recrea la próxima vez que ejecutes Brisa.
 
 > **Por qué importan los `unset`**: cuando Steam lanza un juego, este hereda variables (`LD_PRELOAD`, `STEAM_COMPAT_*`, `STEAM_RUNTIME`) que **crashean los binarios nativos**. Steam no lanza el shortcut vía shell, así que esos `unset` solo pueden vivir en un script — para eso existe el launcher.
 
@@ -194,8 +201,8 @@ exec ./soh.appimage
 
 1. **Steam → Agregar un juego → Agregar un juego no Steam… → Examinar** y elige los `.sh` (`brisa srm-config` ya les da permiso de ejecución).
 2. Steam muestra cada launcher con el título del juego; renómbralo si prefieres.
-3. El port se arranca desde su propia carpeta con su propia imagen, usando el ROM que ya está enlazado ahí (`oot.z64`, `baserom.gba`, …).
-4. Los launchers se **crean automáticamente al instalar un port** (y se borran al desinstalarlo). Si mueves carpetas o cambias manifiestos, vuelve a ejecutar `brisa srm-config` para regenerarlos todos.
+3. Al lanzar, el launcher comprueba/actualiza el port (`update`) y lo arranca (`launch --wait`) con el ROM que ya está enlazado en la carpeta del port (`oot.z64`, `baserom.gba`, …).
+4. Los launchers se **crean automáticamente al instalar un port** (y se borran al desinstalarlo). Si falta alguno de un port instalado (p. ej. borraste la carpeta `launchers/`), se **recrea solo** la próxima vez que ejecutes Brisa; `brisa srm-config` regenera todos desde cero.
 
 > Un launcher por port instalado: si un port soporta varias variantes de ROM (p. ej. SoH base + Master Quest), todas las variantes ejecutan el mismo launcher con el ROM que esté enlazado en la carpeta del port. Usa `brisa launch "<ROM>"` si necesitas una ROM distinta por acceso directo.
 

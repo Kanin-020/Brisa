@@ -1,13 +1,19 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { AppConfig } from "./config";
-import { loadManifest, type Manifest } from "./manifest";
+import { loadManifest } from "./manifest";
 import { listStates, type PortState } from "./state";
+import { appImagePath } from "./version";
 
 /**
  * Launchers .sh para añadir los ports instalados a Steam como juegos
  * no-Steam. Se crean automáticamente al instalar/actualizar un port y se
  * borran al desinstalarlo; `brisa srm-config` los regenera todos.
+ *
+ * Cada launcher limpia las variables de Steam y delega en el CLI de la propia
+ * Brisa (su AppImage copiada en `<raíz>/image/`, invocada a través del
+ * ayudante `image/imagen`): primero `update <port>` (comprueba/actualiza el
+ * port a la última versión) y luego `launch <port> --wait`.
  */
 
 /** Carpeta de launchers, junto al resto de datos de Brisa (roms/, mods/, …). */
@@ -15,19 +21,52 @@ export function launchersDir(cfg: AppConfig): string {
   return path.join(cfg.root, "launchers");
 }
 
+/** Carpeta image/: AppImage de la propia Brisa (copia) + ayudante `imagen`. */
+export function imagesDir(cfg: AppConfig): string {
+  return path.join(cfg.root, "image");
+}
+
 /** Nombre de archivo seguro a partir del título del juego (quita ':' y otros caracteres inválidos). */
 export function launcherTitle(game: string): string {
-  const t = game.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
+  const t = game.replace(/[\\\\/:*?\"<>|]/g, " ").replace(/\s+/g, " ").trim();
   return t || "Port";
 }
 
-/** Encierra una ruta en comillas simples de shell (escapa ' como '\'' para que nada se expanda). */
+/** Encierra una ruta en comillas simples de shell (escapa ' como '\\'' para que nada se expanda). */
 export function shQuote(s: string): string {
-  return `'${s.replace(/'/g, `'\\''`)}'`;
+  return `'${s.replace(/'/g, `'\\\\''`)}'`;
 }
 
-/** Script .sh del launcher: entra al dir del port y ejecuta su imagen directamente. */
-export function launcherScript(portRoot: string, exe: string, portId: string): string {
+/**
+ * Ruta de la AppImage de la propia Brisa copiada en image/ (la más reciente;
+ * el nombre cambia con la versión), o null si aún no hay copia.
+ */
+export function selfImagePath(cfg: AppConfig): string | null {
+  try {
+    const dir = imagesDir(cfg);
+    if (!fs.existsSync(dir)) return null;
+    const files = fs
+      .readdirSync(dir)
+      .filter((f) => /^Brisa-.*\.AppImage$/i.test(f))
+      .map((f) => path.join(dir, f))
+      .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+    return files[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Script .sh del launcher: limpia las variables de Steam y ejecuta el CLI de
+ * la propia Brisa (su AppImage en image/) con `update <port>` y
+ * `launch <port> --wait`. Si aún no hay copia del AppImage (modo desarrollo),
+ * cae al ayudante `image/imagen`.
+ */
+export function launcherScript(cfg: AppConfig, portId: string): string {
+  const exe = selfImagePath(cfg) ?? path.join(cfg.root, "image", "imagen");
+  // El id del port va sin comillas (ids normales: [A-Za-z0-9._-]+); solo se
+  // protege con comillas un id inusual que rompería la sintaxis del script.
+  const safeId = /^[A-Za-z0-9._-]+$/.test(portId) ? portId : shQuote(portId);
   return `#!/bin/sh
 # Launcher generado por Brisa (port: ${portId}) — no editar a mano.
 # Steam lanza los juegos sin pasar por una shell, así que los unset de las
@@ -37,9 +76,104 @@ unset LD_PRELOAD
 unset STEAM_COMPAT_DATA_PATH
 unset STEAM_COMPAT_CLIENT_INSTALL_PATH
 unset STEAM_RUNTIME
-cd ${shQuote(portRoot)} || exit 1
-exec ./${shQuote(exe)} "$@"
+${shQuote(exe)} update ${safeId} || exit 1
+${shQuote(exe)} launch ${safeId} --wait || exit 1
 `;
+}
+
+/**
+ * Script del ayudante `image/imagen` (POSIX sh). Uso:
+ *   imagen <subcomando> <port> [args...]
+ *
+ * Ejecuta el CLI de la propia Brisa (su AppImage en image/) pasándole los
+ * argumentos tal cual, p. ej. `imagen update <port>` -> `brisa update <port>`
+ * o `imagen launch <port> --wait` -> `brisa launch <port> --wait`.
+ * Se elige la AppImage más reciente por mtime (el nombre cambia con la
+ * versión); si no hay ninguna (dev), cae al comando `brisa` del PATH.
+ */
+export function imagenHelperScript(cfg: AppConfig): string {
+  return `#!/bin/sh
+# Ayudante de Brisa (generado por Brisa — no editar a mano).
+# Uso: imagen <subcomando> <port> [args...]
+# Ejecuta el CLI de la propia Brisa (su AppImage en image/) con los argumentos
+# recibidos, p. ej. imagen update <port> o imagen launch <port> --wait.
+ROOT=${shQuote(cfg.root)}
+APPIMAGE="$(ls -t "$ROOT"/image/Brisa-*.AppImage 2>/dev/null | head -n 1)"
+if [ -z "$APPIMAGE" ]; then
+  if command -v brisa >/dev/null 2>&1; then
+    exec brisa "$@"
+  fi
+  echo "imagen: no se encuentra la AppImage de Brisa en $ROOT/image." >&2
+  echo "        Ejecuta Brisa una vez para que se copie a image/, o instala 'brisa' en el PATH." >&2
+  exit 1
+fi
+exec "$APPIMAGE" "$@"
+`;
+}
+
+/**
+ * Escribe (o regenera) el ayudante `image/imagen`. Best-effort: devuelve la
+ * ruta o null; un fallo aquí no debe romper la instalación del port.
+ */
+export function writeImagenHelper(cfg: AppConfig): string | null {
+  try {
+    const dir = imagesDir(cfg);
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, "imagen");
+    fs.writeFileSync(file, imagenHelperScript(cfg));
+    fs.chmodSync(file, 0o755);
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Copia el AppImage de la propia Brisa a `image/` en su primera ejecución
+ * (solo cuando la app corre desde su AppImage de Linux; el archivo original
+ * no se toca). Si ya hay una copia del mismo archivo, no hace nada; las copias
+ * de versiones anteriores en image/ se limpian (el nombre cambia con la
+ * versión). Best-effort: un fallo aquí nunca debe impedir que Brisa arranque.
+ */
+export function ensureSelfImageCopy(cfg: AppConfig): string | null {
+  const src = appImagePath();
+  if (!src) return null;
+  try {
+    const dir = imagesDir(cfg);
+    fs.mkdirSync(dir, { recursive: true });
+    const img = path.join(dir, path.basename(src));
+    // Mantener image/ con una sola copia de Brisa: limpiar copias de otras
+    // versiones (el nombre cambia con la versión) en cada ejecución.
+    for (const f of fs.readdirSync(dir)) {
+      const full = path.join(dir, f);
+      if (full === img) continue;
+      if (/^Brisa-.*\.AppImage$/i.test(f)) {
+        try {
+          fs.rmSync(full, { force: true });
+        } catch {
+          // ok
+        }
+      }
+    }
+    // Recopiar si falta o si el original cambió (mismo tamaño pero más nuevo,
+    // p. ej. tras un self-update que reemplaza el archivo en su sitio).
+    const fresh =
+      fs.existsSync(img) &&
+      fs.statSync(img).size === fs.statSync(src).size &&
+      fs.statSync(img).mtimeMs >= fs.statSync(src).mtimeMs;
+    if (fresh) {
+      return img;
+    }
+    fs.copyFileSync(src, img);
+    try {
+      fs.chmodSync(img, 0o755);
+    } catch {
+      // ok
+    }
+    return img;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -76,7 +210,7 @@ export function computeLauncherNames(cfg: AppConfig): Map<string, string> {
  * null. Es best-effort: un fallo aquí (permisos, disco) NO debe romper la
  * instalación/actualización del port, que ya tuvo éxito.
  */
-export function writeLauncher(cfg: AppConfig, m: Manifest, st: PortState): string | null {
+export function writeLauncher(cfg: AppConfig, st: PortState): string | null {
   try {
     const root = path.join(cfg.portsDir, st.id);
     const exe = st.executable;
@@ -89,12 +223,46 @@ export function writeLauncher(cfg: AppConfig, m: Manifest, st: PortState): strin
     const dir = launchersDir(cfg);
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${title}.sh`);
-    fs.writeFileSync(file, launcherScript(root, exe, st.id));
+    fs.writeFileSync(file, launcherScript(cfg, st.id));
     fs.chmodSync(file, 0o755);
+    // Asegurar que el ayudante image/imagen exista para que el launcher funcione.
+    writeImagenHelper(cfg);
     return file;
   } catch {
     return null;
   }
+}
+
+/**
+ * Crea los launchers que falten para los ports instalados (p. ej. si se borró
+ * la carpeta launchers/, o el port se instaló con una versión anterior que no
+ * generaba launchers), y refresca los que apunten a una AppImage de Brisa que
+ * ya no está en image/ (el nombre cambia con la versión: tras un self-update
+ * el launcher quedaría roto). Para regenerarlos todos usa `brisa srm-config`.
+ * Best-effort: devuelve cuántos se crearon o refrescaron.
+ */
+export function syncLaunchers(cfg: AppConfig): number {
+  let created = 0;
+  const titles = computeLauncherNames(cfg);
+  const dir = launchersDir(cfg);
+  // Solo se refrescan referencias cuando hay una AppImage real en image/ (en
+  // dev no existe y reescribir los launchers iría y vendría según el entorno).
+  const exe = selfImagePath(cfg);
+  for (const st of listStates(cfg)) {
+    const title = titles.get(st.id);
+    if (!title) continue;
+    const file = path.join(dir, `${title}.sh`);
+    let need = !fs.existsSync(file);
+    if (!need && exe) {
+      try {
+        if (!fs.readFileSync(file, "utf8").includes(shQuote(exe))) need = true;
+      } catch {
+        need = true;
+      }
+    }
+    if (need && writeLauncher(cfg, st) !== null) created++;
+  }
+  return created;
 }
 
 /**
