@@ -47,6 +47,8 @@
     "roms.viewCards": "Card view",
     "roms.viewList": "List view",
     "port.updateAndPlay": "Update and play",
+    "port.openFolder": "🗀 Open files",
+    "port.openFolderHint": "Opens the port's folder in your file manager",
     "mod.openAll": "Open mods ({0})",
     "mod.addMods": "＋ Add mods",
     "mod.addModsHint": "Open mods folder: {0}",

@@ -258,6 +258,8 @@ body.modal-open { overflow: hidden; }
 
 .port-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .port-actions .spacer { flex: 1; }
+/* Fila principal de acciones (update / play): alineada a la derecha. */
+.port-actions.main { justify-content: flex-end; }
 
 .progress {
   height: 6px; background: var(--bg-soft); border-radius: 999px; overflow: hidden;

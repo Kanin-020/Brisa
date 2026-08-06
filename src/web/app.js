@@ -286,33 +286,40 @@ function portCard(p) {
   modsRow.appendChild(addModsBtn);
   card.appendChild(modsRow);
 
-  // Actions
+  // Acciones: fila secundaria (abrir archivos / desinstalar) a la izquierda…
   const actions = el("div", "port-actions");
+  if (p.installed) {
+    const files = el("button", "btn ghost sm", t("port.openFolder"));
+    files.title = t("port.openFolderHint");
+    files.addEventListener("click", () => openPortFolder(p));
+    actions.appendChild(files);
+    const un = el("button", "btn red sm", t("port.uninstall"));
+    un.addEventListener("click", () => doUninstall(p));
+    actions.appendChild(un);
+    card.appendChild(actions);
+  }
+
+  // …y fila principal (update / play) en su propia línea, alineada a la derecha.
+  const mainActions = el("div", "port-actions main");
   if (p.installed) {
     const upd = el("button", "btn sm", t("port.update"));
     upd.disabled = !p.updateAvailable;
     upd.addEventListener("click", () => doUpdate(p));
-    actions.appendChild(upd);
+    mainActions.appendChild(upd);
     if (p.updateAvailable) {
       const up = el("button", "btn warn sm", t("port.updateAndPlay"));
       up.addEventListener("click", () => doUpdateAndLaunch(p));
-      actions.appendChild(up);
+      mainActions.appendChild(up);
     }
-  }
-  actions.appendChild(el("div", "spacer"));
-  if (p.installed) {
-    const un = el("button", "btn red sm", t("port.uninstall"));
-    un.addEventListener("click", () => doUninstall(p));
-    actions.appendChild(un);
     const launch = el("button", "btn green sm", t("port.launch"));
     launch.addEventListener("click", () => doLaunch(p));
-    actions.appendChild(launch);
+    mainActions.appendChild(launch);
   } else {
     const inst = el("button", "btn sm", p.hasRom ? t("port.install") : t("port.installNoRom"));
     inst.addEventListener("click", () => doInstall(p));
-    actions.appendChild(inst);
+    mainActions.appendChild(inst);
   }
-  card.appendChild(actions);
+  card.appendChild(mainActions);
 
   // Progress bar
   if (busy.has(p.manifest.id)) {
@@ -357,6 +364,11 @@ function closeModsModal() {
 /** Abre la carpeta central de mods del port (MODS/<gameDir>) en el gestor de archivos. */
 function openPortModsFolder(p) {
   api("/api/open-mods-folder", { id: p.manifest.id }).catch((e) => toast(e.message, "error"));
+}
+
+/** Abre la carpeta del port instalado (ports/<id>) en el gestor de archivos. */
+function openPortFolder(p) {
+  api("/api/open-port-folder", { id: p.manifest.id }).catch((e) => toast(e.message, "error"));
 }
 
 /** Chip de versión + botón de auto-update de la propia app (si hay release nueva). */

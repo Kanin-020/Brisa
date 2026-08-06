@@ -42,6 +42,8 @@
   "port.romOk": "ROM ✓",
   "port.romMissing": "ROM ✗",
   "port.optional": "(opcional)",
+  "port.openFolder": "🗀 Abrir archivos",
+  "port.openFolderHint": "Abre la carpeta del port en el gestor de archivos",
 
   "mod.unlink": "Desenlazar",
   "mod.link": "Enlazar",

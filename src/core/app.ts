@@ -405,6 +405,20 @@ export class App {
     return this.openPath(centralModsRoot(this.cfg, m));
   }
 
+  /**
+   * Open the port's install folder in the OS file manager. Only meaningful
+   * for installed ports (the folder must exist).
+   */
+  async openPortFolder(id: string): Promise<boolean> {
+    const m = this.manifest(id);
+    if (!m) throw new Error(`Port not found: ${id}`);
+    const dir = portDir(this.cfg, id);
+    if (!fs.existsSync(dir)) {
+      throw new Error(`El port ${m.name} no está instalado.`);
+    }
+    return this.openPath(dir);
+  }
+
   /** Opens an arbitrary path in the OS file manager (Electron or platform opener). */
   private async openPath(target: string): Promise<boolean> {
     fs.mkdirSync(target, { recursive: true });

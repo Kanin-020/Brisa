@@ -20,7 +20,9 @@
     "desktop": "npm run build && electron .",
     "package": "npm run build && node scripts/build-desktop.mjs",
     "package:linux": "npm run build && node scripts/build-desktop.mjs --only linux",
-    "package:windows": "npm run build && node scripts/build-desktop.mjs --only windows"
+    "package:windows": "npm run build && node scripts/build-desktop.mjs --only windows",
+    "test:selfupdate": "node scripts/test-selfupdate.mjs",
+    "test:selfupdate:latest": "node scripts/test-selfupdate.mjs --already-latest"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
