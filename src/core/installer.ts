@@ -201,35 +201,6 @@ export function launchExecutable(cfg: AppConfig, id: string): string | null {
 }
 
 /**
- * Re-link one of a port's ROM requirements to a specific ROM file, so the
- * game boots exactly the ROM that was requested (e.g. SoH base vs Master
- * Quest when launched from Steam ROM Manager). Updates the port state too.
- */
-export function relinkRom(cfg: AppConfig, m: Manifest, reqId: string, romPath: string): void {
-  const req = m.roms.find((r) => r.id === reqId);
-  if (!req) throw new Error(`[${m.id}] requisito de ROM desconocido: ${reqId}`);
-  const target = path.resolve(romPath);
-  const dest = path.join(portDir(cfg, m.id), req.dest);
-  let same = false;
-  try {
-    same = fs.existsSync(dest) && fs.realpathSync(dest) === target;
-  } catch {
-    // broken symlink: relink below
-  }
-  if (same) return;
-  createSymlink(target, dest);
-  const state = readState(cfg, m.id);
-  if (state) {
-    const romsLinked = { ...(state.romsLinked ?? {}) };
-    romsLinked[reqId] = target;
-    state.romsLinked = romsLinked;
-    // Legacy single-rom field: keep it pointing at the first requirement.
-    state.romLinked = romsLinked[m.roms[0]?.id ?? reqId] ?? state.romLinked;
-    writeState(cfg, state);
-  }
-}
-
-/**
  * Después de extraer la nueva versión, restaura desde el backup los datos de
  * usuario del port anterior para que las actualizaciones NO borren saves ni
  * configuraciones:

@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import * as fs from "node:fs";
-import * as os from "node:os";
 import * as path from "node:path";
 import { spawn } from "node:child_process";
 import { App } from "./core/app";
@@ -10,11 +9,10 @@ import { cleanLaunchEnv } from "./core/env";
 import { sha1File } from "./core/hash";
 import { appVersion } from "./core/version";
 import type { SelfUpdateInfo } from "./core/selfupdate";
-import { resolveExecutable, portDir, relinkRom } from "./core/installer";
-import { launchersDir, computeLauncherNames, launcherScript, writeImagenHelper } from "./core/launchers";
-import type { Manifest, RomRequirement } from "./core/manifest";
-import { patternSpecificity, type RomFile } from "./core/scanner";
-import { anyMatch, globToRegExp } from "./core/glob";
+import { resolveExecutable, portDir } from "./core/installer";
+import { computeLauncherNames, launcherScript, writeImagenHelper } from "./core/launchers";
+import type { RomFile } from "./core/scanner";
+import { globToRegExp } from "./core/glob";
 import { detectPlatform } from "./core/platform";
 import { unlinkAllMods, isModLinked } from "./core/mods";
 import { startServer } from "./server/server";
@@ -36,18 +34,6 @@ async function progress(stage: string, done: number, total: number) {
   const pct = Math.round((done / total) * 100);
   process.stderr.write(`\r  descargando... ${pct}% (${(done / (1024 * 1024)).toFixed(1)}/${(total / (1024 * 1024)).toFixed(1)} MB)`);
   if (done >= total) process.stderr.write("\n");
-}
-
-/** Expand a leading "~/" to the user's home (shells only do this when the
- *  path is unquoted, so SRM/Steam quoted paths arrive literally). */
-function expandHome(p: string): string {
-  if (p === "~" || p.startsWith("~/")) return path.join(os.homedir(), p.slice(1));
-  return p;
-}
-
-/** True when the argument looks like a file path (not a port id). */
-function looksLikePath(p: string): boolean {
-  return p.startsWith("~") || p.includes("/") || p.includes("\\") || /\.[A-Za-z0-9]{1,8}$/.test(p);
 }
 
 /** Spawn the game executable. With --wait the CLI stays alive until the game
@@ -170,91 +156,15 @@ program
   });
 
 program
-  .command("launch <target>")
-  .description("Ejecuta un port instalado (por id, p. ej. soh) o un archivo ROM (ruta) — para Steam ROM Manager: launch \"<ROM>\".")
+  .command("launch <portId>")
+  .description("Ejecuta un port instalado por id (p. ej. soh). --wait espera a que el juego termine (recomendado al lanzar desde Steam).")
   .option("--wait", "esperar a que el juego termine (recomendado al lanzar desde Steam)", false)
-  .action(async (target: string, opts: { wait?: boolean }) => {
-    const asFile = path.resolve(expandHome(target));
-    const isFile = fs.existsSync(asFile) && fs.statSync(asFile).isFile();
-    if (!isFile && looksLikePath(target)) {
-      console.error(`Archivo no encontrado: ${target}`);
-      console.error(`  Resuelto como: ${asFile}`);
-      console.error(`  Copia el ROM a ${app.cfg.romsDir} o pasa la ruta completa correcta.`);
-      process.exit(1);
-    }
-
-    if (isFile) {
-      // Modo ROM: averiguar a qué port pertenece y lanzarlo con ese ROM.
-      let resolved: { manifest: Manifest; requirement: RomRequirement } | null = null;
-      const matches = await app.resolveRom(asFile);
-      if (matches.length > 0) {
-        const installedIds = new Set(app.installed().map((s) => s.id));
-        let best = matches[0];
-        // Ante varias coincidencias por nombre, preferir un port instalado.
-        const byName = matches.filter((mm) => mm.matchedBy === "name");
-        if (best.matchedBy === "name" && byName.length > 1) {
-          const installed = byName.find((mm) => installedIds.has(mm.manifest.id));
-          if (installed) best = installed;
-        }
-        resolved = { manifest: best.manifest, requirement: best.requirement };
-      } else {
-        // El hash puede no estar en el manifiesto (región/versión no listada):
-        // como último recurso, coincidir por nombre con los ports instalados.
-        const base = path.basename(asFile);
-        const candidates = app
-          .installed()
-          .map((s) => app.manifest(s.id))
-          .filter((m): m is Manifest => !!m)
-          .map((m) => {
-            const matching = m.roms.filter((r) => anyMatch(r.patterns, base));
-            if (matching.length === 0) return null;
-            matching.sort(
-              (a, b) => patternSpecificity(b.patterns, base) - patternSpecificity(a.patterns, base),
-            );
-            const spec = patternSpecificity(
-              m.roms.map((r) => r.patterns).flat(),
-              base,
-            );
-            return { manifest: m, requirement: matching[0], spec };
-          })
-          .filter((x): x is { manifest: Manifest; requirement: RomRequirement; spec: number } => x !== null)
-          .sort((a, b) => b.spec - a.spec || a.manifest.id.localeCompare(b.manifest.id));
-        if (candidates.length === 1 || (candidates.length > 1 && candidates[0].spec > candidates[1].spec)) {
-          console.log(`  (hash no verificado — coincidencia por nombre: ${candidates[0].manifest.name})`);
-          resolved = { manifest: candidates[0].manifest, requirement: candidates[0].requirement };
-        } else if (candidates.length > 1) {
-          console.error(`Varios ports instalados coinciden por nombre con ${base}:`);
-          for (const c of candidates) console.error(`  - ${c.manifest.name} (${c.manifest.id})`);
-          console.error("  Especifica el port: brisa launch <id>");
-          process.exit(1);
-        }
-      }
-      if (!resolved) {
-        console.error(`No se pudo identificar ningún port para el ROM: ${asFile}`);
-        console.error("  Verifica que es un ROM válido de un port instalado, o usa: brisa launch <id>");
-        process.exit(1);
-      }
-      const { manifest, requirement } = resolved;
-      const exe = app.launch(manifest.id);
-      if (!exe) {
-        console.error(`${manifest.name} (${manifest.id}) no está instalado.`);
-        console.error(`  Instálalo primero con: brisa install ${manifest.id}`);
-        process.exit(1);
-      }
-      // Asegurar que el port cargue exactamente este ROM (p. ej. SoH base vs Master Quest).
-      relinkRom(app.cfg, manifest, requirement.id, asFile);
-      console.log(`Lanzando ${manifest.name} (${manifest.id}) con ${path.basename(asFile)}...`);
-      await spawnPort(exe, !!opts.wait);
-      return;
-    }
-
-    // Modo id de port (comportamiento anterior).
-    const exe = app.launch(target);
+  .action(async (portId: string, opts: { wait?: boolean }) => {
+    const exe = app.launch(portId);
     if (!exe) {
-      console.error(`${target} no está instalado o falta el ejecutable.`);
+      console.error(`${portId} no está instalado o falta el ejecutable.`);
       const installed = app.installed().map((s) => s.id);
       if (installed.length > 0) console.error(`  Ports instalados: ${installed.join(", ")}`);
-      console.error("  Para lanzar un ROM directamente: brisa launch <ruta-al-rom>");
       process.exit(1);
     }
     console.log(`Lanzando ${exe}...`);

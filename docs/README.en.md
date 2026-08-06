@@ -122,7 +122,7 @@ The CLI is available in two ways:
 | `brisa scan` | Scan only and list ROM↔port matches. |
 | `brisa install <id> [--force]` | Download + install + link ROM and mods. |
 | `brisa uninstall <id>` | Remove the port and its state. |
-| `brisa launch <id | ROM> [--wait]` | Run a port by id (e.g. `soh`) or directly a ROM file (path): the port is detected automatically. `--wait` waits for the game to exit (useful from Steam). |
+| `brisa launch <id> [--wait]` | Run an installed port by id (e.g. `soh`). `--wait` waits for the game to exit (useful from Steam). |
 | `brisa srm-config [--out <dir>]` | Generate one `.sh` launcher per installed port (using Brisa's CLI: `update` + `launch` the port) to add them to Steam as non-Steam games. |
 | `brisa update [id] [--check]` | Update installed ports to the latest release. |
 | `brisa self-update [--check]` | Update the Brisa app itself (Linux AppImage): downloads the latest release, installs it and relaunches on its own. |
@@ -204,7 +204,7 @@ unset STEAM_RUNTIME
 3. On launch, the launcher checks/updates the port (`update`) and starts it (`launch --wait`) with the ROM that is already symlinked in the port folder (`oot.z64`, `baserom.gba`, …).
 4. Launchers are **created automatically when a port is installed** (and removed when it is uninstalled). If any is missing for an installed port (e.g. you deleted the `launchers/` folder), it is **recreated automatically** the next time you run Brisa; `brisa srm-config` regenerates everything from scratch.
 
-> One launcher per installed port: if a port supports several ROM variants (e.g. SoH base + Master Quest), all variants run the same launcher with whatever ROM is linked in the port folder. Use `brisa launch "<ROM>"` if you need a different ROM per shortcut.
+> One launcher per installed port: if a port supports several ROM variants (e.g. SoH base + Master Quest), all variants run the same launcher with whatever ROM is linked in the port folder.
 
 ## Development
 
