@@ -10,6 +10,7 @@ import type { AssetDef, Manifest } from "./manifest";
 import { detectPlatform } from "./platform";
 import type { RomFile } from "./scanner";
 import { readState, writeState, type PortState } from "./state";
+import { writeLauncher, removeLauncher } from "./launchers";
 
 export interface InstallOptions {
   /** Requirement id -> ROM file to symlink at that requirement's dest. */
@@ -133,7 +134,11 @@ export async function installPort(
       await extract(asset, dl, dir);
     }
   } catch (e) {
-    // Rollback
+    // Rollback: descartar el extract parcial antes de devolver el backup.
+    // renameSync(backup, dir) lanzaría ENOTEMPTY si dir ya existe con contenido,
+    // dejando el port roto y el backup (con los saves) varado en cache/old, que
+    // la próxima actualización borraría perdiendo los datos del usuario.
+    if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
     if (fs.existsSync(backup)) fs.renameSync(backup, dir);
     throw e;
   }
@@ -172,10 +177,14 @@ export async function installPort(
     romsLinked,
   };
   writeState(cfg, state);
+  // Launcher de Steam: se crea/actualiza con el port (también tras un update).
+  writeLauncher(cfg, m, state);
   return state;
 }
 
 export function uninstallPort(cfg: AppConfig, id: string): void {
+  // Quitar su launcher de Steam antes de borrar dir/estado.
+  removeLauncher(cfg, id);
   const dir = portDir(cfg, id);
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
   const stateFile = path.join(cfg.cacheDir, "state", `${id}.json`);
@@ -246,14 +255,12 @@ export function preserveUserData(backup: string, dir: string, m: Manifest): void
       const srcFull = path.join(src, entry.name);
       const destFull = path.join(dir, relPath);
       if (entry.isDirectory()) {
-        // Solo se baja si el directorio puede contener algo restaurable.
-        const mayContain =
-          !destExists(relPath) ||
-          patterns.some((p) => p === relPath || p.startsWith(relPath + "/"));
-        if (mayContain) {
-          fs.mkdirSync(destFull, { recursive: true });
-          walk(srcFull, relPath);
-        }
+        // Siempre se baja: keep() decide por archivo si restaurarlo. No usar
+        // prefijos literales de `preserve` aquí: son globs (p. ej. "saves/**") y
+        // un dir anidado que la release sí traiga ("saves/foo/") haría que se
+        // saltara el descenso y se perdieran los saves del usuario.
+        fs.mkdirSync(destFull, { recursive: true });
+        walk(srcFull, relPath);
       } else if (entry.isSymbolicLink()) {
         if (keep(relPath)) {
           fs.mkdirSync(path.dirname(destFull), { recursive: true });

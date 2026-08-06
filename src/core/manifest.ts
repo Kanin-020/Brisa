@@ -56,6 +56,12 @@ export interface Manifest {
   id: string;
   name: string;
   game: string;
+  /**
+   * Título opcional para el launcher .sh que genera `srm-config` (por defecto
+   * se usa `game`). Útil cuando dos ports comparten juego (p. ej. los dos de
+   * Super Mario 64) y quieres un nombre de archivo propio.
+   */
+  launcher?: string;
   description: string;
   /** GitHub "owner/repo". */
   repo: string;

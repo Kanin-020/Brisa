@@ -5,7 +5,7 @@ import type { AppConfig } from "./config";
 import { download, type ProgressFn } from "./download";
 import { getLatestRelease, pickAsset } from "./github";
 import { detectPlatform } from "./platform";
-import { appVersion, isAppImage } from "./version";
+import { appVersion, appImagePath, isAppImage } from "./version";
 
 export interface SelfUpdateInfo {
   /** Versión instalada actualmente. */
@@ -90,10 +90,15 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
   if (!cfg.selfRepo) return null;
   const cached = readCache(cfg);
   if (!force && cached && Date.now() - cached.checkedAt < CHECK_INTERVAL_MS) {
-    return cached;
+    // `current` y `supported` se recalculan siempre: una caché escrita por una
+    // versión anterior (o con la detección rota de AppImage por execPath) no
+    // debe mostrar una versión instalada vieja.
+    return { ...cached, current: appVersion(), supported: isAppImage() };
   }
   try {
-    const rel = await getLatestRelease(cfg, cfg.selfRepo);
+    // allowPrerelease: el repo de la app publica sus releases como pre-release;
+    // /releases/latest daría 404 y el check fallaría sin esta opción.
+    const rel = await getLatestRelease(cfg, cfg.selfRepo, { allowPrerelease: true });
     const pattern = selfAssetPattern(cfg);
     const asset = pickAsset(rel, pattern);
     const info: SelfUpdateInfo = {
@@ -109,10 +114,14 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
     writeCache(cfg, info);
     return info;
   } catch {
-    // Fallo de red / repo sin releases: cachear también para no golpear la API
-    // de GitHub en cada poll del status (la web consulta cada 8 s).
-    const info = cached ?? unavailable(cfg, "?");
-    if (!cached) writeCache(cfg, info);
+    // Fallo de red / sin release estable: devolver lo último conocido con
+    // `current` y `supported` actualizados, y refrescar la caché SIEMPRE para
+    // que una copia obsoleta (p. ej. escrita por una versión antigua de la
+    // app) no quede atascada mostrando una versión vieja indefinidamente.
+    const info = cached
+      ? { ...cached, current: appVersion(), supported: isAppImage() }
+      : unavailable(cfg, "?");
+    writeCache(cfg, info);
     return info;
   }
 }
@@ -144,7 +153,9 @@ export async function applySelfUpdate(
     throw new Error(`Descarga incompleta de ${info.assetName} (${info.size} bytes esperados).`);
   }
 
-  const oldPath = path.resolve(process.execPath);
+  // Dentro de una AppImage process.execPath apunta al mount temporal (de solo
+  // lectura); hay que reemplazar el archivo real, que expone $APPIMAGE.
+  const oldPath = appImagePath() ?? path.resolve(process.execPath);
   const updater = path.join(cfg.cacheDir, "downloads", "self", "brisa-updater.sh");
   const log = path.join(cfg.cacheDir, "downloads", "self", "updater.log");
   fs.writeFileSync(updater, updaterScript(String(process.pid), dest, oldPath, log));

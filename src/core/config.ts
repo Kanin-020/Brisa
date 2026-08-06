@@ -47,7 +47,7 @@ export function defaultConfig(): AppConfig {
     githubToken: process.env.GITHUB_TOKEN ?? "",
     serverPort: 7380,
     autoCheckUpdates: true,
-    selfRepo: "Kanin-020/port-hub",
+    selfRepo: "Kanin-020/Brisa",
     selfAssetPattern: "",
   };
 }

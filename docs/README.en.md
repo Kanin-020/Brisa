@@ -121,7 +121,7 @@ The CLI is available in two ways:
 | `brisa install <id> [--force]` | Download + install + link ROM and mods. |
 | `brisa uninstall <id>` | Remove the port and its state. |
 | `brisa launch <id | ROM> [--wait]` | Run a port by id (e.g. `soh`) or directly a ROM file (path): the port is detected automatically. `--wait` waits for the game to exit (useful from Steam). |
-| `brisa srm-config [file] [--roms-dir <dir>]` | Generate a parser JSON for Steam ROM Manager. |
+| `brisa srm-config [--out <dir>]` | Generate one `.sh` launcher per installed port (cd to the port folder + run its image) to add them to Steam as non-Steam games. |
 | `brisa update [id] [--check]` | Update installed ports to the latest release. |
 | `brisa self-update [--check]` | Update the Brisa app itself (Linux AppImage): downloads the latest release, installs it and relaunches on its own. |
 | `brisa mods <id>` | List centralized mods of a port. |
@@ -157,39 +157,47 @@ brisa update
 brisa serve          # → http://localhost:7380
 ```
 
-## Steam ROM Manager (SRM)
+## Steam launchers (Steam ROM Manager)
 
-Brisa works directly with **Steam ROM Manager**: every ROM SRM adds to Steam is launched with `brisa launch "<ROM>"` and Brisa automatically detects which port it belongs to (**by exact hash, Game ID or name**), re-links that ROM to the port and starts it. So `appimage launch /path/oot.z64` replaces `appimage launch soh`.
+`brisa srm-config` generates **one `.sh` launcher per installed port** so you can add them to Steam as **non-Steam games** (or use them as the executable of a Glob parser in Steam ROM Manager).
 
-### 1. Generate the parser
+The launchers are generated **inside the Brisa user folder**, next to the rest of the data (`roms/`, `mods/`, `ports/`, …):
 
 ```bash
-brisa srm-config                                   # creates brisa-srm.json in the current folder
-brisa srm-config --roms-dir ~/Emulation/roms/n64   # if your ROMs live in another folder
+brisa srm-config                          # creates <Brisa root>/launchers/ (next to roms/, mods/, …)
+brisa srm-config --out ~/launchers        # choose another output folder
 ```
 
-The generated file includes all ROM extensions from the ports (`.z64`, `.n64`, `.v64`, `.iso`, `.rvz`, `.gcz`, `.gba`, `.gbc`…) and uses the command `brisa launch --wait "<ROM>"`.
+Example output (`launchers/`):
 
-> **Why a launcher script**: when you run a port from Steam, the game inherits Steam environment variables (`LD_PRELOAD`, `STEAM_COMPAT_DATA_PATH`, `STEAM_COMPAT_CLIENT_INSTALL_PATH`, `STEAM_RUNTIME`) that **crash native binaries**. Steam does not run shortcuts through a shell, so the `unset` commands can only live in a script: `brisa srm-config` generates `brisa-srm-launch.sh` (next to the JSON) that clears those variables and then executes your Brisa AppImage, and the parser points to that script as its executable. If you move the AppImage, regenerate the parser.
+```
+launchers/
+├── The Legend of Zelda Ocarina of Time.sh
+├── The Legend of Zelda Majora's Mask.sh
+└── …
+```
 
-### 2. Import into Steam ROM Manager
+Each launcher does exactly two things: `cd` into the port folder and run its image directly:
 
-- Open SRM → **Parsers** page → **Import** button and upload the JSON, or
-- copy the file to `~/.config/steam-rom-manager/userData/configurations/` and restart SRM.
+```sh
+unset LD_PRELOAD
+unset STEAM_COMPAT_DATA_PATH
+unset STEAM_COMPAT_CLIENT_INSTALL_PATH
+unset STEAM_RUNTIME
+cd "/home/user/Brisa/ports/soh"
+exec ./soh.appimage
+```
 
-Check the parser: the **executable** path (your Brisa AppImage) and the **ROM directory**.
+> **Why the `unset` lines matter**: when Steam launches a game it inherits variables (`LD_PRELOAD`, `STEAM_COMPAT_*`, `STEAM_RUNTIME`) that **crash native binaries**. Steam does not run shortcuts through a shell, so those `unset` commands can only live in a script — that is exactly what the launcher is for.
 
-### 3. Preview and Save
+### How to use them
 
-SRM scans the directory and adds each ROM as a Steam game. Pressing **Play** runs `brisa launch "<ROM>"`:
+1. **Steam → Add a Game → Add a Non-Steam Game… → Browse** and select the `.sh` files (`brisa srm-config` already marks them executable).
+2. Steam shows each launcher with its game title; rename it if you prefer.
+3. The port starts from its own folder with its own image, using the ROM that is already symlinked there (`oot.z64`, `baserom.gba`, …).
+4. Launchers are **created automatically when a port is installed** (and removed when it is uninstalled). If you move folders or change manifests, run `brisa srm-config` again to regenerate them all.
 
-- `--wait` keeps the process alive while the game runs, so Steam marks it as *running*.
-- If the matching port is not installed, you are told the command `brisa install <id>`.
-- If you launch the Master Quest (or base) ROM of SoH, Brisa re-links that exact ROM to the port before starting.
-
-### Manual alternative (no JSON needed)
-
-Create a **Glob** parser in SRM: executable = your Brisa AppImage, arguments = `launch --wait "${filePath}"` and extensions `.z64 .n64 .v64 .iso .rvz .gcz .gba .gbc`.
+> One launcher per installed port: if a port supports several ROM variants (e.g. SoH base + Master Quest), all variants run the same launcher with whatever ROM is linked in the port folder. Use `brisa launch "<ROM>"` if you need a different ROM per shortcut.
 
 ## Development
 

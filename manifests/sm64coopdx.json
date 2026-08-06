@@ -2,6 +2,7 @@
   "id": "sm64coopdx",
   "name": "SM64coopdx",
   "game": "Super Mario 64",
+  "launcher": "Super Mario 64 Multiplayer",
   "description": "sm64coopdx is an online multiplayer project for the Super Mario 64 PC port that synchronizes all entities and every level for multiple players.",
   "repo": "coop-deluxe/sm64coopdx",
   "roms": [

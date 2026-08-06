@@ -38,7 +38,26 @@ export function appVersion(): string {
   return "0.0.0";
 }
 
+/**
+ * Ruta real del archivo AppImage de Linux cuando la app corre desde una
+ * AppImage, o null en cualquier otro caso (dev, node plano, CLI, .exe).
+ *
+ * Ojo: dentro de una AppImage en ejecución, process.execPath apunta al binario
+ * del mount temporal (/tmp/.mount_<nombre>/…), no al archivo .AppImage, y
+ * además el mount es de solo lectura. El runtime de AppImage (type 2) define
+ * la variable de entorno APPIMAGE con la ruta absoluta del archivo original;
+ * esa es la que hay que reemplazar y relanzar en un self-update.
+ */
+export function appImagePath(): string | null {
+  if (process.platform !== "linux") return null;
+  const fromEnv = process.env.APPIMAGE;
+  if (fromEnv) return path.resolve(fromEnv);
+  // Fallback para entornos sin variable (p. ej. ejecutando el binario
+  // directamente con un nombre que termina en .AppImage).
+  return /\.appimage$/i.test(process.execPath) ? process.execPath : null;
+}
+
 /** True cuando la app corre desde una AppImage de Linux (único formato auto-actualizable). */
 export function isAppImage(): boolean {
-  return process.platform === "linux" && /\.appimage$/i.test(process.execPath);
+  return appImagePath() !== null;
 }
