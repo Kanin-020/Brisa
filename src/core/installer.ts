@@ -286,7 +286,19 @@ export function preserveUserData(backup: string, dir: string, m: Manifest): void
           fs.mkdirSync(path.dirname(destFull), { recursive: true });
           if (destExists(relPath)) fs.rmSync(destFull, { force: true });
           try {
-            fs.symlinkSync(fs.readlinkSync(srcFull), destFull);
+            const target = fs.readlinkSync(srcFull);
+            // En Windows, los junctions (carpetas de mods) se restauran como
+            // junction (destino absoluto, sin permisos de admin); el resto
+            // como symlink normal.
+            const targetIsDir =
+              process.platform === "win32" &&
+              fs.existsSync(target) &&
+              fs.statSync(target).isDirectory();
+            if (targetIsDir) {
+              fs.symlinkSync(target, destFull, "junction");
+            } else {
+              fs.symlinkSync(target, destFull);
+            }
           } catch {
             // enlace roto o sin permisos: ignorar
           }

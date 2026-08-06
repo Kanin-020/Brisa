@@ -10,7 +10,7 @@ import { sha1File } from "./core/hash";
 import { appVersion } from "./core/version";
 import type { SelfUpdateInfo } from "./core/selfupdate";
 import { resolveExecutable, portDir } from "./core/installer";
-import { computeLauncherNames, launcherScript, writeImagenHelper } from "./core/launchers";
+import { computeLauncherNames, launcherExtension, launcherScriptForPlatform, writeImagenHelper } from "./core/launchers";
 import type { RomFile } from "./core/scanner";
 import { globToRegExp } from "./core/glob";
 import { detectPlatform } from "./core/platform";
@@ -373,7 +373,7 @@ program
 
 program
   .command("srm-config [outDir]")
-  .description("Genera launchers .sh por port instalado (que usan el CLI de Brisa: update + launch del port) para añadirlos a Steam como juegos no-Steam (Linux/macOS).")
+  .description("Genera launchers por port instalado (.sh en Linux/macOS, .cmd en Windows; usan el CLI de Brisa: update + launch del port) para añadirlos a Steam como juegos no-Steam.")
   .option("-o, --out <dir>", "carpeta de salida (por defecto: <raíz de Brisa>/launchers, junto a roms/ y mods/)")
   .action((outDir: string | undefined, opts: { out?: string }) => {
     // Por defecto, junto al resto de datos de Brisa (roms/, mods/, ports/…):
@@ -386,6 +386,7 @@ program
       process.exit(1);
     }
     const names = computeLauncherNames(app.cfg);
+    const ext = launcherExtension();
     let generated = 0;
     for (const st of states) {
       const m = app.manifest(st.id);
@@ -401,22 +402,23 @@ program
         continue;
       }
       const title = names.get(st.id) ?? st.id;
-      const file = path.join(dir, `${title}.sh`);
-      fs.writeFileSync(file, launcherScript(app.cfg, st.id));
-      fs.chmodSync(file, 0o755);
+      const file = path.join(dir, `${title}${ext}`);
+      fs.writeFileSync(file, launcherScriptForPlatform(app.cfg, st.id));
+      if (ext !== ".cmd") fs.chmodSync(file, 0o755);
       generated++;
       const linked = Object.values(st.romsLinked ?? {}).find(Boolean) ?? st.romLinked;
-      console.log(`  ✓ ${title}.sh` + (linked ? "" : "  ⚠ sin ROM enlazado: el juego no arrancará hasta que enlaces su ROM"));
+      console.log(`  ✓ ${title}${ext}` + (linked ? "" : "  ⚠ sin ROM enlazado: el juego no arrancará hasta que enlaces su ROM"));
     }
     // Asegurar que el ayudante image/imagen exista (invoca el CLI de Brisa).
     writeImagenHelper(app.cfg);
     console.log(`\n✓ ${generated} launcher(s) generado(s) en: ${dir}\n`);
     console.log("Cómo usarlos:");
-    console.log("  1) Steam → Agregar un juego → Agregar un juego no Steam… → Examinar → elige los .sh");
+    console.log("  1) Steam → Agregar un juego → Agregar un juego no Steam… → Examinar → elige los " + ext);
     console.log("     (también sirven como ejecutable de un parser Glob en Steam ROM Manager).");
-    console.log("  2) Cada .sh limpia las variables de Steam (LD_PRELOAD, STEAM_COMPAT_*, STEAM_RUNTIME)");
-    console.log("     y delega en el CLI de Brisa (image/imagen): 'update <port>' comprueba/actualiza");
-    console.log("     el port a la última versión y 'launch <port> --wait' lo lanza esperando a que cierre.");
+    console.log("  2) Cada launcher limpia las variables de Steam (LD_PRELOAD, STEAM_COMPAT_*, STEAM_RUNTIME)");
+    console.log("     y delega en el CLI de Brisa (image/imagen o image/imagen.cmd): 'update <port>'");
+    console.log("     comprueba/actualiza el port a la última versión y 'launch <port> --wait' lo");
+    console.log("     lanza esperando a que cierre.");
     console.log("  3) Los launchers también se crean/actualizan solos al instalar o actualizar un");
     console.log("     port, y se borran al desinstalarlo. Regenera todos con: brisa srm-config");
   });

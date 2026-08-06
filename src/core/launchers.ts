@@ -4,16 +4,21 @@ import type { AppConfig } from "./config";
 import { loadManifest } from "./manifest";
 import { listStates, type PortState } from "./state";
 import { appImagePath } from "./version";
+import { detectPlatform } from "./platform";
 
 /**
- * Launchers .sh para añadir los ports instalados a Steam como juegos
- * no-Steam. Se crean automáticamente al instalar/actualizar un port y se
- * borran al desinstalarlo; `brisa srm-config` los regenera todos.
+ * Launchers para añadir los ports instalados a Steam como juegos no-Steam.
+ * Se crean automáticamente al instalar/actualizar un port y se borran al
+ * desinstalarlo; `brisa srm-config` los regenera todos.
+ *
+ * El formato depende del SO: `.sh` (POSIX sh) en Linux/macOS/Android y `.cmd`
+ * (batch de Windows) en Windows.
  *
  * Cada launcher limpia las variables de Steam y delega en el CLI de la propia
  * Brisa (su AppImage copiada en `<raíz>/image/`, invocada a través del
- * ayudante `image/imagen`): primero `update <port>` (comprueba/actualiza el
- * port a la última versión) y luego `launch <port> --wait`.
+ * ayudante `image/imagen` o `image/imagen.cmd`): primero `update <port>`
+ * (comprueba/actualiza el port a la última versión) y luego
+ * `launch <port> --wait`.
  */
 
 /** Carpeta de launchers, junto al resto de datos de Brisa (roms/, mods/, …). */
@@ -21,9 +26,26 @@ export function launchersDir(cfg: AppConfig): string {
   return path.join(cfg.root, "launchers");
 }
 
-/** Carpeta image/: AppImage de la propia Brisa (copia) + ayudante `imagen`. */
+/** Carpeta image/: copia de la propia Brisa + ayudante `imagen`/`imagen.cmd`. */
 export function imagesDir(cfg: AppConfig): string {
   return path.join(cfg.root, "image");
+}
+
+/** Extensión del launcher según el SO (Windows: .cmd; resto: .sh). */
+export function launcherExtension(): string {
+  return detectPlatform().os === "windows" ? ".cmd" : ".sh";
+}
+
+/**
+ * Ruta del ayudante `image/imagen` (POSIX) o `image/imagen.cmd` (Windows) que
+ * los launchers usan para invocar el CLI de la propia Brisa.
+ */
+export function helperPath(cfg: AppConfig): string {
+  return path.join(
+    cfg.root,
+    "image",
+    detectPlatform().os === "windows" ? "imagen.cmd" : "imagen",
+  );
 }
 
 /** Nombre de archivo seguro a partir del título del juego (quita ':' y otros caracteres inválidos). */
@@ -35,6 +57,11 @@ export function launcherTitle(game: string): string {
 /** Encierra una ruta en comillas simples de shell (escapa ' como '\\'' para que nada se expanda). */
 export function shQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\\\''`)}'`;
+}
+
+/** Escapa una ruta para usarla entre comillas dobles en un .cmd de Windows. */
+function batQuote(s: string): string {
+  return `"${s.replace(/%/g, "%%")}"`;
 }
 
 /**
@@ -57,13 +84,21 @@ export function selfImagePath(cfg: AppConfig): string | null {
 }
 
 /**
- * Script .sh del launcher: limpia las variables de Steam y ejecuta el CLI de
- * la propia Brisa (su AppImage en image/) con `update <port>` y
- * `launch <port> --wait`. Si aún no hay copia del AppImage (modo desarrollo),
- * cae al ayudante `image/imagen`.
+ * Ruta que el launcher .sh invoca: la AppImage copiada si existe, o el
+ * ayudante `image/imagen`.
+ */
+function shTarget(cfg: AppConfig): string {
+  return selfImagePath(cfg) ?? helperPath(cfg);
+}
+
+/**
+ * Script .sh del launcher (Linux/macOS/Android): limpia las variables de
+ * Steam y ejecuta el CLI de la propia Brisa (su AppImage en image/) con
+ * `update <port>` y `launch <port> --wait`. Si aún no hay copia del AppImage
+ * (modo desarrollo), cae al ayudante `image/imagen`.
  */
 export function launcherScript(cfg: AppConfig, portId: string): string {
-  const exe = selfImagePath(cfg) ?? path.join(cfg.root, "image", "imagen");
+  const exe = shTarget(cfg);
   // El id del port va sin comillas (ids normales: [A-Za-z0-9._-]+); solo se
   // protege con comillas un id inusual que rompería la sintaxis del script.
   const safeId = /^[A-Za-z0-9._-]+$/.test(portId) ? portId : shQuote(portId);
@@ -79,6 +114,38 @@ unset STEAM_RUNTIME
 ${shQuote(exe)} update ${safeId} || exit 1
 ${shQuote(exe)} launch ${safeId} --wait || exit 1
 `;
+}
+
+/**
+ * Script .cmd del launcher (Windows): limpia las variables de Steam y delega
+ * en `image/imagen.cmd`, que invoca el exe de la propia Brisa con `update
+ * <port>` y `launch <port> --wait`.
+ */
+export function launcherScriptWin(cfg: AppConfig, portId: string): string {
+  const helper = batQuote(path.join(cfg.root, "image", "imagen.cmd"));
+  const safeId = /^[A-Za-z0-9._-]+$/.test(portId) ? portId : portId.replace(/[^\w.-]/g, "_");
+  return [
+    "@echo off",
+    `rem Launcher generado por Brisa (port: ${portId}) - no editar a mano.`,
+    "rem Steam ejecuta los juegos sin pasar por una shell; este .cmd limpia las",
+    "rem variables de Steam que crashean los binarios nativos y delega en el CLI",
+    "rem de Brisa (image\\imagen.cmd): 'update <port>' y 'launch <port> --wait'.",
+    'set "LD_PRELOAD="',
+    'set "STEAM_COMPAT_DATA_PATH="',
+    'set "STEAM_COMPAT_CLIENT_INSTALL_PATH="',
+    'set "STEAM_RUNTIME="',
+    `call ${helper} update "${safeId}"`,
+    "if errorlevel 1 exit /b 1",
+    `call ${helper} launch "${safeId}" --wait`,
+    "if errorlevel 1 exit /b 1",
+  ].join("\r\n");
+}
+
+/** Devuelve el contenido del launcher adecuado para el SO actual. */
+export function launcherScriptForPlatform(cfg: AppConfig, portId: string): string {
+  return detectPlatform().os === "windows"
+    ? launcherScriptWin(cfg, portId)
+    : launcherScript(cfg, portId);
 }
 
 /**
@@ -112,16 +179,49 @@ exec "$APPIMAGE" "$@"
 }
 
 /**
- * Escribe (o regenera) el ayudante `image/imagen`. Best-effort: devuelve la
- * ruta o null; un fallo aquí no debe romper la instalación del port.
+ * Script del ayudante `image/imagen.cmd` (Windows). Uso:
+ *   imagen <subcomando> <port> [args...]
+ *
+ * Invoca el exe de la propia Brisa (la app empaquetada despacha a su CLI
+ * cuando recibe argumentos) pasándole los argumentos tal cual, p. ej.
+ * `imagen update <port>` -> `Brisa.exe update <port>` o
+ * `imagen launch <port> --wait` -> `Brisa.exe launch <port> --wait`.
+ */
+export function imagenHelperScriptWin(_cfg: AppConfig): string {
+  const exe = batQuote(process.execPath);
+  return [
+    "@echo off",
+    "rem Ayudante de Brisa (generado por Brisa - no editar a mano).",
+    "rem Uso: imagen <subcomando> <port> [args...]",
+    "rem Ejecuta el CLI de la propia Brisa con los argumentos recibidos,",
+    "rem p. ej. imagen update <port> o imagen launch <port> --wait.",
+    `${exe} %*`,
+    "exit /b %errorlevel%",
+  ].join("\r\n");
+}
+
+/**
+ * Escribe (o regenera) el ayudante `image/imagen` (POSIX) o `image/imagen.cmd`
+ * (Windows), y borra el del otro formato si existe (restos de otra plataforma
+ * o de una versión anterior). Best-effort: devuelve la ruta o null; un fallo
+ * aquí no debe romper la instalación del port.
  */
 export function writeImagenHelper(cfg: AppConfig): string | null {
   try {
     const dir = imagesDir(cfg);
     fs.mkdirSync(dir, { recursive: true });
-    const file = path.join(dir, "imagen");
-    fs.writeFileSync(file, imagenHelperScript(cfg));
-    fs.chmodSync(file, 0o755);
+    const win = detectPlatform().os === "windows";
+    const file = path.join(dir, win ? "imagen.cmd" : "imagen");
+    const stale = path.join(dir, win ? "imagen" : "imagen.cmd");
+    if (stale !== file && fs.existsSync(stale)) {
+      try {
+        fs.rmSync(stale, { force: true });
+      } catch {
+        // ok
+      }
+    }
+    fs.writeFileSync(file, win ? imagenHelperScriptWin(cfg) : imagenHelperScript(cfg));
+    if (!win) fs.chmodSync(file, 0o755);
     return file;
   } catch {
     return null;
@@ -206,9 +306,10 @@ export function computeLauncherNames(cfg: AppConfig): Map<string, string> {
 }
 
 /**
- * Crea (o actualiza) el launcher .sh de un port instalado. Devuelve la ruta o
- * null. Es best-effort: un fallo aquí (permisos, disco) NO debe romper la
- * instalación/actualización del port, que ya tuvo éxito.
+ * Crea (o actualiza) el launcher de un port instalado (`.sh` o `.cmd` según
+ * el SO). Devuelve la ruta o null. Es best-effort: un fallo aquí (permisos,
+ * disco) NO debe romper la instalación/actualización del port, que ya tuvo
+ * éxito.
  */
 export function writeLauncher(cfg: AppConfig, st: PortState): string | null {
   try {
@@ -222,9 +323,9 @@ export function writeLauncher(cfg: AppConfig, st: PortState): string | null {
     removeLauncher(cfg, st.id);
     const dir = launchersDir(cfg);
     fs.mkdirSync(dir, { recursive: true });
-    const file = path.join(dir, `${title}.sh`);
-    fs.writeFileSync(file, launcherScript(cfg, st.id));
-    fs.chmodSync(file, 0o755);
+    const file = path.join(dir, `${title}${launcherExtension()}`);
+    fs.writeFileSync(file, launcherScriptForPlatform(cfg, st.id));
+    if (launcherExtension() !== ".cmd") fs.chmodSync(file, 0o755);
     // Asegurar que el ayudante image/imagen exista para que el launcher funcione.
     writeImagenHelper(cfg);
     return file;
@@ -251,7 +352,7 @@ export function syncLaunchers(cfg: AppConfig): number {
   for (const st of listStates(cfg)) {
     const title = titles.get(st.id);
     if (!title) continue;
-    const file = path.join(dir, `${title}.sh`);
+    const file = path.join(dir, `${title}${launcherExtension()}`);
     let need = !fs.existsSync(file);
     if (!need && exe) {
       try {
@@ -275,7 +376,7 @@ export function removeLauncher(cfg: AppConfig, portId: string): void {
     if (!fs.existsSync(dir)) return;
     const marker = `(port: ${portId})`;
     for (const f of fs.readdirSync(dir)) {
-      if (!f.endsWith(".sh")) continue;
+      if (!/\.(sh|cmd|bat)$/i.test(f)) continue;
       try {
         if (fs.readFileSync(path.join(dir, f), "utf8").includes(marker)) {
           fs.rmSync(path.join(dir, f), { force: true });

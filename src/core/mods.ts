@@ -51,24 +51,66 @@ export function isModLinked(cfg: AppConfig, m: Manifest, modName: string): boole
   return fs.existsSync(link);
 }
 
+/**
+ * Crea el enlace del mod en su destino (o una copia si el SO/permisos no lo
+ * permiten):
+ *   - Windows: junction para carpetas (no requiere permisos de admin) y
+ *     symlink de archivo para archivos sueltos; si falla (p. ej. sin modo
+ *     desarrollador) se copia el mod para que el juego pueda leerlo.
+ *   - Linux/macOS: symlink normal.
+ */
 export function linkMod(cfg: AppConfig, m: Manifest, modName: string): void {
   const src = path.join(centralModsRoot(cfg, m), modName);
   if (!fs.existsSync(src)) throw new Error(`Mod not found in MODS/${m.mods.gameDir}: ${modName}`);
   const dest = path.join(modsLinkRoot(cfg, m), modName);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
-  if (fs.existsSync(dest)) fs.rmSync(dest, { recursive: true, force: true });
+  removeLinked(dest);
+  if (fs.statSync(src).isDirectory()) {
+    // Carpeta: junction (Windows, no requiere permisos de admin; en el resto
+    // de SO se crea un symlink normal). Si falla, symlink de directorio y,
+    // como último recurso, copia.
+    try {
+      fs.symlinkSync(src, dest, "junction");
+    } catch {
+      try {
+        fs.symlinkSync(src, dest, "dir");
+      } catch {
+        fs.cpSync(src, dest, { recursive: true });
+      }
+    }
+  } else {
+    // Archivo suelto (p. ej. un .o2r): NUNCA junction (en Windows crearía un
+    // junction roto en silencio). Symlink de archivo y, si el SO no lo
+    // permite (sin modo desarrollador), copia para que el juego pueda leerlo.
+    try {
+      fs.symlinkSync(src, dest, "file");
+    } catch {
+      fs.copyFileSync(src, dest);
+    }
+  }
+}
+
+/**
+ * Borra un enlace/copia de mod del destino sin tocar el mod central ni su
+ * contenido (un junction/symlink se elimina solo como enlace).
+ */
+function removeLinked(dest: string): void {
   try {
-    fs.symlinkSync(src, dest, "junction");
+    const st = fs.lstatSync(dest);
+    if (st.isSymbolicLink()) {
+      fs.rmSync(dest, { force: true });
+    } else if (st.isDirectory()) {
+      fs.rmSync(dest, { recursive: true, force: true });
+    } else {
+      fs.rmSync(dest, { force: true });
+    }
   } catch {
-    fs.symlinkSync(src, dest);
+    // no existe
   }
 }
 
 export function unlinkMod(cfg: AppConfig, m: Manifest, modName: string): void {
-  const dest = path.join(modsLinkRoot(cfg, m), modName);
-  if (fs.existsSync(dest) || fs.lstatSync(dest, { throwIfNoEntry: false })) {
-    fs.rmSync(dest, { recursive: true, force: true });
-  }
+  removeLinked(path.join(modsLinkRoot(cfg, m), modName));
 }
 
 /** Link all centralized mods for a port (called after install/update/scan). */
@@ -91,9 +133,13 @@ export function linkAllMods(cfg: AppConfig, m: Manifest): string[] {
 export function unlinkAllMods(cfg: AppConfig, m: Manifest): void {
   const destRoot = modsLinkRoot(cfg, m);
   if (!fs.existsSync(destRoot)) return;
+  // Se borran los enlaces (junctions/symlinks) y las copias/archivos cuyo
+  // nombre coincide con un mod central; los archivos propios del juego o del
+  // usuario en el destino se respetan.
+  const managed = new Set(listCentralMods(cfg, m));
   for (const entry of fs.readdirSync(destRoot, { withFileTypes: true })) {
     const full = path.join(destRoot, entry.name);
-    if (entry.isSymbolicLink()) fs.rmSync(full, { force: true });
+    if (entry.isSymbolicLink() || managed.has(entry.name)) removeLinked(full);
   }
 }
 

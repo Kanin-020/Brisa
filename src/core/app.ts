@@ -9,7 +9,7 @@ import { readState, listStates, writeState } from "./state";
 import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
 import { checkSelfUpdate, applySelfUpdate, type SelfUpdateInfo } from "./selfupdate";
 import { detectPlatform } from "./platform";
-import { ensureSelfImageCopy, syncLaunchers } from "./launchers";
+import { ensureSelfImageCopy, syncLaunchers, writeImagenHelper } from "./launchers";
 
 export interface RomSlotStatus {
   /** Requirement id (e.g. "oot", "oot-mq"). */
@@ -44,8 +44,10 @@ export class App {
   constructor() {
     this.cfg = loadConfig();
     ensureDirs(this.cfg);
-    // Primera ejecución: copiar el AppImage de la propia Brisa a image/.
+    // Primera ejecución: copiar el AppImage de la propia Brisa a image/ (en
+    // Windows se crea el ayudante `image/imagen.cmd` para acceder al CLI).
     ensureSelfImageCopy(this.cfg);
+    writeImagenHelper(this.cfg);
     // Recrear los launchers que falten para ports ya instalados.
     syncLaunchers(this.cfg);
   }
