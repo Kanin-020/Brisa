@@ -234,12 +234,25 @@ function portCard(p) {
   const m = p.manifest;
   const card = el("div", `port-card${p.installed ? " installed" : ""}`);
 
-  // Top row
+  // Top row: icono del proyecto + título a la izquierda, badges a la derecha.
   const top = el("div", "port-top");
+  const head = el("div", "port-head");
+  {
+    // Icono por convención: assets/<portId>.png (se gestiona aparte de los
+    // manifiestos, que no llevan campo de icono). Si el archivo no existe,
+    // el <img> se quita sin romper el layout.
+    const icon = el("img", "port-icon");
+    icon.src = "assets/" + m.id + ".png";
+    icon.alt = m.name;
+    icon.loading = "lazy";
+    icon.addEventListener("error", () => icon.remove());
+    head.appendChild(icon);
+  }
   const titleBox = el("div");
   titleBox.appendChild(el("div", "port-title", m.name));
   titleBox.appendChild(el("div", "port-game", m.game));
-  top.appendChild(titleBox);
+  head.appendChild(titleBox);
+  top.appendChild(head);
 
   const badges = el("div");
   if (p.installed) {
