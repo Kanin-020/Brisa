@@ -6,7 +6,7 @@ import type { AppConfig } from "./config";
 import { download, downloadPath } from "./download";
 import { getLatestRelease, pickAsset, type ReleaseInfo } from "./github";
 import { matchGlob } from "./glob";
-import type { AssetDef, Manifest } from "./manifest";
+import { loadManifest, type AssetDef, type Manifest } from "./manifest";
 import { detectPlatform } from "./platform";
 import type { RomFile } from "./scanner";
 import { readState, writeState, type PortState } from "./state";
@@ -185,10 +185,59 @@ export async function installPort(
 export function uninstallPort(cfg: AppConfig, id: string): void {
   // Quitar su launcher de Steam antes de borrar dir/estado.
   removeLauncher(cfg, id);
+  const m = loadManifest(cfg, id);
   const dir = portDir(cfg, id);
-  if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+  if (fs.existsSync(dir)) {
+    if (m?.preserve && m.preserve.length > 0) {
+      // Desinstalar sin perder los datos de usuario marcados con `preserve`
+      // (saves, configs): se borra todo lo demás y esos archivos se quedan en
+      // la carpeta del port, de modo que al reinstalarlo se restauran solos
+      // (el instalador trata la carpeta sobrante como instalación previa).
+      const kept = removeExceptPreserved(dir, m.preserve);
+      if (!kept) fs.rmSync(dir, { recursive: true, force: true });
+    } else {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
   const stateFile = path.join(cfg.cacheDir, "state", `${id}.json`);
   if (fs.existsSync(stateFile)) fs.rmSync(stateFile, { force: true });
+}
+
+/**
+ * Borra todo el contenido de `root` excepto los archivos/enlaces que coincidan
+ * con alguno de los patrones glob de `preserve` (rutas relativas a `root`).
+ * Los directorios se mantienen si contienen algo preservado (o si ellos mismos
+ * coinciden). Devuelve true si quedó algo dentro de `root`.
+ */
+function removeExceptPreserved(root: string, patterns: string[]): boolean {
+  const isPreserved = (rel: string) => patterns.some((p) => matchGlob(p, rel));
+  const walk = (dir: string): boolean => {
+    let kept = false;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      const rel = path.relative(root, full);
+      if (entry.isDirectory()) {
+        if (isPreserved(rel)) {
+          // El directorio entero está preservado (p. ej. patrón literal "saves").
+          kept = true;
+          continue;
+        }
+        if (walk(full)) {
+          kept = true;
+        } else {
+          fs.rmSync(full, { recursive: true, force: true });
+        }
+      } else if (isPreserved(rel)) {
+        // Archivo o symlink preservado (p. ej. un save o una config).
+        kept = true;
+      } else {
+        // Todo lo demás (binarios, symlinks de ROM y mods, …) se borra.
+        fs.rmSync(full, { force: true });
+      }
+    }
+    return kept;
+  };
+  return walk(root);
 }
 
 export function launchExecutable(cfg: AppConfig, id: string): string | null {

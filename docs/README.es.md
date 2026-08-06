@@ -121,7 +121,7 @@ El CLI está disponible de dos formas:
 | `brisa status` | Escaneo completo: ROMs, ports, mods, actualizaciones. |
 | `brisa scan` | Solo escanea y lista coincidencias ROM↔port. |
 | `brisa install <id> [--force]` | Descarga + instala + enlaza ROM y mods. |
-| `brisa uninstall <id>` | Elimina el port y su estado. |
+| `brisa uninstall <id>` | Elimina el port y su estado (conserva los archivos marcados en `preserve`). |
 | `brisa launch <id> [--wait]` | Ejecuta un port instalado por id (ej. `soh`). `--wait` espera a que el juego termine (útil desde Steam). |
 | `brisa srm-config [--out <dir>]` | Genera un launcher `.sh` por port instalado (que usa el CLI de Brisa: `update` + `launch` del port) para añadirlos a Steam como juegos no-Steam. |
 | `brisa update [id] [--check]` | Actualiza ports instalados a la última release. |
@@ -303,6 +303,8 @@ Al actualizar un port, Brisa **restaura por defecto** todo archivo del port ante
 ```json
 "preserve": ["saves/**", "settings.json", "userdata/**"]
 ```
+
+Al **desinstalar** un port también se respetan estos patrones: se borra todo excepto los archivos que coincidan con `preserve`, que se quedan en la carpeta del port (`ports/<id>/`) y se **restauran automáticamente** si vuelves a instalarlo.
 
 ## Interfaz web
 

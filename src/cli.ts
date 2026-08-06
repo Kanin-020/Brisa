@@ -149,10 +149,16 @@ program
 
 program
   .command("uninstall <portId>")
-  .description("Desinstala un port.")
+  .description("Desinstala un port (conserva los archivos marcados en `preserve` del manifiesto: saves y configs).")
   .action((portId: string) => {
     app.uninstall(portId);
-    console.log(`✓ ${portId} desinstalado.`);
+    const dir = portDir(app.cfg, portId);
+    if (fs.existsSync(dir)) {
+      console.log(`✓ ${portId} desinstalado. Se conservaron los archivos de preserve en: ${dir}`);
+      console.log("  Se restaurarán automáticamente si vuelves a instalar el port.");
+    } else {
+      console.log(`✓ ${portId} desinstalado.`);
+    }
   });
 
 program

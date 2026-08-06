@@ -76,6 +76,8 @@ export interface Manifest {
    * instalador restaura por defecto todo archivo del port anterior que no
    * exista en la nueva release; `preserve` sirve para los archivos que SÍ
    * vienen en la release (configs por defecto) y deben ganar los del usuario.
+   * Al desinstalar el port también se respetan: se borra todo menos los
+   * archivos que coincidan con estos patrones, y al reinstalar se restauran.
    */
   preserve?: string[];
 }

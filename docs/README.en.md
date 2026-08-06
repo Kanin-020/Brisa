@@ -121,7 +121,7 @@ The CLI is available in two ways:
 | `brisa status` | Full scan: ROMs, ports, mods, updates. |
 | `brisa scan` | Scan only and list ROM↔port matches. |
 | `brisa install <id> [--force]` | Download + install + link ROM and mods. |
-| `brisa uninstall <id>` | Remove the port and its state. |
+| `brisa uninstall <id>` | Remove the port and its state (keeps files marked in `preserve`). |
 | `brisa launch <id> [--wait]` | Run an installed port by id (e.g. `soh`). `--wait` waits for the game to exit (useful from Steam). |
 | `brisa srm-config [--out <dir>]` | Generate one `.sh` launcher per installed port (using Brisa's CLI: `update` + `launch` the port) to add them to Steam as non-Steam games. |
 | `brisa update [id] [--check]` | Update installed ports to the latest release. |
@@ -303,6 +303,8 @@ When updating a port, Brisa **restores by default** every file of the previous i
 ```json
 "preserve": ["saves/**", "settings.json", "userdata/**"]
 ```
+
+When **uninstalling** a port these patterns are respected too: everything is deleted except files matching `preserve`, which stay in the port folder (`ports/<id>/`) and are **restored automatically** if you install the port again.
 
 ## Web interface
 
