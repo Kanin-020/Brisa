@@ -32,5 +32,5 @@
     "dir": "mods",
     "gameDir": "spaghettikart"
   },
-  "preserve": ["saves/**", "spaghettify.cfg.json", "mk64.o2r"]
+  "preserve": ["saves/**", "Save/**", "Saves/**", "spaghettify.cfg.json", "mk64.o2r"]
 }

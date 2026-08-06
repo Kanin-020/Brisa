@@ -33,5 +33,5 @@
     "dir": "mods",
     "gameDir": "starship"
   },
-  "preserve": ["saves/**", "starship.cfg.json", "sf64.o2r"]
+  "preserve": ["saves/**", "Save/**", "Saves/**", "starship.cfg.json", "sf64.o2r"]
 }

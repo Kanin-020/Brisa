@@ -34,5 +34,5 @@
     "dir": "mods",
     "gameDir": "ghostship"
   },
-  "preserve": ["saves/**", "ghostship.cfg.json", "sm64.o2r"]
+  "preserve": ["saves/**", "Save/**", "Saves/**", "ghostship.cfg.json", "sm64.o2r"]
 }
