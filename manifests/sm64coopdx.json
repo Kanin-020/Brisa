@@ -33,6 +33,5 @@
   "mods": {
     "dir": "mods",
     "gameDir": "sm64coopdx"
-  },
-  "preserve": ["saves/**", "config/**"]
+  }
 }

@@ -74,5 +74,5 @@
     "dir": "mods",
     "gameDir": "soh"
   },
-  "preserve": ["saves/**", "settings.json"]
+  "preserve": ["saves/**", "shipofharkinian.json", "oot.o2r", "oot-mq.o2r"]
 }

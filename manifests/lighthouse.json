@@ -35,5 +35,5 @@
     "dir": "mods",
     "gameDir": "lighthouse"
   },
-  "preserve": ["saves/**", "settings.json"]
+  "preserve": ["saves/**", "lighthouse.cfg.json", "bk.o2r"]
 }

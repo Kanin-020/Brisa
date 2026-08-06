@@ -58,5 +58,5 @@
     "dir": "mods",
     "gameDir": "tmc"
   },
-  "preserve": ["saves/**", "settings.json"]
+  "preserve": ["*.sav", "config.json", "rom_data"]
 }

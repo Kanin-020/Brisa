@@ -59,6 +59,5 @@
       "windows": "%APPDATA%/TwilitRealm/Dusklight/texture_replacements",
       "macos": "~/Library/Application Support/TwilitRealm/Dusklight/texture_replacements"
     }
-  },
-  "preserve": ["saves/**", "settings.json"]
+  }
 }

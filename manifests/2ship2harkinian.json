@@ -47,5 +47,5 @@
     "dir": "mods",
     "gameDir": "2ship2harkinian"
   },
-  "preserve": ["saves/**", "2ship2harkinian.json", "userdata/**"]
+  "preserve": ["saves/**", "2ship2harkinian.json", "mm.o2r"]
 }
