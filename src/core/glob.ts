@@ -10,41 +10,56 @@ export function globToRegExp(pattern: string): RegExp {
   return new RegExp(`^(?:${body})$`, "i");
 }
 
-/** Expand {a,b,c} into a list of plain patterns. */
+/**
+ * Expand {a,b,c} into a list of plain patterns. Recursive: the first top-level
+ * brace group is split into alternatives and each one is cross-multiplied with
+ * the rest of the pattern (handles nested groups like {a,{b,c}}).
+ */
 function expandBraces(pattern: string): string[] {
-  const results: string[] = [];
-  const stack: string[][] = [[""]];
-  let buf = "";
-
-  for (let i = 0; i < pattern.length; i++) {
-    const ch = pattern[i];
-    if (ch === "{") {
-      stack.push([""]);
-      buf = "";
-    } else if (ch === "}") {
-      const branch = stack.pop()!;
-      const prev = stack[stack.length - 1];
-      const out: string[] = [];
-      for (const p of prev) {
-        for (const b of branch) {
-          out.push(p + b + buf);
-        }
+  const i = pattern.indexOf("{");
+  if (i === -1) return [pattern];
+  let depth = 0;
+  let j = -1;
+  for (let k = i; k < pattern.length; k++) {
+    const ch = pattern[k];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        j = k;
+        break;
       }
-      stack[stack.length - 1] = out;
-      buf = "";
-    } else if (ch === "," && stack.length > 1) {
-      stack[stack.length - 1].push(buf);
-      buf = "";
-    } else {
-      buf += ch;
     }
   }
-
-  if (stack.length > 1) {
-    // Unbalanced braces: treat literally.
-    return [pattern];
+  if (j === -1) return [pattern]; // llaves sin cerrar: tratar literalmente
+  const prefix = pattern.slice(0, i);
+  const suffix = pattern.slice(j + 1);
+  const out: string[] = [];
+  for (const alt of splitTopLevel(pattern.slice(i + 1, j))) {
+    for (const rest of expandBraces(prefix + alt + suffix)) {
+      if (!out.includes(rest)) out.push(rest);
+    }
   }
-  return stack[0].map((s) => s + buf);
+  return out;
+}
+
+/** Divide una cadena en alternativas por "," que no estén dentro de llaves anidadas. */
+function splitTopLevel(s: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let cur = "";
+  for (const ch of s) {
+    if (ch === "{") depth++;
+    else if (ch === "}") depth--;
+    if (ch === "," && depth === 0) {
+      parts.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  parts.push(cur);
+  return parts;
 }
 
 function compileOne(pattern: string): string {

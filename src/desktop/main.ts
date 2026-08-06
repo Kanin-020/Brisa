@@ -26,7 +26,8 @@ app.whenReady().then(() => {
   server = startServer(brisa, 0, (url) => void win.loadURL(url), {
     openBrowser: false,
     // Tras aplicar un self-update la app se cierra; un updater desacoplado
-    // reemplaza la AppImage y la relanza con la versión nueva.
+    // reemplaza el binario (AppImage) o instala la versión nueva (Windows)
+    // y relanza la app.
     onSelfUpdate: () => setTimeout(() => app.quit(), 800),
   });
 

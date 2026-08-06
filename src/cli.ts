@@ -252,7 +252,7 @@ program
 
 program
   .command("self-update")
-  .description("Comprueba y aplica la actualización de la propia app Brisa (AppImage de Linux).")
+  .description("Comprueba y aplica la actualización de la propia app Brisa (AppImage de Linux o instalador de Windows).")
   .option("--check", "solo comprobar, no actualizar")
   .action(async (opts: { check?: boolean }) => {
     let info: SelfUpdateInfo | null = null;
@@ -266,7 +266,7 @@ program
       console.error("No hay selfRepo configurado. Usa: brisa config-set selfRepo <owner/repo>");
       process.exit(1);
     }
-    console.log(`Brisa v${info.current} (${info.supported ? "AppImage" : "dev/CLI"})`);
+    console.log(`Brisa v${info.current} (${info.supported ? "auto-update disponible" : "dev/CLI"})`);
     if (!info.available) {
       if (!info.latest || info.latest === "?") {
         console.log("No se pudo comprobar la última versión (revisa selfRepo o la conexión a GitHub).");
@@ -278,7 +278,7 @@ program
     console.log(`⬆ Nueva versión disponible: ${info.latest}`);
     if (opts.check) return;
     if (!info.supported) {
-      console.error("El auto-update solo funciona desde la AppImage de Linux.");
+      console.error("El auto-update solo funciona en builds empaquetadas (AppImage de Linux o instalador de Windows).");
       console.error("  Descárgala desde: https://github.com/" + app.cfg.selfRepo + "/releases/latest");
       process.exit(1);
     }

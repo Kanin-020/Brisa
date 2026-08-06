@@ -5,16 +5,16 @@ import type { AppConfig } from "./config";
 import { download, type ProgressFn } from "./download";
 import { getLatestRelease, pickAsset } from "./github";
 import { detectPlatform } from "./platform";
-import { appVersion, appImagePath, isAppImage } from "./version";
+import { appVersion, appImagePath, isSelfUpdateSupported } from "./version";
 
 export interface SelfUpdateInfo {
   /** Versión instalada actualmente. */
   current: string;
   /** Tag de la última release. */
   latest: string;
-  /** True cuando latest > current. */
+  /** True cuando latest > current y existe el asset para esta plataforma. */
   available: boolean;
-  /** True cuando el auto-update es posible en este build (AppImage Linux). */
+  /** True cuando el auto-update es posible en este build (AppImage de Linux o instalador de Windows). */
   supported: boolean;
   assetName: string;
   size: number;
@@ -27,11 +27,20 @@ const CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
 const cacheFile = (cfg: AppConfig) => path.join(cfg.cacheDir, "update-check", "self.json");
 
-/** Nombre del asset AppImage de Brisa según la plataforma (electron-builder artifactName). */
+/**
+ * Nombre del asset de Brisa según la plataforma (electron-builder artifactName
+ * `Brisa-${os}-${arch}.${ext}`). Ojo con la nomenclatura de electron-builder:
+ * el OS de Windows es `win` (no `windows`) y el AppImage de Linux usa `x86_64`
+ * (no `x64`), por eso el patrón tolera ambas variantes de arch.
+ */
 export function selfAssetPattern(cfg: AppConfig): string {
   if (cfg.selfAssetPattern) return cfg.selfAssetPattern;
   const p = detectPlatform();
-  return `Brisa-${p.os}-${p.arch}.AppImage`;
+  const os = p.os === "windows" ? "win" : p.os;
+  const arch =
+    p.arch === "x64" ? "{x64,x86_64}" : p.arch === "arm64" ? "{arm64,aarch64}" : p.arch;
+  const ext = p.os === "windows" ? "exe" : "AppImage";
+  return `Brisa-${os}-${arch}.${ext}`;
 }
 
 /** Compara versiones/tags tipo "0.3.0", "v1.2.3" (ignora pre-releases suffix). */
@@ -68,13 +77,28 @@ function writeCache(cfg: AppConfig, info: SelfUpdateInfo): void {
   fs.writeFileSync(cacheFile(cfg), JSON.stringify(info));
 }
 
+/**
+ * Recalcula los campos que dependen del proceso actual (versión instalada y
+ * soporte) y descarta `available` si la caché no tiene un asset descargable
+ * (p. ej. escrita por una versión antigua con el patrón de asset roto, con
+ * `available: true` pero sin downloadUrl).
+ */
+function refreshCached(cached: SelfUpdateInfo): SelfUpdateInfo {
+  return {
+    ...cached,
+    current: appVersion(),
+    supported: isSelfUpdateSupported(),
+    available: cached.available && !!cached.downloadUrl,
+  };
+}
+
 /** Sin repo configurado o fallo de red: info con available=false. */
 function unavailable(cfg: AppConfig, latest: string, cached?: SelfUpdateInfo | null): SelfUpdateInfo {
   return {
     current: appVersion(),
     latest: cached?.latest ?? latest,
     available: false,
-    supported: isAppImage(),
+    supported: isSelfUpdateSupported(),
     assetName: cached?.assetName ?? "",
     size: cached?.size ?? 0,
     downloadUrl: cached?.downloadUrl ?? "",
@@ -93,7 +117,7 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
     // `current` y `supported` se recalculan siempre: una caché escrita por una
     // versión anterior (o con la detección rota de AppImage por execPath) no
     // debe mostrar una versión instalada vieja.
-    return { ...cached, current: appVersion(), supported: isAppImage() };
+    return refreshCached(cached);
   }
   try {
     // allowPrerelease: el repo de la app publica sus releases como pre-release;
@@ -104,8 +128,10 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
     const info: SelfUpdateInfo = {
       current: appVersion(),
       latest: rel.tag,
-      available: compareVersions(rel.tag, appVersion()) > 0,
-      supported: isAppImage(),
+      // Solo ofrecer la actualización si el asset de esta plataforma existe:
+      // sin archivo descargable no se puede aplicar.
+      available: !!asset && compareVersions(rel.tag, appVersion()) > 0,
+      supported: isSelfUpdateSupported(),
       assetName: asset?.name ?? "",
       size: asset?.size ?? 0,
       downloadUrl: asset?.url ?? "",
@@ -118,27 +144,25 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
     // `current` y `supported` actualizados, y refrescar la caché SIEMPRE para
     // que una copia obsoleta (p. ej. escrita por una versión antigua de la
     // app) no quede atascada mostrando una versión vieja indefinidamente.
-    const info = cached
-      ? { ...cached, current: appVersion(), supported: isAppImage() }
-      : unavailable(cfg, "?");
+    const info = cached ? refreshCached(cached) : unavailable(cfg, "?");
     writeCache(cfg, info);
     return info;
   }
 }
 
 /**
- * Descarga la nueva AppImage y lanza un updater desacoplado que espera a que
- * este proceso salga (o lo termina a los 15 s), reemplaza el binario actual
- * y relanza la app con la versión nueva.
+ * Descarga el asset de la nueva versión (AppImage en Linux, instalador .exe en
+ * Windows) y lanza un updater desacoplado que espera a que este proceso salga
+ * (o lo termina), reemplaza/instala la versión nueva y relanza la app.
  */
 export async function applySelfUpdate(
   cfg: AppConfig,
   onProgress?: ProgressFn,
 ): Promise<SelfUpdateInfo> {
-  if (!isAppImage()) {
+  if (!isSelfUpdateSupported()) {
     throw new Error(
-      "El auto-update solo está disponible desde la AppImage de Linux. " +
-        "Descarga la última versión desde GitHub.",
+      "El auto-update solo está disponible en las builds empaquetadas " +
+        "(AppImage de Linux o instalador de Windows). Descarga la última versión desde GitHub.",
     );
   }
   const info = await checkSelfUpdate(cfg, true);
@@ -153,6 +177,19 @@ export async function applySelfUpdate(
     throw new Error(`Descarga incompleta de ${info.assetName} (${info.size} bytes esperados).`);
   }
 
+  if (process.platform === "win32") {
+    spawnWindowsUpdater(cfg, dest);
+  } else {
+    spawnLinuxUpdater(cfg, dest);
+  }
+  return info;
+}
+
+/**
+ * Linux (AppImage): lanza un updater shell desacoplado que espera a que este
+ * proceso salga (o lo termina a los 15 s), reemplaza la AppImage y la relanza.
+ */
+function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
   // Dentro de una AppImage process.execPath apunta al mount temporal (de solo
   // lectura); hay que reemplazar el archivo real, que expone $APPIMAGE.
   const oldPath = appImagePath() ?? path.resolve(process.execPath);
@@ -160,7 +197,6 @@ export async function applySelfUpdate(
   const log = path.join(cfg.cacheDir, "downloads", "self", "updater.log");
   fs.writeFileSync(updater, updaterScript(String(process.pid), dest, oldPath, log));
   fs.chmodSync(updater, 0o755);
-
   try {
     const child = spawn("/bin/sh", [updater], { detached: true, stdio: "ignore" });
     child.on("error", (err) => {
@@ -170,7 +206,32 @@ export async function applySelfUpdate(
   } catch (e) {
     throw new Error(`No se pudo lanzar el updater: ${(e as Error).message}`);
   }
-  return info;
+}
+
+/**
+ * Windows (instalador NSIS): un .cmd desacoplado espera a que la app salga y
+ * ejecuta el instalador en silencio (/S); al terminar, el instalador relanza
+ * la app automáticamente (comportamiento por defecto de electron-builder).
+ */
+function spawnWindowsUpdater(cfg: AppConfig, dest: string): void {
+  const updater = path.join(cfg.cacheDir, "downloads", "self", "brisa-updater.cmd");
+  const log = path.join(cfg.cacheDir, "downloads", "self", "updater.log");
+  fs.writeFileSync(updater, windowsUpdaterScript(String(process.pid), dest));
+  try {
+    // La salida del .cmd se redirige al log para poder depurar.
+    const cmdLine = `"${updater}" >> "${log}" 2>&1`;
+    const child = spawn("cmd.exe", ["/c", cmdLine], {
+      detached: true,
+      stdio: "ignore",
+      windowsHide: true,
+    });
+    child.on("error", (err) => {
+      console.error(`[self-update] no se pudo lanzar el updater: ${err.message}`);
+    });
+    child.unref();
+  } catch (e) {
+    throw new Error(`No se pudo lanzar el updater: ${(e as Error).message}`);
+  }
 }
 
 /**
@@ -213,4 +274,42 @@ LOG=${JSON.stringify(log)}
   fi
 } >> "$LOG" 2>&1
 `;
+}
+
+/**
+ * Batch de Windows: espera (hasta 60 s) a que Brisa salga; si sigue viva la
+ * termina con taskkill /F. Después ejecuta el instalador NSIS en silencio
+ * (/S), que instala la nueva versión y relanza la app.
+ */
+function windowsUpdaterScript(pid: string, installerPath: string): string {
+  // Sin enabledelayedexpansion ni bloques parentizados: cada línea se expande
+  // al ejecutarse, así que %PID%/%NEW% funcionan y los caracteres raros de la
+  // ruta (!, &, ^) se tratan como literales dentro de las comillas.
+  return (
+    "@echo off\r\n" +
+    `rem Generado por Brisa (self-update). Espera al proceso ${pid}, ejecuta el\r\n` +
+    "rem instalador NSIS en silencio (/S); al terminar relanza la app.\r\n" +
+    `set "PID=${pid}"\r\n` +
+    `set "NEW=${installerPath}"\r\n` +
+    "set /a i=0\r\n" +
+    ":wait\r\n" +
+    'tasklist /FI "PID eq %PID%" 2>nul | findstr /C:"%PID%" >nul\r\n' +
+    "if errorlevel 1 goto relaunch\r\n" +
+    "set /a i+=1\r\n" +
+    "if %i% geq 60 goto kill\r\n" +
+    "ping -n 2 127.0.0.1 >nul\r\n" +
+    "goto wait\r\n" +
+    ":kill\r\n" +
+    "taskkill /PID %PID% /F >nul 2>nul\r\n" +
+    ":relaunch\r\n" +
+    "ping -n 2 127.0.0.1 >nul\r\n" +
+    'if exist "%NEW%" (\r\n' +
+    "  echo [updater] lanzando instalador en silencio...\r\n" +
+    '  start "" /wait "%NEW%" /S\r\n' +
+    "  echo OK: %NEW%\r\n" +
+    ") else (\r\n" +
+    "  echo FAIL: %NEW%\r\n" +
+    ")\r\n" +
+    "endlocal\r\n"
+  );
 }

@@ -167,8 +167,10 @@ export function startServer(
         void total;
       });
       sendJson(res, 200, { info });
-      // La app de escritorio se cierra para que el updater la reemplace.
-      setTimeout(() => opts.onSelfUpdate?.(), 1000);
+      // La app de escritorio se cierra para que el updater la reemplace, pero
+      // SOLO si se aplicó una actualización (available=false significa "ya en
+      // la última versión" o asset no encontrado: nada que reemplazar).
+      if (info.available) setTimeout(() => opts.onSelfUpdate?.(), 1000);
     } catch (e) {
       sendJson(res, 500, { error: (e as Error).message });
     }

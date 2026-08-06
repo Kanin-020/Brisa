@@ -57,7 +57,19 @@ export function appImagePath(): string | null {
   return /\.appimage$/i.test(process.execPath) ? process.execPath : null;
 }
 
-/** True cuando la app corre desde una AppImage de Linux (único formato auto-actualizable). */
+/** True cuando la app corre desde una AppImage de Linux. */
 export function isAppImage(): boolean {
   return appImagePath() !== null;
+}
+
+/**
+ * True cuando esta build puede auto-actualizarse: AppImage de Linux, o la app
+ * de escritorio empaquetada de Windows (el instalador NSIS se puede ejecutar
+ * en silencio). En Windows se detecta con BRISA_ROOT, que solo define
+ * src/desktop/environment.ts en builds empaquetadas (app.isPackaged); en
+ * dev/CLI plano no hay auto-update.
+ */
+export function isSelfUpdateSupported(): boolean {
+  if (process.platform === "win32") return !!process.env.BRISA_ROOT;
+  return isAppImage();
 }

@@ -150,7 +150,7 @@ export class App {
     return checkSelfUpdate(this.cfg, force);
   }
 
-  /** Descarga y aplica la nueva AppImage de Brisa (solo Linux AppImage). */
+  /** Descarga y aplica la nueva versión de Brisa (AppImage de Linux o instalador de Windows). */
   async selfUpdate(
     onProgress?: (stage: string, done: number, total: number) => void,
   ): Promise<SelfUpdateInfo> {
