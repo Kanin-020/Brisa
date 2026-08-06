@@ -15,7 +15,7 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 }
 
-const hub = new App();
+const brisa = new App();
 let server: Server | null = null;
 
 registerLifecycleEvents(() => server);
@@ -23,7 +23,7 @@ registerLifecycleEvents(() => server);
 app.whenReady().then(() => {
   const win = createMainWindow();
 
-  server = startServer(hub, 0, (url) => void win.loadURL(url), {
+  server = startServer(brisa, 0, (url) => void win.loadURL(url), {
     openBrowser: false,
     // Tras aplicar un self-update la app se cierra; un updater desacoplado
     // reemplaza la AppImage y la relanza con la versión nueva.
