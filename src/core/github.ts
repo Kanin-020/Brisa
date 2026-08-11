@@ -1,5 +1,6 @@
 import type { AppConfig } from "./config";
 import { matchGlob } from "./glob";
+import { normalizeVersion } from "./version";
 
 export interface ReleaseAsset {
   name: string;
@@ -32,7 +33,7 @@ function githubHeaders(cfg: AppConfig): Record<string, string> {
 
 function parseRelease(data: RawRelease): ReleaseInfo {
   return {
-    tag: data.tag_name ?? "unknown",
+    tag: normalizeVersion(data.tag_name) ?? "unknown",
     name: data.name ?? data.tag_name ?? "unknown",
     publishedAt: data.published_at ?? "",
     assets: (data.assets ?? [])

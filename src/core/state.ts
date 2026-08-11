@@ -1,6 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type { AppConfig } from "./config";
+import { normalizeVersion } from "./version";
 
 export interface PortState {
   id: string;
@@ -18,10 +19,15 @@ export interface PortState {
   romsLinked?: Record<string, string>;
 }
 
+/** Versión canónica para mostrar/comparar (quita el prefijo "v" de tags antiguos). */
+function normalizeState(state: PortState): PortState {
+  return { ...state, version: normalizeVersion(state.version) ?? state.version };
+}
+
 export function readState(cfg: AppConfig, id: string): PortState | null {
   const file = path.join(cfg.stateDir, `${id}.json`);
   try {
-    return JSON.parse(fs.readFileSync(file, "utf8")) as PortState;
+    return normalizeState(JSON.parse(fs.readFileSync(file, "utf8")) as PortState);
   } catch {
     return null;
   }
@@ -39,7 +45,7 @@ export function listStates(cfg: AppConfig): PortState[] {
     .filter((f) => f.endsWith(".json"))
     .map((f) => {
       try {
-        return JSON.parse(fs.readFileSync(path.join(cfg.stateDir, f), "utf8")) as PortState;
+        return normalizeState(JSON.parse(fs.readFileSync(path.join(cfg.stateDir, f), "utf8")) as PortState);
       } catch {
         return null;
       }

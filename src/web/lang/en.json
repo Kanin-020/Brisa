@@ -37,6 +37,10 @@
   "port.install": "Install",
   "port.installNoRom": "Install (no ROM)",
   "port.uninstall": "Uninstall",
+  "confirm.uninstallTitle": "Uninstall port",
+  "confirm.uninstallMessage": "Are you sure you want to uninstall \"{0}\"? Saves and preserved files will be kept.",
+  "confirm.cancel": "Cancel",
+  "confirm.uninstall": "Uninstall",
   "port.update": "Update",
   "port.updateAndPlay": "Update and play",
   "port.launch": "▶ Play",
@@ -45,6 +49,7 @@
   "port.optional": "(optional)",
   "port.openFolder": "🗀 Open files",
   "port.openFolderHint": "Opens the port's folder in your file manager",
+  "port.sourceHint": "Open the repository in your browser ({0})",
 
   "mod.unlink": "Unlink",
   "mod.link": "Link",

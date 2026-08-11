@@ -239,6 +239,23 @@ function portCard(p) {
     icon.alt = m.name;
     icon.loading = "lazy";
     icon.addEventListener("error", () => icon.remove());
+    // La imagen abre el repositorio del port en el navegador por defecto.
+    // En la app de escritorio desktop/window.ts redirige window.open a
+    // shell.openExternal; en navegador abre una pestaña nueva.
+    if (m.repo && /^[A-Za-z0-9._/-]+$/.test(m.repo)) {
+      const repoUrl = `https://github.com/${m.repo}`;
+      icon.title = t("port.sourceHint", `github.com/${m.repo}`);
+      icon.classList.add("repo-link");
+      icon.tabIndex = 0;
+      icon.setAttribute("role", "link");
+      icon.addEventListener("click", () => window.open(repoUrl, "_blank", "noopener"));
+      icon.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          window.open(repoUrl, "_blank", "noopener");
+        }
+      });
+    }
     head.appendChild(icon);
   }
   const titleBox = el("div");
@@ -248,7 +265,9 @@ function portCard(p) {
   top.appendChild(head);
 
   const badges = el("div");
-  if (p.installed) {
+  // Con actualización pendiente solo se muestra el chip de update, que ya
+  // incluye la versión instalada (⬆ 1.2.3 → 1.4.0); si no, el chip de versión.
+  if (p.installed && !p.updateAvailable) {
     badges.appendChild(el("span", "badge version", p.version));
   }
   if (p.updateAvailable) {
@@ -275,7 +294,8 @@ function portCard(p) {
     card.appendChild(romLine);
   }
 
-  // Mods — chips capped at MAX_MODS_INLINE; "Añadir mods" opens the port's mods folder
+  // Mods — chips capped at MAX_MODS_INLINE. El botón "Añadir mods" vive en la
+  // fila de acciones, junto a "Abrir archivos" y "Desinstalar".
   const modsRow = el("div", "mod-row");
   if (p.mods.length > 0) {
     const visible = p.mods.length > MAX_MODS_INLINE ? p.mods.slice(0, MAX_MODS_INLINE) : p.mods;
@@ -286,14 +306,15 @@ function portCard(p) {
       modsRow.appendChild(openBtn);
     }
   }
+  if (modsRow.children.length > 0) card.appendChild(modsRow);
+
+  // Fila de acciones secundarias: añadir mods, abrir archivos y desinstalar
+  // comparten la misma fila. En ports no instalados solo aparece "Añadir mods".
+  const actions = el("div", "port-actions");
   const addModsBtn = el("button", "btn ghost sm mods-add-btn", t("mod.addMods"));
   addModsBtn.title = t("mod.addModsHint", p.modsRoot);
   addModsBtn.addEventListener("click", () => openPortModsFolder(p));
-  modsRow.appendChild(addModsBtn);
-  card.appendChild(modsRow);
-
-  // Acciones: fila secundaria (abrir archivos / desinstalar) a la izquierda…
-  const actions = el("div", "port-actions");
+  actions.appendChild(addModsBtn);
   if (p.installed) {
     const files = el("button", "btn ghost sm", t("port.openFolder"));
     files.title = t("port.openFolderHint");
@@ -302,8 +323,8 @@ function portCard(p) {
     const un = el("button", "btn red sm", t("port.uninstall"));
     un.addEventListener("click", () => doUninstall(p));
     actions.appendChild(un);
-    card.appendChild(actions);
   }
+  card.appendChild(actions);
 
   // …y fila principal (update / play) en su propia línea, alineada a la derecha.
   const mainActions = el("div", "port-actions main");
@@ -664,9 +685,16 @@ function doInstall(p) {
 }
 
 function doUninstall(p) {
-  busyRun(p.manifest.id, async () => {
-    await api("/api/uninstall", { id: p.manifest.id });
-    toast(t("toast.uninstalled", p.manifest.name), "ok");
+  // Confirmación explícita antes de desinstalar.
+  openConfirmModal({
+    title: t("confirm.uninstallTitle"),
+    message: t("confirm.uninstallMessage", p.manifest.name),
+    confirmText: t("confirm.uninstall"),
+    onConfirm: () =>
+      busyRun(p.manifest.id, async () => {
+        await api("/api/uninstall", { id: p.manifest.id });
+        toast(t("toast.uninstalled", p.manifest.name), "ok");
+      }),
   });
 }
 
@@ -777,6 +805,28 @@ function initViewToggles() {
   });
 }
 
+/** Callback pendiente del modal de confirmación (null si no hay uno abierto). */
+let confirmAction = null;
+
+/** Abre el modal de confirmación con título, mensaje y acción al confirmar. */
+function openConfirmModal({ title, message, confirmText, onConfirm }) {
+  $("#confirm-modal-title").textContent = title;
+  $("#confirm-modal-message").textContent = message;
+  const okBtn = $("#confirm-modal-ok");
+  okBtn.textContent = confirmText;
+  $("#confirm-modal-cancel").textContent = t("confirm.cancel");
+  confirmAction = onConfirm;
+  $("#confirm-modal").classList.add("show");
+  document.body.classList.add("modal-open");
+}
+
+/** Cierra el modal de confirmación sin ejecutar la acción. */
+function closeConfirmModal() {
+  confirmAction = null;
+  $("#confirm-modal").classList.remove("show");
+  document.body.classList.remove("modal-open");
+}
+
 function initModsModal() {
   $("#mods-modal-close").addEventListener("click", closeModsModal);
   $("#mods-modal").addEventListener("click", (e) => {
@@ -787,6 +837,22 @@ function initModsModal() {
   });
 }
 
+function initConfirmModal() {
+  $("#confirm-modal-close").addEventListener("click", closeConfirmModal);
+  $("#confirm-modal-cancel").addEventListener("click", closeConfirmModal);
+  $("#confirm-modal-ok").addEventListener("click", () => {
+    const action = confirmAction;
+    closeConfirmModal();
+    if (action) action();
+  });
+  $("#confirm-modal").addEventListener("click", (e) => {
+    if (e.target === $("#confirm-modal")) closeConfirmModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && $("#confirm-modal").classList.contains("show")) closeConfirmModal();
+  });
+}
+
 async function init() {
   await i18nReady();
   initLocaleSwitcher();
@@ -794,6 +860,7 @@ async function init() {
   initPortsTools();
   initViewToggles();
   initModsModal();
+  initConfirmModal();
   initDropZone();
   initRomPicker();
   initManifestTools();

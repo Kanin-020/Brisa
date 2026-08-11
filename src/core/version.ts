@@ -39,6 +39,16 @@ export function appVersion(): string {
 }
 
 /**
+ * Normaliza una versión/tag para mostrarla y compararla: quita el prefijo "v"
+ * que algunos repos de GitHub usan en sus tags ("v1.2.3") y otros no
+ * ("1.2.3"), para que todos los chips y mensajes muestren "x.x.x".
+ */
+export function normalizeVersion(version: string | null | undefined): string | null {
+  if (!version) return null;
+  return version.replace(/^v/i, "").trim();
+}
+
+/**
  * Ruta real del archivo AppImage de Linux cuando la app corre desde una
  * AppImage, o null en cualquier otro caso (dev, node plano, CLI, .exe).
  *

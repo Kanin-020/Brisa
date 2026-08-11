@@ -168,10 +168,10 @@ body {
 }
 
 /* Port cards */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
 .port-card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 18px; display: flex; flex-direction: column; gap: 10px;
+  padding: 20px; display: flex; flex-direction: column; gap: 14px;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   position: relative; overflow: hidden;
 }
@@ -185,26 +185,32 @@ body {
 .port-card.installed { border-color: rgba(63, 185, 80, 0.45); }
 .port-card.installed::before { opacity: 1; }
 
-/* List view for ports */
+/* List view for ports: filas apiladas — título con versión arriba a la
+   derecha, descripción debajo y cada ROM reconocido en su propia fila. */
 .grid.list { grid-template-columns: 1fr; }
 .grid.list .port-card {
-  flex-direction: row; flex-wrap: wrap; align-items: center;
-  row-gap: 8px; column-gap: 18px;
+  flex-direction: column;
+  row-gap: 12px;
 }
-.grid.list .port-top { flex: 0 0 240px; }
-.grid.list .port-desc { flex: 1 1 280px; min-height: 0; }
-.grid.list .mod-row { flex: 1 1 260px; }
-.grid.list .port-actions { flex: 1 1 100%; margin-top: 2px; }
+.grid.list .port-top { flex: 0 0 auto; }
+.grid.list .port-desc { flex: 0 0 auto; min-height: 38px; }
+.grid.list .mod-row { flex: 0 0 auto; }
+.grid.list .port-actions { flex: 0 0 auto; margin-top: 4px; }
 
-.port-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
-.port-head { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
+.port-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.port-head { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
 .port-icon {
   width: 42px; height: 42px; border-radius: 10px;
   object-fit: cover; flex-shrink: 0;
   background: var(--bg-soft); border: 1px solid var(--border);
 }
+/* Icono clicable: abre el repositorio del port (cursor + halo al hover/focus) */
+.port-icon.repo-link { cursor: pointer; }
+.port-icon.repo-link:hover { filter: brightness(1.12); }
+.port-icon.repo-link:focus-visible,
+.port-icon.repo-link:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
 .port-title { font-size: 16px; font-weight: 700; }
-.port-game { color: var(--text-dim); font-size: 12px; margin-top: 2px; }
+.port-game { color: var(--text-dim); font-size: 12px; margin-top: 3px; }
 .badge {
   font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap;
 }
@@ -214,11 +220,18 @@ body {
 .badge.rom-nomatch { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.35); }
 .badge.update { background: rgba(210, 153, 34, 0.18); color: var(--yellow); }
 
-.port-desc { color: var(--text-dim); font-size: 12px; line-height: 1.5; min-height: 36px; }
-.rom-line { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+.port-desc {
+  color: var(--text-dim); font-size: 12px; line-height: 1.55;
+  min-height: 38px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rom-line { font-size: 12px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
 .rom-line b { color: var(--text); font-weight: 600; }
 
-.mod-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+.mod-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .mod-chip {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--bg-soft); border: 1px solid var(--border);
@@ -232,7 +245,6 @@ body {
 }
 .mod-chip button:hover { color: var(--text); }
 .mods-open-btn { font-size: 11px; padding: 4px 10px; }
-.mods-add-btn { font-size: 11px; padding: 4px 10px; }
 .mod-row-modal { flex-wrap: wrap; }
 /* Botón "habilitar/deshabilitar todos los mods" del modal */
 .mods-toggle-all {
@@ -267,12 +279,20 @@ body {
 }
 .modal-close:hover { color: var(--text); background: var(--card-hover); }
 .modal-body { padding: 16px 18px; overflow-y: auto; }
+/* Modal de confirmación: más estrecho y con pie de botones */
+.modal-confirm { width: min(420px, 100%); }
+.modal-foot {
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 18px; border-top: 1px solid var(--border);
+}
 body.modal-open { overflow: hidden; }
 
-.port-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.port-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .port-actions .spacer { flex: 1; }
-/* Fila principal de acciones (update / play): alineada a la derecha. */
+/* Fila principal de acciones (update / play): alineada a la derecha y fija al
+   pie de la tarjeta en vista tarjetas, para que todas queden alineadas. */
 .port-actions.main { justify-content: flex-end; }
+.grid:not(.list) .port-actions.main { margin-top: auto; padding-top: 6px; }
 
 .progress {
   height: 6px; background: var(--bg-soft); border-radius: 999px; overflow: hidden;
@@ -280,11 +300,11 @@ body.modal-open { overflow: hidden; }
 .progress .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--purple)); transition: width 0.2s ease; }
 
 /* ROMs — vista tarjetas / lista */
-.roms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
-.roms-grid.list { grid-template-columns: 1fr; gap: 8px; }
+.roms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.roms-grid.list { grid-template-columns: 1fr; gap: 10px; }
 .rom-card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 16px; display: flex; flex-direction: column; gap: 10px;
+  padding: 18px; display: flex; flex-direction: column; gap: 12px;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
   position: relative; overflow: hidden;
 }
@@ -295,28 +315,35 @@ body.modal-open { overflow: hidden; }
 }
 .rom-card:hover { transform: translateY(-3px); border-color: #3d444d; box-shadow: var(--shadow); }
 .rom-card:hover::before { opacity: 1; }
-.rom-card-head { display: flex; align-items: center; gap: 10px; }
-.rom-card .rom-name { flex: 1; }
+.rom-card-head { display: flex; align-items: center; gap: 12px; }
+.rom-card .rom-name {
+  flex: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .rom-card .rom-meta { align-items: flex-start; text-align: left; }
 .rom-card .rom-hash-row { justify-content: flex-start; }
 .rom-size { font-size: 12px; color: var(--text-dim); }
-.rom-card-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; flex-wrap: wrap; }
+.rom-card-foot { display: flex; align-items: center; gap: 10px; margin-top: auto; flex-wrap: wrap; padding-top: 4px; }
 .rom-card-foot .spacer { flex: 1; }
 /* Chips de ports compatibles (un ROM puede matchear varios) */
-.rom-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.rom-badges { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
 .rom-item {
-  display: flex; align-items: center; gap: 14px;
-  background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;
+  display: flex; align-items: center; gap: 16px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 18px; min-height: 68px;
   transition: border-color 0.15s ease;
 }
 .rom-item:hover { border-color: #3d444d; }
-.rom-icon { font-size: 22px; }
+.rom-icon { font-size: 22px; flex-shrink: 0; }
 .rom-name { font-weight: 600; font-size: 14px; flex: 1; word-break: break-all; }
 .rom-meta {
   color: var(--text-dim); font-size: 12px; text-align: right;
-  display: flex; flex-direction: column; align-items: flex-end; gap: 3px;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
 }
-.rom-hash-row { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.rom-hash-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .rom-hash { font-family: ui-monospace, monospace; font-size: 11px; color: var(--text-dim); }
 .copy-btn {
   background: none; border: none; cursor: pointer; color: var(--text-dim);

@@ -12,6 +12,7 @@ import { detectPlatform } from "./platform";
 import { ensureSelfImageCopy, syncLaunchers, writeImagenHelper } from "./launchers";
 import { deleteRom, saveRomFile } from "./roms";
 import { openPathInFileManager } from "./folders";
+import { normalizeVersion } from "./version";
 
 export interface RomSlotStatus {
   /** Requirement id (e.g. "oot", "oot-mq"). */
@@ -121,7 +122,15 @@ export class App {
         roms,
         hasRom: roms.filter((slot) => slot.required).every((slot) => slot.matched),
         updateAvailable: !!updateInfo?.available,
-        updateInfo,
+        // Normaliza también lo cacheados (escritos por versiones anteriores),
+        // para que el frontend siempre reciba versiones "x.x.x".
+        updateInfo: updateInfo
+          ? {
+              ...updateInfo,
+              installed: normalizeVersion(updateInfo.installed) ?? updateInfo.installed,
+              latest: normalizeVersion(updateInfo.latest) ?? updateInfo.latest,
+            }
+          : null,
         mods,
         linkedMods: mods.filter((mod) => isModLinked(this.cfg, manifest, mod)),
         modsRoot: centralModsRoot(this.cfg, manifest),
@@ -129,7 +138,17 @@ export class App {
       });
     }
     const self = await checkSelfUpdate(this.cfg);
-    return { scan, ports, self };
+    return {
+      scan,
+      ports,
+      self: self
+        ? {
+            ...self,
+            current: normalizeVersion(self.current) ?? self.current,
+            latest: normalizeVersion(self.latest) ?? self.latest,
+          }
+        : null,
+    };
   }
 
   async install(
