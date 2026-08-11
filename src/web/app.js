@@ -361,6 +361,17 @@ function openModsModal(p) {
   $("#mods-modal-title").textContent = t("mod.modalTitle", p.manifest.name);
   const body = $("#mods-modal-body");
   body.innerHTML = "";
+  // Botón para habilitar/deshabilitar todos los mods a la vez
+  if (p.mods.length > 0) {
+    const allLinked = p.linkedMods.length === p.mods.length;
+    const toggleAll = el(
+      "button",
+      `btn mods-toggle-all ${allLinked ? "red" : "green"}`,
+      allLinked ? t("mod.disableAll") : t("mod.enableAll"),
+    );
+    toggleAll.addEventListener("click", () => toggleAllMods(p, !allLinked));
+    body.appendChild(toggleAll);
+  }
   const row = el("div", "mod-row mod-row-modal");
   for (const mod of p.mods) row.appendChild(modChip(p, mod));
   body.appendChild(row);
@@ -745,6 +756,14 @@ function toggleMod(p, mod, linked) {
   busyRun(p.manifest.id, async () => {
     await api(linked ? "/api/mods/unlink" : "/api/mods/link", { id: p.manifest.id, mod });
     toast(linked ? t("toast.modUnlinked", mod) : t("toast.modLinked", mod), "ok");
+  });
+}
+
+/** Habilita o deshabilita todos los mods de un port de una sola vez. */
+function toggleAllMods(p, enable) {
+  busyRun(p.manifest.id, async () => {
+    await api(enable ? "/api/mods/link-all" : "/api/mods/unlink-all", { id: p.manifest.id });
+    toast(enable ? t("toast.modsEnabledAll", p.mods.length) : t("toast.modsDisabledAll", p.mods.length), "ok");
   });
 }
 

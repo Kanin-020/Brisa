@@ -1,6 +1,6 @@
 {
   "name": "brisa",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Recopilador y gestor de ports nativos de PC al estilo EmuDeck, basado en manifiestos.",
   "license": "MIT",
   "author": "Kanin",
@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
-    "serve": "node dist/cli.js serve",
+    "serve": "npm run build; concurrently -k -n build,web,server \"tsc -p tsconfig.json --watch --preserveWatchOutput\" \"node scripts/copy-web.js --watch\" \"nodemon\"",
     "desktop": "npm run build && electron .",
     "package": "npm run build && node scripts/build-desktop.mjs",
     "package:linux": "npm run build && node scripts/build-desktop.mjs --only linux",
@@ -33,9 +33,11 @@
     "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.10.1",
     "@types/tar": "^6.1.13",
+    "concurrently": "^10.0.4",
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "esbuild": "^0.28.0",
+    "nodemon": "^3.1.14",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

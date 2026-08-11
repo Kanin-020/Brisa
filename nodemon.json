@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json.schemastore.org/nodemon.json",
+  "watch": ["dist"],
+  "ext": "js,json,css,html",
+  "delay": 2,
+  "exec": "node dist/cli.js serve"
+}

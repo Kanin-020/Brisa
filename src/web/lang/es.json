@@ -51,6 +51,8 @@
   "mod.addMods": "＋ Añadir mods",
   "mod.addModsHint": "Abrir carpeta de mods: {0}",
   "mod.modalTitle": "Mods de {0}",
+  "mod.enableAll": "✓ Habilitar todos",
+  "mod.disableAll": "✕ Deshabilitar todos",
   "mod.close": "Cerrar",
 
   "self.version": "Brisa v{0}",
@@ -70,6 +72,8 @@
   "toast.updateAvailable": "⚠ {0}: hay versión nueva {2} (instalada: {1}). Haz clic para actualizar",
   "toast.modUnlinked": "Mod \"{0}\" desenlazado",
   "toast.modLinked": "Mod \"{0}\" enlazado",
+  "toast.modsEnabledAll": "✓ {0} mods habilitados",
+  "toast.modsDisabledAll": "✓ {0} mods deshabilitados",
   "toast.uploading": "Subiendo {0}",
   "toast.romsAdded": "✓ {0} ROMs añadidos",
   "toast.romsSkipped": "⏭ {0} ya existían (sin cambios)",

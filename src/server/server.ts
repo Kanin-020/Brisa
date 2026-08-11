@@ -142,6 +142,28 @@ export function startServer(
     }
   });
 
+  route("POST", /^\/api\/mods\/link-all$/, async (req, res, body) => {
+    const id = (body as { id?: string })?.id;
+    if (!id) return sendJson(res, 400, { error: "missing id" });
+    try {
+      app.relinkMods(id);
+      sendJson(res, 200, { ok: true });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
+  route("POST", /^\/api\/mods\/unlink-all$/, async (req, res, body) => {
+    const id = (body as { id?: string })?.id;
+    if (!id) return sendJson(res, 400, { error: "missing id" });
+    try {
+      app.unlinkAllMods(id);
+      sendJson(res, 200, { ok: true });
+    } catch (e) {
+      sendJson(res, 500, { error: (e as Error).message });
+    }
+  });
+
   route("POST", /^\/api\/relink-mods$/, async (req, res, body) => {
     const id = (body as { id?: string })?.id;
     if (!id) return sendJson(res, 400, { error: "missing id" });

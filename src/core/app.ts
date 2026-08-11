@@ -194,6 +194,13 @@ export class App {
     unlinkMod(this.cfg, m, modName);
   }
 
+  /** Desenlaza todos los mods centrales de un port (sin borrar los archivos). */
+  unlinkAllMods(id: string) {
+    const m = this.manifest(id);
+    if (!m) throw new Error(`Port not found: ${id}`);
+    unlinkAllMods(this.cfg, m);
+  }
+
   relinkMods(id: string): string[] {
     const m = this.manifest(id);
     if (!m) throw new Error(`Port not found: ${id}`);

@@ -1,4 +1,5 @@
 // Copies the static web UI into dist so the server can serve it after build.
+// With `--watch` it re-copies on every change (hot reload of the web assets).
 const fs = require("fs");
 const path = require("path");
 
@@ -18,5 +19,32 @@ function copyDir(srcDir, destDir) {
   }
 }
 
-copyDir(src, dest);
-console.log("copied src/web -> dist/web");
+function copyAll() {
+  copyDir(src, dest);
+  console.log("copied src/web -> dist/web");
+}
+
+copyAll();
+
+// `--watch`: recopia src/web -> dist/web cada vez que cambie un archivo web.
+if (process.argv.includes("--watch")) {
+  console.log("watching src/web for changes...");
+  let timer = null;
+  const schedule = () => {
+    clearTimeout(timer);
+    timer = setTimeout(copyAll, 80);
+  };
+  try {
+    // fs.watch({recursive}) está disponible desde Node 20 en Linux/macOS.
+    fs.watch(src, { recursive: true }, schedule);
+  } catch {
+    // Fallback para Node < 20: vigilar cada subcarpeta por separado.
+    const watchDir = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) watchDir(path.join(dir, entry.name));
+      }
+      fs.watch(dir, schedule);
+    };
+    watchDir(src);
+  }
+}

@@ -233,6 +233,12 @@ body {
 .mods-open-btn { font-size: 11px; padding: 4px 10px; }
 .mods-add-btn { font-size: 11px; padding: 4px 10px; }
 .mod-row-modal { flex-wrap: wrap; }
+/* Botón "habilitar/deshabilitar todos los mods" del modal */
+.mods-toggle-all {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 8px 14px;
+}
 
 /* Mods modal */
 .modal-overlay {
