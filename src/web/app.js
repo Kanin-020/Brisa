@@ -1,6 +1,9 @@
-/* Brisa GUI — i18n-ready */
+/* Brisa GUI — interfaz: estado, renderizado y eventos.
+ * La capa de red vive en api.js y las utilidades en utils.js.
+ * (api, uploadRom, launchPort, fmtSize, copyHash están definidas ahí.) */
+
 let state = null;
-let busy = new Set();
+let busyPortIds = new Set();
 
 const MAX_MODS_INLINE = 3;
 
@@ -32,13 +35,13 @@ try {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => document.querySelectorAll(sel);
 const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text !== undefined) n.textContent = text;
-  return n;
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
 };
 
-// ── i18n helpers ──
+// ── i18n ──
 
 const { t, setLocale, locale, onLocaleChange, localeLabel, availableLocales, ready: i18nReady } = window.__i18n;
 
@@ -111,26 +114,16 @@ function updateStaticText() {
 // ── Toast ──
 
 function toast(msg, kind = "ok", duration = 3200, onClick = null) {
-  const t = $("#toast");
-  t.textContent = msg;
-  t.className = `toast show ${kind}`;
-  t.classList.toggle("clickable", !!onClick);
-  t.onclick = onClick;
-  clearTimeout(t._timer);
-  t._timer = setTimeout(() => {
-    t.classList.remove("show");
-    t.onclick = null;
+  const node = $("#toast");
+  node.textContent = msg;
+  node.className = `toast show ${kind}`;
+  node.classList.toggle("clickable", !!onClick);
+  node.onclick = onClick;
+  clearTimeout(node._timer);
+  node._timer = setTimeout(() => {
+    node.classList.remove("show");
+    node.onclick = null;
   }, duration);
-}
-
-// ── API ──
-
-async function api(path, body) {
-  const opts = body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {};
-  const res = await fetch(path, opts);
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-  return data;
 }
 
 // ── Locale switcher ──
@@ -161,7 +154,7 @@ function initLocaleSwitcher() {
   updateStaticText();
 }
 
-// ── Loader ──
+// ── Carga de estado ──
 
 async function load() {
   try {
@@ -182,7 +175,7 @@ function render() {
   renderSelfUpdate(state.self);
   $("#stat-roms").textContent = scan.roms.length;
   $("#stat-installed").textContent = ports.filter((p) => p.installed).length;
-  $("#stat-mods").textContent = ports.reduce((a, p) => a + p.mods.length, 0);
+  $("#stat-mods").textContent = ports.reduce((total, p) => total + p.mods.length, 0);
   $("#stat-updates").textContent = ports.filter((p) => p.updateAvailable).length;
   $("#cfg-roms-dir").textContent = `${t("footer.romsDir")}: ${state.cfg.romsDir}`;
   $("#roms-hint").textContent = t("roms.hint", scan.matches.length);
@@ -201,20 +194,20 @@ function render() {
 
   // Re-open the mods modal if it was open (e.g. after a re-render/refresh)
   if (modsModalPort) {
-    const p = allPorts.find((x) => x.manifest.id === modsModalPort);
-    if (p) openModsModal(p);
+    const port = allPorts.find((p) => p.manifest.id === modsModalPort);
+    if (port) openModsModal(port);
     else closeModsModal();
   }
 }
 
 function renderPorts() {
   if (!state) return;
-  renderPortsList("#ports-grid-installed", allPorts.filter((p) => p.installed), installedQuery, t("ports.emptyInstalled"));
-  renderPortsList("#ports-grid-available", allPorts.filter((p) => !p.installed), availableQuery, t("ports.emptyAvailable"));
+  renderPortsInto("#ports-grid-installed", allPorts.filter((p) => p.installed), installedQuery, t("ports.emptyInstalled"));
+  renderPortsInto("#ports-grid-available", allPorts.filter((p) => !p.installed), availableQuery, t("ports.emptyAvailable"));
 }
 
-function renderPortsList(sel, list, query, emptyMsg) {
-  const grid = $(sel);
+function renderPortsInto(containerSelector, list, query, emptyMsg) {
+  const grid = $(containerSelector);
   grid.classList.toggle("list", viewMode === "list");
   grid.innerHTML = "";
   const q = query.toLowerCase();
@@ -225,8 +218,8 @@ function renderPortsList(sel, list, query, emptyMsg) {
     grid.appendChild(el("div", "loading", q ? t("ports.empty") : emptyMsg));
     return;
   }
-  for (const p of filtered) {
-    grid.appendChild(portCard(p));
+  for (const port of filtered) {
+    grid.appendChild(portCard(port));
   }
 }
 
@@ -259,8 +252,8 @@ function portCard(p) {
     badges.appendChild(el("span", "badge version", p.version));
   }
   if (p.updateAvailable) {
-    const b = el("span", "badge update", `⬆ ${p.updateInfo.installed} → ${p.updateInfo.latest}`);
-    badges.appendChild(b);
+    const badge = el("span", "badge update", `⬆ ${p.updateInfo.installed} → ${p.updateInfo.latest}`);
+    badges.appendChild(badge);
   }
   top.appendChild(badges);
   card.appendChild(top);
@@ -268,16 +261,16 @@ function portCard(p) {
   card.appendChild(el("div", "port-desc", m.description));
 
   // ROM status (one slot per requirement — multirom ports show base + MQ)
-  for (const s of p.roms) {
+  for (const slot of p.roms) {
     const romLine = el("div", "rom-line");
-    if (s.matched) {
+    if (slot.matched) {
       romLine.appendChild(el("span", "badge rom-ok", t("port.romOk")));
-      romLine.appendChild(document.createTextNode(`${s.name} — ${s.romName}`));
-      if (s.matchedBy === "hash") romLine.appendChild(el("span", "badge version", t("roms.byHash")));
-      if (s.matchedBy === "gameid") romLine.appendChild(el("span", "badge version", t("roms.byGameId")));
+      romLine.appendChild(document.createTextNode(`${slot.name} — ${slot.romName}`));
+      if (slot.matchedBy === "hash") romLine.appendChild(el("span", "badge version", t("roms.byHash")));
+      if (slot.matchedBy === "gameid") romLine.appendChild(el("span", "badge version", t("roms.byGameId")));
     } else {
       romLine.appendChild(el("span", "badge rom-missing", t("port.romMissing")));
-      romLine.appendChild(document.createTextNode(s.name + (s.required ? "" : ` ${t("port.optional")}`)));
+      romLine.appendChild(document.createTextNode(slot.name + (slot.required ? "" : ` ${t("port.optional")}`)));
     }
     card.appendChild(romLine);
   }
@@ -335,10 +328,10 @@ function portCard(p) {
   card.appendChild(mainActions);
 
   // Progress bar
-  if (busy.has(p.manifest.id)) {
-    const prog = el("div", "progress");
-    prog.appendChild(el("div", "bar"));
-    card.appendChild(prog);
+  if (busyPortIds.has(p.manifest.id)) {
+    const progress = el("div", "progress");
+    progress.appendChild(el("div", "bar"));
+    card.appendChild(progress);
   }
 
   return card;
@@ -446,62 +439,64 @@ function renderRoms(scan) {
     list.appendChild(el("div", "loading", t("roms.empty")));
     return;
   }
-  const byName = {};
-  for (const mm of scan.matches) {
-    const multi = mm.manifest.roms.length > 1;
-    byName[mm.rom.path] = multi ? `${mm.manifest.name} · ${mm.requirement.name}` : mm.manifest.name;
+  const matchedNames = {};
+  for (const match of scan.matches) {
+    const multi = match.manifest.roms.length > 1;
+    matchedNames[match.rom.path] = multi
+      ? `${match.manifest.name} · ${match.requirement.name}`
+      : match.manifest.name;
   }
-  for (const r of scan.roms) {
-    list.appendChild(romsViewMode === "cards" ? romCard(r, byName[r.path]) : romListItem(r, byName[r.path]));
+  for (const rom of scan.roms) {
+    list.appendChild(romsViewMode === "cards" ? romCard(rom, matchedNames[rom.path]) : romListItem(rom, matchedNames[rom.path]));
   }
 }
 
-function romHashRow(r) {
+function romHashRow(rom) {
   const hashRow = el("div", "rom-hash-row");
-  hashRow.appendChild(el("span", "rom-hash", `sha1 ${r.sha1.slice(0, 16)}…`));
+  hashRow.appendChild(el("span", "rom-hash", `sha1 ${rom.sha1.slice(0, 16)}…`));
   const copyBtn = el("button", "copy-btn", "⧉");
   copyBtn.title = t("roms.copyHash");
-  copyBtn.addEventListener("click", () => copyHash(r.sha1));
+  copyBtn.addEventListener("click", () => copyHash(rom.sha1));
   hashRow.appendChild(copyBtn);
   return hashRow;
 }
 
-function romDeleteBtn(r) {
+function romDeleteBtn(rom) {
   const del = el("button", "copy-btn del-btn", "🗑");
   del.title = t("roms.delete");
-  del.addEventListener("click", () => deleteRom(r));
+  del.addEventListener("click", () => deleteRom(rom));
   return del;
 }
 
 /** Vista de tarjetas: icono, nombre, hash, tamaño y acciones. */
-function romCard(r, matchedBy) {
+function romCard(rom, matchedBy) {
   const card = el("div", "rom-card");
   const head = el("div", "rom-card-head");
   head.appendChild(el("div", "rom-icon", "💾"));
-  head.appendChild(el("div", "rom-name", r.name));
+  head.appendChild(el("div", "rom-name", rom.name));
   card.appendChild(head);
   const meta = el("div", "rom-meta");
-  meta.appendChild(romHashRow(r));
-  meta.appendChild(el("div", "rom-size", fmtSize(r.size)));
+  meta.appendChild(romHashRow(rom));
+  meta.appendChild(el("div", "rom-size", fmtSize(rom.size)));
   card.appendChild(meta);
   const foot = el("div", "rom-card-foot");
   if (matchedBy) foot.appendChild(el("div", "badge rom-ok", matchedBy));
   foot.appendChild(el("div", "spacer"));
-  foot.appendChild(romDeleteBtn(r));
+  foot.appendChild(romDeleteBtn(rom));
   card.appendChild(foot);
   return card;
 }
 
 /** Vista de lista: la fila compacta de siempre. */
-function romListItem(r, matchedBy) {
+function romListItem(rom, matchedBy) {
   const item = el("div", "rom-item");
   item.appendChild(el("div", "rom-icon", "💾"));
-  item.appendChild(el("div", "rom-name", r.name));
+  item.appendChild(el("div", "rom-name", rom.name));
   const meta = el("div", "rom-meta");
-  meta.appendChild(romHashRow(r));
-  meta.appendChild(el("div", "", fmtSize(r.size)));
+  meta.appendChild(romHashRow(rom));
+  meta.appendChild(el("div", "", fmtSize(rom.size)));
   if (matchedBy) meta.appendChild(el("div", "badge rom-ok", matchedBy));
-  meta.appendChild(romDeleteBtn(r));
+  meta.appendChild(romDeleteBtn(rom));
   item.appendChild(meta);
   return item;
 }
@@ -546,42 +541,17 @@ function initRomPicker() {
   });
 }
 
-/** Subir un archivo con barra de progreso (XHR permite leer upload.onprogress). */
-function uploadRom(file, onProgress) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/roms/upload");
-    xhr.setRequestHeader("Content-Type", "application/octet-stream");
-    xhr.setRequestHeader("X-Filename", encodeURIComponent(file.name));
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
-    };
-    xhr.onload = () => {
-      let data = {};
-      try {
-        data = JSON.parse(xhr.responseText || "{}");
-      } catch {
-        /* ignore */
-      }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(data);
-      else reject(new Error(data.error || `HTTP ${xhr.status}`));
-    };
-    xhr.onerror = () => reject(new Error("network error"));
-    xhr.send(file);
-  });
-}
-
 async function uploadRoms(files) {
   let added = 0;
   let skipped = 0;
-  for (const f of files) {
-    if (!f.name || f.size === 0) continue;
+  for (const file of files) {
+    if (!file.name || file.size === 0) continue;
     try {
-      const data = await uploadRom(f, (pct) => toast(`${t("toast.uploading", f.name)} ${pct}%`));
+      const data = await uploadRom(file, (pct) => toast(`${t("toast.uploading", file.name)} ${pct}%`));
       if (data.skipped) skipped++;
       else added++;
     } catch (e) {
-      toast(`${f.name}: ${e.message}`, "error", 4000);
+      toast(`${file.name}: ${e.message}`, "error", 4000);
     }
   }
   if (added > 0 && skipped > 0) {
@@ -663,44 +633,15 @@ function initManifestTools() {
   });
 }
 
-function fmtSize(n) {
-  if (n < 1024) return `${n} B`;
-  if (n < 1048576) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1048576).toFixed(1)} MB`;
-}
-
-function copyHash(hash) {
-  const done = () => toast(t("toast.copied"), "ok");
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(hash).then(done).catch(() => legacyCopy(hash, done));
-  } else {
-    legacyCopy(hash, done);
-  }
-}
-
-function legacyCopy(text, done) {
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  ta.style.position = "fixed";
-  ta.style.opacity = "0";
-  document.body.appendChild(ta);
-  ta.select();
-  try {
-    document.execCommand("copy");
-  } catch {
-    /* ignore */
-  }
-  document.body.removeChild(ta);
-  done();
-}
+// ── Acciones de ports ──
 
 async function busyRun(id, fn) {
-  busy.add(id);
+  busyPortIds.add(id);
   render();
   try {
     await fn();
   } finally {
-    busy.delete(id);
+    busyPortIds.delete(id);
     await load();
   }
 }
@@ -728,23 +669,19 @@ function doUpdate(p) {
   });
 }
 
-function launchPort(p) {
-  fetch(`/api/launch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: p.manifest.id }) }).catch(() => {});
-}
-
 function doUpdateAndLaunch(p) {
   busyRun(p.manifest.id, async () => {
     toast(t("toast.installing", p.manifest.name));
     const data = await api("/api/update", { id: p.manifest.id });
     toast(`${t("toast.updated", p.manifest.name, data.info.latest)} · ${t("toast.launching", p.manifest.name)}`, "ok");
-    launchPort(p);
+    launchPort(p.manifest.id);
   });
 }
 
 function doLaunch(p) {
   api("/api/status").catch(() => {});
   toast(t("toast.launching", p.manifest.name), "ok");
-  launchPort(p);
+  launchPort(p.manifest.id);
   // Auto update check: warn with a clickable toast if a new version is available
   api("/api/check-update", { id: p.manifest.id })
     .then(({ info }) => {
@@ -791,12 +728,12 @@ function switchTab(tab) {
   } catch {
     /* ignore */
   }
-  $$(".tab-btn").forEach((b) => {
-    const on = b.dataset.tab === tab;
-    b.classList.toggle("active", on);
-    b.setAttribute("aria-selected", String(on));
+  $$(".tab-btn").forEach((btn) => {
+    const on = btn.dataset.tab === tab;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", String(on));
   });
-  $$(".tab-pane").forEach((p) => p.classList.toggle("active", p.dataset.tab === tab));
+  $$(".tab-pane").forEach((pane) => pane.classList.toggle("active", pane.dataset.tab === tab));
 }
 
 function initTabs() {
@@ -858,7 +795,7 @@ async function init() {
   $("#btn-self-update").addEventListener("click", doSelfUpdate);
   load();
   setInterval(() => {
-    if (busy.size === 0) load();
+    if (busyPortIds.size === 0) load();
   }, 8000);
 }
 

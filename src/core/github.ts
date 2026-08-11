@@ -23,7 +23,7 @@ interface RawRelease {
   assets?: Array<{ name?: string; browser_download_url?: string; size?: number }>;
 }
 
-function ghHeaders(cfg: AppConfig): Record<string, string> {
+function githubHeaders(cfg: AppConfig): Record<string, string> {
   return {
     "User-Agent": "brisa",
     ...(cfg.githubToken ? { Authorization: `Bearer ${cfg.githubToken}` } : {}),
@@ -36,8 +36,8 @@ function parseRelease(data: RawRelease): ReleaseInfo {
     name: data.name ?? data.tag_name ?? "unknown",
     publishedAt: data.published_at ?? "",
     assets: (data.assets ?? [])
-      .filter((a) => a.name && a.browser_download_url)
-      .map((a) => ({ name: a.name!, url: a.browser_download_url!, size: a.size ?? 0 })),
+      .filter((asset) => asset.name && asset.browser_download_url)
+      .map((asset) => ({ name: asset.name!, url: asset.browser_download_url!, size: asset.size ?? 0 })),
   };
 }
 
@@ -54,7 +54,7 @@ export async function getLatestRelease(
   opts: { allowPrerelease?: boolean } = {},
 ): Promise<ReleaseInfo> {
   const url = `https://api.github.com/repos/${repo}/releases/latest`;
-  const res = await fetch(url, { headers: ghHeaders(cfg) });
+  const res = await fetch(url, { headers: githubHeaders(cfg) });
   if (res.status === 404 && opts.allowPrerelease) {
     return getLatestReleaseFallback(cfg, repo);
   }
@@ -67,18 +67,18 @@ export async function getLatestRelease(
 /** Última release publicada (la API las ordena de más reciente a más antigua), saltando drafts. */
 async function getLatestReleaseFallback(cfg: AppConfig, repo: string): Promise<ReleaseInfo> {
   const url = `https://api.github.com/repos/${repo}/releases?per_page=5`;
-  const res = await fetch(url, { headers: ghHeaders(cfg) });
+  const res = await fetch(url, { headers: githubHeaders(cfg) });
   if (!res.ok) {
     throw new Error(`GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`);
   }
   const data = (await res.json()) as RawRelease[];
-  const rel = data.find((r) => !r.draft);
-  if (!rel) {
+  const release = data.find((item) => !item.draft);
+  if (!release) {
     throw new Error(`No releases found for ${repo}.`);
   }
-  return parseRelease(rel);
+  return parseRelease(release);
 }
 
 export function pickAsset(release: ReleaseInfo, pattern: string): ReleaseAsset | null {
-  return release.assets.find((a) => matchGlob(pattern, a.name)) ?? null;
+  return release.assets.find((asset) => matchGlob(pattern, asset.name)) ?? null;
 }

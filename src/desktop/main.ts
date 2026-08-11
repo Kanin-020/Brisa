@@ -16,6 +16,7 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 const brisa = new App();
+brisa.initialize();
 let server: Server | null = null;
 
 registerLifecycleEvents(() => server);

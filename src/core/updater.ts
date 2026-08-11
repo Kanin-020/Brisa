@@ -39,23 +39,23 @@ function writeCache(cfg: AppConfig, info: UpdateInfo): void {
  */
 export async function checkUpdate(
   cfg: AppConfig,
-  m: Manifest,
+  manifest: Manifest,
   force = false,
 ): Promise<UpdateInfo | null> {
-  const state = readState(cfg, m.id);
+  const state = readState(cfg, manifest.id);
   if (!state) return null;
-  const cached = readCache(cfg, m.id);
+  const cached = readCache(cfg, manifest.id);
   if (!force && cached && Date.now() - cached.checkedAt < CHECK_INTERVAL_MS) {
     return cached;
   }
   try {
-    const rel = await getLatestRelease(cfg, m.repo);
+    const release = await getLatestRelease(cfg, manifest.repo);
     const info: UpdateInfo = {
-      id: m.id,
-      name: m.name,
+      id: manifest.id,
+      name: manifest.name,
       installed: state.version,
-      latest: rel.tag,
-      available: rel.tag !== state.version,
+      latest: release.tag,
+      available: release.tag !== state.version,
       checkedAt: Date.now(),
     };
     writeCache(cfg, info);
@@ -64,8 +64,8 @@ export async function checkUpdate(
     // Network failure: fall back to cache or report unavailable.
     return (
       cached ?? {
-        id: m.id,
-        name: m.name,
+        id: manifest.id,
+        name: manifest.name,
         installed: state.version,
         latest: "?",
         available: false,
@@ -75,26 +75,26 @@ export async function checkUpdate(
   }
 }
 
-export async function applyUpdate(cfg: AppConfig, m: Manifest): Promise<UpdateInfo> {
+export async function applyUpdate(cfg: AppConfig, manifest: Manifest): Promise<UpdateInfo> {
   // Reinstall over the existing install dir (installer handles backup + rom relink).
-  const state = readState(cfg, m.id);
+  const state = readState(cfg, manifest.id);
   // Multirom: re-link every previously linked ROM. Old single-rom states only
   // store romLinked, which maps to the first requirement (the required base).
   const linked: Record<string, string> = { ...(state?.romsLinked ?? {}) };
   if (Object.keys(linked).length === 0 && state?.romLinked) {
-    const firstId = m.roms[0]?.id;
-    if (firstId) linked[firstId] = state.romLinked;
+    const firstRequirementId = manifest.roms[0]?.id;
+    if (firstRequirementId) linked[firstRequirementId] = state.romLinked;
   }
   const roms: Record<string, { path: string; name: string; size: number; sha1: string; gameId: null }> = {};
-  for (const [reqId, romPath] of Object.entries(linked)) {
+  for (const [requirementId, romPath] of Object.entries(linked)) {
     if (fs.existsSync(romPath)) {
-      roms[reqId] = { path: romPath, name: path.basename(romPath), size: 0, sha1: "", gameId: null };
+      roms[requirementId] = { path: romPath, name: path.basename(romPath), size: 0, sha1: "", gameId: null };
     }
   }
-  const newState = await installPort(cfg, m, { roms });
+  const newState = await installPort(cfg, manifest, { roms });
   const info: UpdateInfo = {
-    id: m.id,
-    name: m.name,
+    id: manifest.id,
+    name: manifest.name,
     installed: newState.version,
     latest: newState.version,
     available: false,
