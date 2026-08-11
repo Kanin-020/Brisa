@@ -439,15 +439,14 @@ function renderRoms(scan) {
     list.appendChild(el("div", "loading", t("roms.empty")));
     return;
   }
-  const matchedNames = {};
+  const matchedByPath = {};
   for (const match of scan.matches) {
     const multi = match.manifest.roms.length > 1;
-    matchedNames[match.rom.path] = multi
-      ? `${match.manifest.name} · ${match.requirement.name}`
-      : match.manifest.name;
+    const label = multi ? `${match.manifest.name} · ${match.requirement.name}` : match.manifest.name;
+    (matchedByPath[match.rom.path] ??= []).push(label);
   }
   for (const rom of scan.roms) {
-    list.appendChild(romsViewMode === "cards" ? romCard(rom, matchedNames[rom.path]) : romListItem(rom, matchedNames[rom.path]));
+    list.appendChild(romsViewMode === "cards" ? romCard(rom, matchedByPath[rom.path]) : romListItem(rom, matchedByPath[rom.path]));
   }
 }
 
@@ -480,7 +479,11 @@ function romCard(rom, matchedBy) {
   meta.appendChild(el("div", "rom-size", fmtSize(rom.size)));
   card.appendChild(meta);
   const foot = el("div", "rom-card-foot");
-  if (matchedBy) foot.appendChild(el("div", "badge rom-ok", matchedBy));
+  if (matchedBy && matchedBy.length > 0) {
+    for (const portName of matchedBy) foot.appendChild(el("div", "badge rom-ok", portName));
+  } else {
+    foot.appendChild(el("div", "badge rom-nomatch", t("roms.noMatch")));
+  }
   foot.appendChild(el("div", "spacer"));
   foot.appendChild(romDeleteBtn(rom));
   card.appendChild(foot);
@@ -495,7 +498,13 @@ function romListItem(rom, matchedBy) {
   const meta = el("div", "rom-meta");
   meta.appendChild(romHashRow(rom));
   meta.appendChild(el("div", "", fmtSize(rom.size)));
-  if (matchedBy) meta.appendChild(el("div", "badge rom-ok", matchedBy));
+  const badges = el("div", "rom-badges");
+  if (matchedBy && matchedBy.length > 0) {
+    for (const portName of matchedBy) badges.appendChild(el("div", "badge rom-ok", portName));
+  } else {
+    badges.appendChild(el("div", "badge rom-nomatch", t("roms.noMatch")));
+  }
+  meta.appendChild(badges);
   meta.appendChild(romDeleteBtn(rom));
   item.appendChild(meta);
   return item;

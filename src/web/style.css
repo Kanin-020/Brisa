@@ -211,6 +211,7 @@ body {
 .badge.version { background: rgba(88, 166, 255, 0.15); color: var(--accent); }
 .badge.rom-ok { background: rgba(63, 185, 80, 0.15); color: var(--green); }
 .badge.rom-missing { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+.badge.rom-nomatch { background: rgba(248, 81, 73, 0.15); color: var(--red); border: 1px solid rgba(248, 81, 73, 0.35); }
 .badge.update { background: rgba(210, 153, 34, 0.18); color: var(--yellow); }
 
 .port-desc { color: var(--text-dim); font-size: 12px; line-height: 1.5; min-height: 36px; }
@@ -299,8 +300,10 @@ body.modal-open { overflow: hidden; }
 .rom-card .rom-meta { align-items: flex-start; text-align: left; }
 .rom-card .rom-hash-row { justify-content: flex-start; }
 .rom-size { font-size: 12px; color: var(--text-dim); }
-.rom-card-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.rom-card-foot { display: flex; align-items: center; gap: 8px; margin-top: auto; flex-wrap: wrap; }
 .rom-card-foot .spacer { flex: 1; }
+/* Chips de ports compatibles (un ROM puede matchear varios) */
+.rom-badges { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
 .rom-item {
   display: flex; align-items: center; gap: 14px;
   background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 16px;

@@ -25,6 +25,7 @@
   "roms.byHash": "by hash",
   "roms.byGameId": "by game ID",
   "roms.byName": "by name",
+  "roms.noMatch": "No matches",
   "roms.viewCards": "Card view",
   "roms.viewList": "List view",
   "roms.copyHash": "Copy hash",
