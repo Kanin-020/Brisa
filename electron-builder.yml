@@ -16,7 +16,7 @@ extraResources:
     to: cli-entry.cjs
   - from: src/web/icon.png
     to: icon.png
-  - from: src/web/icon.icon
+  - from: src/web/icon.ico
     to: icon.ico
 
 linux:

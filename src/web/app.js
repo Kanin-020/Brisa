@@ -427,7 +427,10 @@ async function doSelfUpdate() {
   const latest = btn.dataset.latest ?? "";
   toast(t("toast.selfUpdating", latest), "ok", 6000);
   try {
-    const data = await api("/api/self-update");
+    // El endpoint exige POST (descarga el asset y lanza el updater). api() solo
+    // hace POST cuando recibe body; sin él haría GET y el servidor respondería
+    // 404 {"error":"not found"}.
+    const data = await api("/api/self-update", {});
     toast(t("toast.selfUpdated", data.info.latest), "ok", 9000);
   } catch (e) {
     btn.disabled = false;
