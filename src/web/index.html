@@ -49,6 +49,9 @@
           <span class="tab-label" id="tab-label-roms"></span>
           <span class="tab-count" id="tab-count-roms"></span>
         </button>
+        <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
+          <span class="tab-label" id="tab-label-help"></span>
+        </button>
       </nav>
       <div class="tabs-actions">
         <button id="btn-export-manifests" class="btn ghost sm" title="">⬆</button>
@@ -100,6 +103,14 @@
           </div>
         </div>
         <div id="roms-list" class="roms-grid"><div class="loading">Cargando…</div></div>
+      </section>
+
+      <section class="section tab-pane" data-tab="help" role="tabpanel" aria-labelledby="tab-label-help">
+        <div class="section-head">
+          <h2 id="help-title"></h2>
+        </div>
+        <p id="help-intro" class="help-intro"></p>
+        <div id="help-steps" class="help-grid"></div>
       </section>
     </main>
 

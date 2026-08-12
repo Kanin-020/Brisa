@@ -11,6 +11,7 @@
   "tabs.installed": "Installed ports",
   "tabs.available": "Available ports",
   "tabs.roms": "ROMs",
+  "tabs.help": "Help",
   "ports.hintInstalled": "{0} installed",
   "ports.hintAvailable": "{0} available",
   "ports.searchPlaceholder": "Search game or port…",
@@ -96,6 +97,49 @@
   "footer.madeWith": "Made with ♥",
   "footer.legal": "ROMs must be obtained legally",
   "footer.romsDir": "ROMs",
+
+  "help.title": "How to use Brisa",
+  "help.intro": "Brisa installs and updates native PC ports (SoH, 2Ship2Harkinian, Dusklight, TMC, …) directly from your ROMs, and even adds them to Steam as non-Steam games.",
+  "help.welcome": "Welcome to Brisa!",
+  "help.steps": [
+    {
+      "icon": "📥",
+      "title": "Add your ROMs",
+      "text": "In the ROMs tab, drop your files anywhere in the window or click \"＋ Add ROMs\". They will be copied to Brisa's ROMs folder."
+    },
+    {
+      "icon": "🔍",
+      "title": "Check the matches",
+      "text": "Each ROM shows a green chip for every compatible port (one per port, or per requirement in multi-ROM ports). If a ROM matches nothing, it shows a red \"No matches\" chip."
+    },
+    {
+      "icon": "⬇",
+      "title": "Install a port",
+      "text": "Go to the Available ports tab, make sure the ROM requirement is green (✓), and click \"Install\". If the ROM is missing you can still install, but the port won't run until you add it."
+    },
+    {
+      "icon": "▶",
+      "title": "Play and update",
+      "text": "Click \"Play\" to launch the port. When an update is available you'll see an orange chip (⬆ 1.2.3 → 1.4.0): click \"Update\" or \"Update and play\"."
+    },
+    {
+      "icon": "🎮",
+      "title": "Manage mods",
+      "text": "\"＋ Add mods\" opens the port's mods folder. Mods appear as chips in the card: click ＋ to enable one or ✕ to disable it. \"Open mods\" shows the full list."
+    },
+    {
+      "icon": "🖥",
+      "title": "Add ports to Steam",
+      "text": "Each installed port gets a launcher (.sh / .cmd) in Brisa's launchers folder. Add those files to Steam as non-Steam games; they stay up to date automatically."
+    },
+    {
+      "icon": "🗀",
+      "title": "Open files",
+      "text": "\"Open files\" shows the installed port's folder in your file manager. Clicking the port's icon opens its repository in your browser."
+    }
+  ],
+  "help.legal": "⚠ ROMs must be obtained legally: only use copies of games you own.",
+  "help.finish": "Let's go!",
 
   "loading": "Loading…",
 

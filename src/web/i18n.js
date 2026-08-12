@@ -31,6 +31,7 @@
     "tabs.installed": "Installed ports",
     "tabs.available": "Available ports",
     "tabs.roms": "ROMs",
+    "tabs.help": "Help",
     "ports.searchPlaceholder": "Search game or port…",
     "ports.empty": "No ports found",
     "ports.emptyInstalled": "No installed ports yet",
@@ -79,6 +80,21 @@
     "toast.selfUpdating": "Downloading Brisa v{0}…",
     "toast.selfUpdated": "✓ Brisa v{0} ready. The app will close and reopen automatically.",
     "loading": "Loading…",
+    "help.title": "How to use Brisa",
+    "help.intro": "Brisa installs and updates native PC ports directly from your ROMs, and adds them to Steam as non-Steam games.",
+    "help.welcome": "Welcome to Brisa!",
+    "help.steps": [
+      { "icon": "📥", "title": "Add your ROMs", "text": "Drop your files in the ROMs tab or click \"＋ Add ROMs\"." },
+      { "icon": "🔍", "title": "Check the matches", "text": "Each ROM shows a green chip per compatible port; a red chip means no match." },
+      { "icon": "⬇", "title": "Install a port", "text": "Go to Available ports, check the ROM is green (✓) and click Install." },
+      { "icon": "▶", "title": "Play and update", "text": "Click Play to launch. An orange chip means an update is available." },
+      { "icon": "🎮", "title": "Manage mods", "text": "＋ Add mods opens the mods folder; chips enable or disable each mod." },
+      { "icon": "🖥", "title": "Add ports to Steam", "text": "Installed ports get a launcher in Brisa's launchers folder — add it to Steam as a non-Steam game." },
+      { "icon": "🗀", "title": "Open files", "text": "Open files shows the port folder; the port icon opens its repository." }
+    ],
+    "help.legal": "⚠ ROMs must be obtained legally: only use copies of games you own.",
+    "help.finish": "Let's go!",
+
     "lang.en": "English",
     "lang.es": "Español",
   };
@@ -164,6 +180,20 @@
       }
     }
     return interpolate(val, ...args);
+  }
+
+  /**
+   * Get a translation value without interpolation. Use for structured data
+   * (arrays/objects) such as the help steps.
+   */
+  function tRaw(key) {
+    const dict = _translations[_locale] || _translations.en;
+    let val = dict ? dict[key] : undefined;
+    if (val === undefined) {
+      val = _translations.en ? _translations.en[key] : undefined;
+      if (val === undefined) val = FALLBACK_EN[key];
+    }
+    return val;
   }
 
   /**
@@ -272,6 +302,7 @@
   // Expose globally (the app.js script loads after this one)
   window.__i18n = {
     t,
+    tRaw,
     setLocale,
     locale: getLocale,
     onLocaleChange,

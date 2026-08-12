@@ -15,6 +15,8 @@ let romsViewMode = "cards";
 let activeTab = "installed";
 let modsModalPort = null;
 let selfToastShown = false;
+/** True en el primer arranque (guía de ayuda destacada + auto-apertura). */
+let firstRun = false;
 try {
   viewMode = localStorage.getItem("brisa-ports-view") === "list" ? "list" : "cards";
 } catch {
@@ -27,7 +29,7 @@ try {
 }
 try {
   const savedTab = localStorage.getItem("brisa-active-tab");
-  if (savedTab === "installed" || savedTab === "available" || savedTab === "roms") activeTab = savedTab;
+  if (savedTab === "installed" || savedTab === "available" || savedTab === "roms" || savedTab === "help") activeTab = savedTab;
 } catch {
   /* localStorage may be unavailable */
 }
@@ -43,7 +45,7 @@ const el = (tag, cls, text) => {
 
 // ── i18n ──
 
-const { t, setLocale, locale, onLocaleChange, localeLabel, availableLocales, ready: i18nReady } = window.__i18n;
+const { t, tRaw, setLocale, locale, onLocaleChange, localeLabel, availableLocales, ready: i18nReady } = window.__i18n;
 
 /** True si el botón de vista pertenece al toggle de ROMs. */
 function viewBtnIsRoms(btn) {
@@ -73,6 +75,8 @@ function updateStaticText() {
   $("#tab-label-installed").textContent = t("tabs.installed");
   $("#tab-label-available").textContent = t("tabs.available");
   $("#tab-label-roms").textContent = t("tabs.roms");
+  $("#tab-label-help").textContent = t("tabs.help");
+  renderHelp();
   $("#ports-search-installed").placeholder = t("ports.searchPlaceholder");
   $("#ports-search-available").placeholder = t("ports.searchPlaceholder");
   $$(".view-btn").forEach((btn) => {
@@ -531,6 +535,39 @@ function romListItem(rom, matchedBy) {
   return item;
 }
 
+// ── Ayuda ──
+
+/** Renderiza la sección de ayuda (bienvenida, pasos y nota legal). */
+function renderHelp() {
+  const title = $("#help-title");
+  if (!title) return;
+  title.textContent = t("help.title");
+  $("#help-intro").textContent = t("help.intro");
+  const grid = $("#help-steps");
+  grid.innerHTML = "";
+  // Banner destacado solo en el primer arranque (persiste durante la sesión,
+  // aunque se cambie de idioma).
+  if (firstRun) grid.appendChild(el("div", "help-welcome", `🎉 ${t("help.welcome")}`));
+  const steps = tRaw("help.steps") ?? [];
+  for (const step of steps) {
+    const card = el("div", "help-card");
+    const icon = el("div", "help-icon", step.icon ?? "•");
+    card.appendChild(icon);
+    const body = el("div", "help-body");
+    body.appendChild(el("h3", "help-card-title", step.title));
+    body.appendChild(el("p", "help-card-text", step.text));
+    card.appendChild(body);
+    grid.appendChild(card);
+  }
+  const legal = el("div", "help-legal", t("help.legal"));
+  const finish = el("button", "btn green", t("help.finish"));
+  finish.addEventListener("click", () => switchTab("installed"));
+  const foot = el("div", "help-foot");
+  foot.appendChild(legal);
+  foot.appendChild(finish);
+  grid.appendChild(foot);
+}
+
 // ── ROMs: añadir, borrar, abrir carpeta ──
 
 function initDropZone() {
@@ -757,13 +794,19 @@ function initPortsTools() {
   });
 }
 
-/** Cambia la pestaña activa (installed / available / roms) y la persiste. */
-function switchTab(tab) {
+/**
+ * Cambia la pestaña activa (installed / available / roms / help) y la persiste.
+ * Con `persist = false` (primer arranque) no se guarda para no reabrir en la
+ * pestaña de ayuda la próxima vez.
+ */
+function switchTab(tab, persist = true) {
   activeTab = tab;
-  try {
-    localStorage.setItem("brisa-active-tab", tab);
-  } catch {
-    /* ignore */
+  if (persist) {
+    try {
+      localStorage.setItem("brisa-active-tab", tab);
+    } catch {
+      /* ignore */
+    }
   }
   $$(".tab-btn").forEach((btn) => {
     const on = btn.dataset.tab === tab;
@@ -855,8 +898,26 @@ function initConfirmModal() {
 
 async function init() {
   await i18nReady();
+  // Primer arranque: marcar el flag ANTES de renderizar para que el banner de
+  // bienvenida salga en renderHelp(), y auto-abrir la guía al final.
+  let helpSeen = false;
+  try {
+    helpSeen = localStorage.getItem("brisa-help-seen") === "1";
+  } catch {
+    /* localStorage may be unavailable */
+  }
+  if (!helpSeen) {
+    firstRun = true;
+    try {
+      localStorage.setItem("brisa-help-seen", "1");
+    } catch {
+      /* localStorage may be unavailable */
+    }
+  }
   initLocaleSwitcher();
   initTabs();
+  // Solo en el primer arranque se abre la ayuda sin persistir la pestaña.
+  if (firstRun) switchTab("help", false);
   initPortsTools();
   initViewToggles();
   initModsModal();

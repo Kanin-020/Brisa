@@ -38,7 +38,7 @@ export function registerSrmConfigCommand(program: Command, app: App): void {
         }
         const title = names.get(state.id) ?? state.id;
         const file = path.join(dir, `${title}${ext}`);
-        fs.writeFileSync(file, launcherScriptForPlatform(app.cfg, state.id));
+        fs.writeFileSync(file, launcherScriptForPlatform(app.cfg, state.id, state.version));
         if (ext !== ".cmd") fs.chmodSync(file, 0o755);
         generated++;
         const linked = Object.values(state.romsLinked ?? {}).find(Boolean) ?? state.romLinked;

@@ -11,6 +11,7 @@
   "tabs.installed": "Ports instalados",
   "tabs.available": "Ports disponibles",
   "tabs.roms": "ROMs",
+  "tabs.help": "Ayuda",
   "ports.hintInstalled": "{0} instalados",
   "ports.hintAvailable": "{0} disponibles",
   "ports.searchPlaceholder": "Buscar juego o port…",
@@ -96,6 +97,49 @@
   "footer.madeWith": "Hecho con ♥",
   "footer.legal": "Los ROMs deben obtenerse legalmente",
   "footer.romsDir": "ROMs",
+
+  "help.title": "Cómo usar Brisa",
+  "help.intro": "Brisa instala y actualiza ports nativos de PC (SoH, 2Ship2Harkinian, Dusklight, TMC, …) directamente desde tus ROMs, y además los añade a Steam como juegos no-Steam.",
+  "help.welcome": "¡Bienvenido a Brisa!",
+  "help.steps": [
+    {
+      "icon": "📥",
+      "title": "Añade tus ROMs",
+      "text": "En la pestaña ROMs, suelta tus archivos en cualquier parte de la ventana o pulsa «＋ Añadir ROMs». Se copiarán a la carpeta de ROMs de Brisa."
+    },
+    {
+      "icon": "🔍",
+      "title": "Revisa las coincidencias",
+      "text": "Cada ROM muestra un chip verde por cada port compatible (uno por port, o por requisito en ports multi-ROM). Si un ROM no coincide con nada, se muestra el chip rojo «Sin coincidencias»."
+    },
+    {
+      "icon": "⬇",
+      "title": "Instala un port",
+      "text": "Ve a la pestaña Ports disponibles, asegúrate de que el requisito de ROM esté en verde (✓) y pulsa «Instalar». Si falta la ROM puedes instalarlo igualmente, pero no se lanzará hasta que la añadas."
+    },
+    {
+      "icon": "▶",
+      "title": "Juega y actualiza",
+      "text": "Pulsa «Jugar» para lanzar el port. Cuando haya una actualización verás un chip naranja (⬆ 1.2.3 → 1.4.0): pulsa «Actualizar» o «Actualizar y jugar»."
+    },
+    {
+      "icon": "🎮",
+      "title": "Gestiona mods",
+      "text": "«＋ Añadir mods» abre la carpeta de mods del port. Los mods aparecen como chips en la tarjeta: pulsa ＋ para activar uno o ✕ para desactivarlo. «Abrir mods» muestra la lista completa."
+    },
+    {
+      "icon": "🖥",
+      "title": "Añade ports a Steam",
+      "text": "Cada port instalado recibe un launcher (.sh / .cmd) en la carpeta launchers de Brisa. Añade esos archivos a Steam como juegos no-Steam; se mantienen actualizados automáticamente."
+    },
+    {
+      "icon": "🗀",
+      "title": "Abrir archivos",
+      "text": "«Abrir archivos» muestra la carpeta del port instalado en tu gestor de archivos. Pulsar el icono del port abre su repositorio en el navegador."
+    }
+  ],
+  "help.legal": "⚠ Los ROMs deben obtenerse legalmente: usa solo copias de juegos que poseas.",
+  "help.finish": "¡Vamos allá!",
 
   "loading": "Cargando…",
 
