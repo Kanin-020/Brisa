@@ -37,6 +37,13 @@ concurrency:
   group: brisa-release
   cancel-in-progress: false
 
+# Electron (npm) descarga su binario en el postinstall y en runners limpios
+# es propenso a fallos de red (`socket hang up`). En CI no hace falta ese
+# binario: electron-builder se descarga el suyo al empaquetar. Por eso se
+# salta aquí y se cachea la descarga del empaquetado.
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+
 jobs:
   # 1) Versiona, genera CHANGELOG.md, pasa tests y crea el tag.
   prepare:
@@ -52,7 +59,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -103,6 +110,11 @@ jobs:
             target: linux
           - os: windows-latest
             target: windows
+    # Cachés de electron-builder en el workspace (rutas iguales en Linux y
+    # Windows) para que las descargas de Electron/NSIS no se repitan.
+    env:
+      ELECTRON_CACHE: .cache/electron
+      ELECTRON_BUILDER_CACHE: .cache/electron-builder
     steps:
       - uses: actions/checkout@v4
         with:
@@ -110,8 +122,15 @@ jobs:
           fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
+      - name: Cache Electron binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/electron
+            .cache/electron-builder
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
         run: npm ci
       - name: Build (TypeScript + web)
@@ -138,7 +157,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Generate release notes
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
