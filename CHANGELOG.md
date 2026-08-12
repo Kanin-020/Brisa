@@ -9,5 +9,4 @@ Todas las versiones notables de Brisa.
 - More UI improvements. (`685bc15`)
 - UI rom improvements (`7ba0d61`)
 
-[Ver diff](https://github.com/Kanin-020/port-hub/compare/0.3.8...0.4.0)
-
+[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.3.8...0.4.0)
