@@ -81,7 +81,7 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: node scripts/changelog.mjs "$VERSION" --write
-      - name: Commit version + changelog, create and push tag
+      - name: Commit version + changelog, push tag and main
         env:
           VERSION: ${{ steps.release.outputs.version }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
@@ -92,9 +92,17 @@ jobs:
           # --allow-empty / -f / --force: re-ejecutar el workflow con la misma
           # versión (reintento) no debe fallar ni crear releases duplicadas.
           git commit --allow-empty -m "chore: release $VERSION"
+          # El tag es lo imprescindible para el build y la release: se empuja
+          # PRIMERO y con --force (los reintentos lo re-apuntan al commit nuevo).
           git tag -f "$VERSION"
-          git push origin HEAD:"$DEFAULT_BRANCH"
           git push --force origin "refs/tags/$VERSION"
+          # main se actualiza si es posible, sin forzar. Si alguien empujó
+          # commits mientras el workflow corría (non-fast-forward), no se
+          # bloquea la release: el tag ya está arriba y el usuario solo tiene
+          # que hacer 'git pull --rebase' en local.
+          git push origin HEAD:"$DEFAULT_BRANCH" \
+            || echo "::warning::main no se pudo actualizar (¿commits nuevos?). " \
+                "El tag $VERSION y la release continúan; haz 'git pull --rebase' en local."
 
   # 2) Buildea en el runner nativo de cada plataforma (sin wine).
   build:
