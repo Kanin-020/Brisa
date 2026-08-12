@@ -5,6 +5,7 @@ Todas las versiones notables de Brisa.
 ## 0.4.0 (2026-08-12)
 
 ### 🔧 Otros
+- Fix ignored files (`89c3197`)
 - Fix release builder. (`a03474b`)
 - Help section. (`112e223`)
 - More UI improvements. (`685bc15`)
