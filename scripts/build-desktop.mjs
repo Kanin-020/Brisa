@@ -147,7 +147,10 @@ async function runBuilder() {
     ".bin",
     process.platform === "win32" ? "electron-builder.cmd" : "electron-builder",
   );
-  run(builder, targets);
+  // --publish never: en CI electron-builder detecta el entorno y, si no hay
+  // GH_TOKEN, falla al intentar publicar a GitHub (la release la crea el
+  // workflow con softprops/action-gh-release después del build).
+  run(builder, [...targets, "--publish", "never"]);
 }
 
 // ---------------------------------------------------------------------------
