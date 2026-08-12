@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { App } from "./core/app";
 import { appVersion } from "./core/version";
 import { registerStatusCommand } from "./cli/commands/status";
+import { registerDoctorCommand } from "./cli/commands/doctor";
 import { registerScanCommand } from "./cli/commands/scan";
 import { registerInstallCommand } from "./cli/commands/install";
 import { registerUninstallCommand } from "./cli/commands/uninstall";
@@ -28,6 +29,7 @@ program
   .version(appVersion());
 
 registerStatusCommand(program, app);
+registerDoctorCommand(program, app);
 registerScanCommand(program, app);
 registerInstallCommand(program, app);
 registerUninstallCommand(program, app);

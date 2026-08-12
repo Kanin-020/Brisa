@@ -76,8 +76,10 @@ export function saveRomFile(
  */
 export function deleteRom(cfg: AppConfig, file: string): void {
   const abs = path.resolve(file);
-  if (!isPathWithin(cfg.romsDir, abs)) {
-    throw new Error(`Ruta fuera de la carpeta de ROMs: ${file}`);
+  // Con varias carpetas de ROMs, el archivo debe vivir dentro de alguna de ellas.
+  const withinAny = cfg.romsDirs.some((dir) => isPathWithin(dir, abs));
+  if (!withinAny) {
+    throw new Error(`Ruta fuera de las carpetas de ROMs: ${file}`);
   }
   if (!fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
     throw new Error(`No es un archivo: ${file}`);

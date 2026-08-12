@@ -16,6 +16,8 @@ export interface SelfUpdateInfo {
   available: boolean;
   /** True cuando el auto-update es posible en este build (AppImage de Linux o instalador de Windows). */
   supported: boolean;
+  /** Notas de la release nueva (changelog, markdown). Vacío si no hay. */
+  notes: string;
   assetName: string;
   size: number;
   downloadUrl: string;
@@ -89,6 +91,7 @@ function refreshCached(cached: SelfUpdateInfo): SelfUpdateInfo {
     current: appVersion(),
     supported: isSelfUpdateSupported(),
     available: cached.available && !!cached.downloadUrl,
+    notes: cached.notes ?? "",
   };
 }
 
@@ -99,6 +102,7 @@ function unavailable(cfg: AppConfig, latest: string, cached?: SelfUpdateInfo | n
     latest: cached?.latest ?? latest,
     available: false,
     supported: isSelfUpdateSupported(),
+    notes: cached?.notes ?? "",
     assetName: cached?.assetName ?? "",
     size: cached?.size ?? 0,
     downloadUrl: cached?.downloadUrl ?? "",
@@ -132,6 +136,7 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
       // sin archivo descargable no se puede aplicar.
       available: !!asset && compareVersions(rel.tag, appVersion()) > 0,
       supported: isSelfUpdateSupported(),
+      notes: rel.body,
       assetName: asset?.name ?? "",
       size: asset?.size ?? 0,
       downloadUrl: asset?.url ?? "",

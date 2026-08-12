@@ -1,0 +1,163 @@
+# ---------------------------------------------------------------------------
+# Release — buildea y publica las releases de Brisa sin tocar tu PC.
+#
+# Desde GitHub: Actions → "Release" → Run workflow.
+#   - version : vacío = sube el patch desde el último tag (0.3.8 -> 0.3.9);
+#               también acepta "1.2.3" o "v1.2.3".
+#   - prerelease : marca la release como pre-release.
+#   - notes : notas extra que se añaden al changelog generado.
+#
+# El workflow: versiona package.json, genera CHANGELOG.md (commits
+# convencionales), crea el tag, buildea Linux (AppImage) y Windows (.exe) en
+# runners nativos, pasa los tests y publica la release con el changelog como
+# cuerpo. La GUI de Brisa muestra esas notas al actualizar la app.
+# ---------------------------------------------------------------------------
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versión (p. ej. 1.2.3). Vacío = subir el patch desde el último tag."
+        required: false
+        default: ""
+      prerelease:
+        description: "Marcar como pre-release"
+        type: boolean
+        default: false
+      notes:
+        description: "Notas adicionales para el changelog"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: brisa-release
+  cancel-in-progress: false
+
+jobs:
+  # 1) Versiona, genera CHANGELOG.md, pasa tests y crea el tag.
+  prepare:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Resolve and bump version
+        id: release
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ -n "$INPUT_VERSION" ]; then
+            VERSION=$(node scripts/bump-version.mjs "$INPUT_VERSION" | sed -n 's/^version=//p')
+          else
+            VERSION=$(node scripts/bump-version.mjs | sed -n 's/^version=//p')
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Update CHANGELOG.md
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: node scripts/changelog.mjs "$VERSION" --write
+      - name: Commit version + changelog, create and push tag
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.md
+          # --allow-empty / -f / --force: re-ejecutar el workflow con la misma
+          # versión (reintento) no debe fallar ni crear releases duplicadas.
+          git commit --allow-empty -m "chore: release $VERSION"
+          git tag -f "$VERSION"
+          git push origin HEAD:"$DEFAULT_BRANCH"
+          git push --force origin "refs/tags/$VERSION"
+
+  # 2) Buildea en el runner nativo de cada plataforma (sin wine).
+  build:
+    name: Build (${{ matrix.target }})
+    needs: prepare
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux
+          - os: windows-latest
+            target: windows
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build (TypeScript + web)
+        run: npm run build
+      - name: Package desktop (${{ matrix.target }})
+        run: node scripts/build-desktop.mjs --only ${{ matrix.target }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: brisa-${{ matrix.target }}
+          path: release/Brisa-*
+          if-no-files-found: error
+
+  # 3) Genera el changelog definitivo y publica la release con ambos assets.
+  release:
+    name: Publish release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Generate release notes
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          EXTRA_NOTES: ${{ github.event.inputs.notes }}
+        run: |
+          node scripts/changelog.mjs "$VERSION" > /tmp/release-notes.md
+          if [ -n "$EXTRA_NOTES" ]; then
+            printf '\n---\n\n%s\n' "$EXTRA_NOTES" >> /tmp/release-notes.md
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: Brisa ${{ needs.prepare.outputs.version }}
+          body_path: /tmp/release-notes.md
+          files: artifacts/*
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          fail_on_unmatched_files: true

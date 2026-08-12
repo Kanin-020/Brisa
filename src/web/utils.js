@@ -11,6 +11,24 @@ function fmtSize(bytes) {
  * de este archivo; estas funciones solo se invocan en runtime, cuando ya
  * existen. */
 
+/** Notificación del sistema (Notification API). Pide permiso la primera vez. */
+function notifySystem(title, body) {
+  try {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "granted") {
+      try {
+        new Notification(title, { body, icon: "/icon.png" });
+      } catch {
+        /* ignore */
+      }
+    } else if (Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Copia el hash al portapapeles (con fallback para contextos sin Clipboard API). */
 function copyHash(hash) {
   const done = () => toast(t("toast.copied"), "ok");

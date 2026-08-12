@@ -12,6 +12,8 @@ export interface UpdateInfo {
   installed: string;
   latest: string;
   available: boolean;
+  /** Notas de la release nueva (changelog, markdown). Vacío si no hay. */
+  notes: string;
   checkedAt: number;
 }
 
@@ -46,7 +48,8 @@ export async function checkUpdate(
   if (!state) return null;
   const cached = readCache(cfg, manifest.id);
   if (!force && cached && Date.now() - cached.checkedAt < CHECK_INTERVAL_MS) {
-    return cached;
+    // Caches escritos por versiones anteriores no tienen `notes`.
+    return { ...cached, notes: cached.notes ?? "" };
   }
   try {
     const release = await getLatestRelease(cfg, manifest.repo);
@@ -56,26 +59,37 @@ export async function checkUpdate(
       installed: state.version,
       latest: release.tag,
       available: release.tag !== state.version,
+      notes: release.body,
       checkedAt: Date.now(),
     };
     writeCache(cfg, info);
     return info;
   } catch {
     // Network failure: fall back to cache or report unavailable.
-    return (
-      cached ?? {
-        id: manifest.id,
-        name: manifest.name,
-        installed: state.version,
-        latest: "?",
-        available: false,
-        checkedAt: Date.now(),
-      }
-    );
+    return cached
+      ? { ...cached, notes: cached.notes ?? "" }
+      : {
+          id: manifest.id,
+          name: manifest.name,
+          installed: state.version,
+          latest: "?",
+          available: false,
+          notes: "",
+          checkedAt: Date.now(),
+        };
   }
 }
 
-export async function applyUpdate(cfg: AppConfig, manifest: Manifest): Promise<UpdateInfo> {
+export interface ApplyUpdateOptions {
+  signal?: AbortSignal;
+  onProgress?: (stage: string, done: number, total: number) => void;
+}
+
+export async function applyUpdate(
+  cfg: AppConfig,
+  manifest: Manifest,
+  opts: ApplyUpdateOptions = {},
+): Promise<UpdateInfo> {
   // Reinstall over the existing install dir (installer handles backup + rom relink).
   const state = readState(cfg, manifest.id);
   // Multirom: re-link every previously linked ROM. Old single-rom states only
@@ -91,13 +105,18 @@ export async function applyUpdate(cfg: AppConfig, manifest: Manifest): Promise<U
       roms[requirementId] = { path: romPath, name: path.basename(romPath), size: 0, sha1: "", gameId: null };
     }
   }
-  const newState = await installPort(cfg, manifest, { roms });
+  const newState = await installPort(cfg, manifest, {
+    roms,
+    signal: opts.signal,
+    onProgress: opts.onProgress,
+  });
   const info: UpdateInfo = {
     id: manifest.id,
     name: manifest.name,
     installed: newState.version,
     latest: newState.version,
     available: false,
+    notes: "",
     checkedAt: Date.now(),
   };
   writeCache(cfg, info);

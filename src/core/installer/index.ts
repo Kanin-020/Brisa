@@ -8,6 +8,7 @@ import { detectPlatform } from "../platform";
 import type { RomFile } from "../scanner";
 import { readState, writeState, type PortState } from "../state";
 import { writeLauncher, removeLauncher } from "../launchers";
+import { throwIfAborted } from "../tasks";
 import { extractArchive } from "./archive";
 import { createSymlink, findFileByName } from "./links";
 import { preserveUserData, removeExceptPreserved } from "./preserve";
@@ -19,6 +20,8 @@ export interface InstallOptions {
   roms?: Record<string, RomFile>;
   force?: boolean;
   onProgress?: (stage: string, done: number, total: number) => void;
+  /** Si se aborta, la instalación se detiene en los puntos de control. */
+  signal?: AbortSignal;
 }
 
 export function resolveAssetForPlatform(m: Manifest): AssetDef | null {
@@ -66,6 +69,7 @@ export async function installPort(
 
   opts.onProgress?.("release", 0, 1);
   const release = await getLatestInfo(cfg, manifest);
+  throwIfAborted(opts.signal);
   if (!release) throw new Error(`[${manifest.id}] no release found for ${manifest.repo}`);
   const assetName = pickAsset(release, asset.pattern);
   if (!assetName) {
@@ -78,8 +82,9 @@ export async function installPort(
   if (!fs.existsSync(downloadedFile) || fs.statSync(downloadedFile).size !== assetName.size) {
     await download(cfg, assetName.url, downloadedFile, (done, total) =>
       opts.onProgress?.("download", done, total),
-    );
+    { signal: opts.signal });
   }
+  throwIfAborted(opts.signal);
 
   // Extract / place
   opts.onProgress?.("extract", 0, 1);
@@ -107,6 +112,7 @@ export async function installPort(
     if (fs.existsSync(backup)) fs.renameSync(backup, portRoot);
     throw e;
   }
+  throwIfAborted(opts.signal);
   // Restaurar saves/configs del port anterior antes de descartar el backup.
   preserveUserData(backup, portRoot, manifest);
   if (fs.existsSync(backup)) fs.rmSync(backup, { recursive: true, force: true });
@@ -117,6 +123,8 @@ export async function installPort(
     executable = path.join(portRoot, assetName.name);
   }
   ensureExecutable(executable);
+
+  throwIfAborted(opts.signal);
 
   // Symlink the ROMs (one per requirement; optional ones only when provided)
   const roms = opts.roms ?? {};

@@ -5,6 +5,7 @@ import { sendJson, readJsonBody } from "./http";
 import { ApiRouter } from "./router";
 import { serveStatic } from "./static";
 import { registerStatusRoute } from "./routes/status";
+import { registerTasksRoutes } from "./routes/tasks";
 import { registerPortsRoutes } from "./routes/ports";
 import { registerModsRoutes } from "./routes/mods";
 import { registerRomsRoutes } from "./routes/roms";
@@ -27,6 +28,7 @@ export function startServer(
 ): http.Server {
   const router = new ApiRouter();
   registerStatusRoute(router, app);
+  registerTasksRoutes(router, app);
   registerPortsRoutes(router, app);
   registerModsRoutes(router, app);
   registerRomsRoutes(router, app);

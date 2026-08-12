@@ -12,7 +12,7 @@ export function registerStatusCommand(program: Command, app: App): void {
       console.log(`\n== Brisa (${detectPlatform().key}) ==\n`);
       console.log(`ROMs encontrados (${scan.roms.length}):`);
       for (const rom of scan.roms) console.log(`  ${rom.name}  ${formatBytes(rom.size)}  [sha1 ${rom.sha1.slice(0, 8)}…]`);
-      if (scan.roms.length === 0) console.log("  (vacío) — copia tus ROMs a:", app.cfg.romsDir);
+      if (scan.roms.length === 0) console.log("  (vacío) — copia tus ROMs a:", app.cfg.romsDirs.join(", "));
 
       console.log("\nPorts:");
       for (const port of ports) {

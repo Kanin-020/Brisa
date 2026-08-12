@@ -12,6 +12,7 @@ export function registerConfigCommands(program: Command, app: App): void {
         JSON.stringify(
           {
             root: app.cfg.root,
+            romsDirs: app.cfg.romsDirs,
             romsDir: app.cfg.romsDir,
             modsDir: app.cfg.modsDir,
             portsDir: app.cfg.portsDir,
@@ -30,7 +31,7 @@ export function registerConfigCommands(program: Command, app: App): void {
 
   program
     .command("config-set <key> <value>")
-    .description("Establece un valor de configuración (romsDir, modsDir, registryUrl, serverPort, autoCheckUpdates).")
+    .description("Establece un valor de configuración (romsDirs, romsDir, modsDir, registryUrl, serverPort, autoCheckUpdates). romsDirs acepta varias carpetas separadas por coma o un array JSON.")
     .action((key: string, value: string) => {
       const cfg = app.cfg;
       if (key === "registryUrl") cfg.registryUrl = value;
@@ -38,13 +39,33 @@ export function registerConfigCommands(program: Command, app: App): void {
       else if (key === "autoCheckUpdates") cfg.autoCheckUpdates = value === "true";
       else if (key === "selfRepo") cfg.selfRepo = value;
       else if (key === "selfAssetPattern") cfg.selfAssetPattern = value;
-      else if (key === "romsDir" || key === "modsDir" || key === "portsDir" || key === "manifestsDir") {
+      else if (key === "romsDirs") {
+        // Acepta un array JSON (["dir1","dir2"]) o carpetas separadas por coma.
+        let dirs: string[];
+        try {
+          const parsed = JSON.parse(value) as unknown;
+          dirs = Array.isArray(parsed) ? parsed.map(String) : value.split(",");
+        } catch {
+          dirs = value.split(",");
+        }
+        const cleaned = dirs.map((d) => d.trim()).filter(Boolean);
+        if (cleaned.length === 0) {
+          console.error("romsDirs no puede estar vacío.");
+          process.exit(1);
+        }
+        cfg.romsDirs = cleaned.map((d) => path.resolve(projectRoot(), d));
+        cfg.romsDir = cfg.romsDirs[0];
+      } else if (key === "romsDir") {
+        // Compatibilidad: un solo dir actualiza la lista completa.
+        cfg.romsDirs = [path.resolve(projectRoot(), value)];
+        cfg.romsDir = cfg.romsDirs[0];
+      } else if (key === "modsDir" || key === "portsDir" || key === "manifestsDir") {
         (cfg as unknown as Record<string, string>)[key] = path.resolve(projectRoot(), value);
       } else {
         console.error(`Clave desconocida: ${key}`);
         process.exit(1);
       }
       saveConfig(cfg);
-      console.log(`✓ ${key} = ${value}`);
+      console.log(`✓ ${key} = ${key === "romsDirs" ? cfg.romsDirs.join(", ") : value}`);
     });
 }

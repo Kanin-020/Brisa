@@ -5,6 +5,11 @@
 let state = null;
 let busyPortIds = new Set();
 
+/** Tareas en segundo plano lanzadas desde la GUI: taskId -> { type, portId, info, onDone }. */
+let activeTasks = new Map();
+let pollTimer = null;
+let polling = false;
+
 const MAX_MODS_INLINE = 3;
 
 let allPorts = [];
@@ -66,6 +71,13 @@ function updateStaticText() {
   $("#brand-tagline").textContent = t("brand.tagline");
   $("#btn-refresh").textContent = t("btn.refresh");
   $("#btn-refresh").title = t("btn.refresh");
+  syncSettingsUI();
+  // El popup de ajustes se re-traduce si está abierto (idioma, tema…)
+  if ($("#settings-modal").classList.contains("show")) renderSettingsBody();
+  const updateAllBtn = $("#btn-update-all");
+  if (updateAllBtn) updateAllBtn.textContent = t("btn.updateAll");
+  const globalCancelBtn = $("#global-task-cancel");
+  if (globalCancelBtn) globalCancelBtn.textContent = t("task.cancel");
 
   $("#stat-label-roms").textContent = t("stat.roms");
   $("#stat-label-installed").textContent = t("stat.installed");
@@ -106,13 +118,179 @@ function updateStaticText() {
   // Update html lang attribute for accessibility
   document.documentElement.lang = locale();
 
-  // Update locale buttons active state
-  $$(".locale-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.locale === locale());
-  });
-
   // Re-render dynamic content if state is available
   if (state) render();
+}
+
+// ── Tareas en segundo plano (progreso real + cancelación) ──
+
+/** Devuelve la tarea activa de un port (si la hay). */
+function taskForPort(portId) {
+  for (const entry of activeTasks.values()) {
+    if (entry.portId === portId) return entry.info;
+  }
+  return null;
+}
+
+/** Traduce la etapa interna de una tarea ("download", "extract", …). */
+function taskStageLabel(stage) {
+  const key = `stage.${stage}`;
+  const label = t(key);
+  return label === key ? stage : label;
+}
+
+/** Registra una tarea recién creada y arranca el polling de /api/tasks. */
+function trackTask(task, portId, onDone) {
+  activeTasks.set(task.id, { type: task.type, portId, info: task, onDone });
+  schedulePoll();
+}
+
+function schedulePoll() {
+  if (pollTimer) return;
+  pollTimer = setInterval(pollTasks, 700);
+}
+
+function stopPoll() {
+  if (activeTasks.size === 0 && pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+/** Consulta /api/tasks, actualiza las barras y detecta tareas terminadas. */
+async function pollTasks() {
+  if (polling || activeTasks.size === 0) return;
+  polling = true;
+  try {
+    const list = await api("/api/tasks");
+    const byId = new Map(list.map((task) => [task.id, task]));
+    const finished = [];
+    for (const [taskId, entry] of activeTasks) {
+      const info = byId.get(taskId);
+      if (!info) {
+        // La tarea desapareció del servidor (p. ej. reinicio): liberar el port.
+        activeTasks.delete(taskId);
+        busyPortIds.delete(entry.portId);
+        continue;
+      }
+      entry.info = info;
+      if (info.status !== "running") finished.push([taskId, entry, info]);
+    }
+    updateTaskUI();
+    for (const [taskId, entry, info] of finished) {
+      activeTasks.delete(taskId);
+      busyPortIds.delete(entry.portId);
+      handleTaskDone(entry, info);
+    }
+    stopPoll();
+  } catch {
+    // Red no disponible: reintentar en el siguiente tick.
+  } finally {
+    polling = false;
+  }
+}
+
+/** Actualiza solo las barras de progreso (sin re-render completo). */
+function updateTaskUI() {
+  for (const [taskId, entry] of activeTasks) {
+    const bar = document.querySelector(`.bar[data-task="${taskId}"]`);
+    if (!bar) continue;
+    const info = entry.info;
+    if (info.pct > 0) {
+      bar.style.width = `${info.pct}%`;
+      bar.classList.remove("indeterminate");
+    }
+    const wrap = bar.closest(".progress-wrap");
+    const stage = wrap && wrap.querySelector(".progress-stage");
+    if (stage) stage.textContent = `${info.label}: ${taskStageLabel(info.stage)}`;
+    const cancel = wrap && wrap.querySelector(".cancel-btn");
+    if (cancel) cancel.hidden = info.status !== "running";
+  }
+  updateGlobalTaskUI();
+}
+
+/** Barra global para tareas sin port (update-all): progreso + cancelar. */
+function updateGlobalTaskUI() {
+  const wrap = $("#global-task");
+  if (!wrap) return;
+  let task = null;
+  for (const entry of activeTasks.values()) {
+    if (entry.portId === null && entry.info.status === "running") {
+      task = entry.info;
+      break;
+    }
+  }
+  if (!task) {
+    wrap.hidden = true;
+    wrap.removeAttribute("data-task");
+    return;
+  }
+  wrap.hidden = false;
+  wrap.dataset.task = task.id;
+  const bar = $("#global-task-bar");
+  if (task.pct > 0) {
+    bar.style.width = `${task.pct}%`;
+    bar.classList.remove("indeterminate");
+  } else {
+    bar.classList.add("indeterminate");
+  }
+  $("#global-task-stage").textContent = `${task.label}: ${taskStageLabel(task.stage)}`;
+}
+
+/** Muestra el resultado de una tarea terminada (toast + notificación + recarga). */
+function handleTaskDone(entry, info) {
+  const port = entry.portId ? allPorts.find((p) => p.manifest.id === entry.portId) : undefined;
+  const name = port ? port.manifest.name : info.label;
+  const result = info.result || {};
+  if (info.status === "done") {
+    if (entry.type === "install") {
+      toast(t("toast.installed", name, result.version ?? ""), "ok");
+      notifySystem(t("brand.title"), t("notify.installDone", name, result.version ?? ""));
+    } else if (entry.type === "update") {
+      toast(t("toast.updated", name, result.latest ?? ""), "ok");
+      notifySystem(t("brand.title"), t("notify.updateDone", name, result.latest ?? ""));
+    } else if (entry.type === "update-all") {
+      toast(t("toast.updatedAll", result.updated ?? 0), "ok");
+      notifySystem(t("brand.title"), t("notify.updatedAll", result.updated ?? 0));
+    }
+    if (typeof entry.onDone === "function") entry.onDone();
+  } else if (info.status === "cancelled") {
+    toast(t("toast.cancelled", name), "warn");
+  } else {
+    toast(`${name}: ${info.error || t("toast.error")}`, "error", 6000);
+    notifySystem(t("brand.title"), `${t("notify.error", name)}: ${info.error || ""}`);
+  }
+  load();
+}
+
+/** Arranca una tarea de port (install/update) y marca la tarjeta como ocupada. */
+function startPortTask(p, endpoint, type, onDone) {
+  busyPortIds.add(p.manifest.id);
+  render(); // feedback inmediato: barra indeterminada + botones deshabilitados
+  api(endpoint, { id: p.manifest.id })
+    .then((data) => {
+      if (!data.task) throw new Error(t("toast.error"));
+      trackTask(data.task, p.manifest.id, onDone);
+      render();
+    })
+    .catch((e) => {
+      busyPortIds.delete(p.manifest.id);
+      render();
+      toast(e.message, "error");
+    });
+}
+
+/** Cancela una tarea en marcha (POST /api/tasks/cancel). */
+function cancelTask(taskId) {
+  api("/api/tasks/cancel", { id: taskId }).catch((e) => toast(e.message, "error"));
+}
+
+/** True mientras haya una tarea update-all en marcha. */
+function updateAllRunning() {
+  for (const entry of activeTasks.values()) {
+    if (entry.type === "update-all" && entry.info.status === "running") return true;
+  }
+  return false;
 }
 
 // ── Toast ──
@@ -130,32 +308,206 @@ function toast(msg, kind = "ok", duration = 3200, onClick = null) {
   }, duration);
 }
 
-// ── Locale switcher ──
+// ── Ajustes (idioma, tema, vistas) ──
 
-function initLocaleSwitcher() {
-  const container = $("#locale-selector");
-  container.innerHTML = "";
-  const locales = availableLocales();
-  locales.forEach((loc, i) => {
-    if (i > 0) {
-      const divider = document.createElement("span");
-      divider.className = "locale-divider";
-      divider.textContent = "|";
-      container.appendChild(divider);
+/** Abre el popup de ajustes (re-renderiza el contenido para traducirlo). */
+function openSettings() {
+  renderSettingsBody();
+  $("#settings-modal").classList.add("show");
+  document.body.classList.add("modal-open");
+}
+
+/** Cierra el popup de ajustes. */
+function closeSettings() {
+  $("#settings-modal").classList.remove("show");
+  document.body.classList.remove("modal-open");
+}
+
+/** Marca como activa la opción cuyo valor coincida dentro de un grupo .seg. */
+function setSegActive(sel, value) {
+  const seg = $(sel);
+  if (!seg) return;
+  seg.querySelectorAll(".seg-btn").forEach((btn) => {
+    const on = btn.dataset.value === value;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", String(on));
+  });
+}
+
+/** Sincroniza el tooltip del botón y las opciones marcadas del popup. */
+function syncSettingsUI() {
+  const theme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
+  setSegActive("#settings-lang", locale());
+  setSegActive("#settings-theme", theme);
+  setSegActive("#settings-view-ports", viewMode);
+  setSegActive("#settings-view-roms", romsViewMode);
+  const btn = $("#btn-settings");
+  if (btn) btn.title = t("settings.title");
+}
+
+/** Aplica el tema (claro/oscuro) y lo persiste. */
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  try {
+    localStorage.setItem("brisa-theme", theme);
+  } catch {
+    /* ignore */
+  }
+  syncSettingsUI();
+}
+
+/** Construye el contenido del popup de ajustes (traducido). */
+function renderSettingsBody() {
+  const body = $("#settings-modal-body");
+  body.innerHTML = "";
+  const group = (label, id, options) => {
+    const wrap = el("div", "settings-group");
+    wrap.appendChild(el("div", "settings-label", label));
+    const seg = el("div", "seg");
+    seg.id = id;
+    for (const opt of options) {
+      const btn = el("button", "seg-btn", opt.label);
+      btn.dataset.key = opt.key;
+      btn.dataset.value = opt.value;
+      btn.setAttribute("aria-pressed", "false");
+      seg.appendChild(btn);
     }
-    const btn = document.createElement("button");
-    btn.className = "locale-btn";
-    btn.dataset.locale = loc;
-    btn.textContent = localeLabel(loc);
-    btn.addEventListener("click", () => {
-      setLocale(loc);
-    });
-    container.appendChild(btn);
+    wrap.appendChild(seg);
+    return wrap;
+  };
+
+  $("#settings-modal-title").textContent = t("settings.title");
+  $("#settings-modal-close").title = t("settings.close");
+
+  // Idioma
+  body.appendChild(
+    group(
+      t("settings.language"),
+      "settings-lang",
+      availableLocales().map((loc) => ({ key: "locale", value: loc, label: localeLabel(loc) })),
+    ),
+  );
+  // Tema
+  body.appendChild(
+    group(t("settings.theme"), "settings-theme", [
+      { key: "theme", value: "light", label: `☀️ ${t("settings.themeLight")}` },
+      { key: "theme", value: "dark", label: `🌙 ${t("settings.themeDark")}` },
+    ]),
+  );
+  // Vista de ports y de ROMs
+  body.appendChild(
+    group(t("settings.viewPorts"), "settings-view-ports", [
+      { key: "view", value: "cards", label: `▦ ${t("settings.viewCards")}` },
+      { key: "view", value: "list", label: `☰ ${t("settings.viewList")}` },
+    ]),
+  );
+  body.appendChild(
+    group(t("settings.viewRoms"), "settings-view-roms", [
+      { key: "view", value: "cards", label: `▦ ${t("settings.viewCards")}` },
+      { key: "view", value: "list", label: `☰ ${t("settings.viewList")}` },
+    ]),
+  );
+
+  syncSettingsUI();
+}
+
+/** Gestiona el botón de ajustes y los clics dentro del popup. */
+function initSettings() {
+  $("#btn-settings").addEventListener("click", () => {
+    if ($("#settings-modal").classList.contains("show")) closeSettings();
+    else openSettings();
+  });
+  $("#settings-modal-close").addEventListener("click", closeSettings);
+  $("#settings-modal").addEventListener("click", (e) => {
+    if (e.target === $("#settings-modal")) closeSettings();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && $("#settings-modal").classList.contains("show")) closeSettings();
+  });
+  $("#settings-modal-body").addEventListener("click", (e) => {
+    const btn = e.target.closest(".seg-btn");
+    if (!btn) return;
+    const { key, value } = btn.dataset;
+    if (key === "locale") {
+      setLocale(value);
+    } else if (key === "theme") {
+      applyTheme(value);
+    } else if (key === "view") {
+      const isRoms = !!btn.closest("#settings-view-roms");
+      try {
+        localStorage.setItem(isRoms ? "brisa-roms-view" : "brisa-ports-view", value);
+      } catch {
+        /* ignore */
+      }
+      if (isRoms) {
+        romsViewMode = value;
+        if (state) renderRoms(state.scan);
+      } else {
+        viewMode = value;
+        renderPorts();
+      }
+      syncViewActive();
+      syncSettingsUI();
+    }
   });
   // Subscribe to locale changes
   onLocaleChange(updateStaticText);
   // Initial render
   updateStaticText();
+}
+
+// ── Changelog (novedades de releases) ──
+
+/** Abre el modal de novedades con las notas de una release (markdown ligero). */
+function openChangelogModal({ title, version, notes }) {
+  $("#changelog-modal-title").textContent = t("changelog.title");
+  $("#changelog-modal-close").title = t("changelog.close");
+  const body = $("#changelog-modal-body");
+  body.innerHTML = "";
+  const head = el("div", "changelog-head");
+  head.appendChild(el("span", "changelog-app", title));
+  if (version) head.appendChild(el("span", "badge version", `v${version}`));
+  body.appendChild(head);
+  if (notes && notes.trim()) {
+    body.appendChild(renderNotes(notes));
+  } else {
+    body.appendChild(el("p", "changelog-empty", t("changelog.empty")));
+  }
+  $("#changelog-modal").classList.add("show");
+  document.body.classList.add("modal-open");
+}
+
+/** Cierra el modal de novedades. */
+function closeChangelogModal() {
+  $("#changelog-modal").classList.remove("show");
+  document.body.classList.remove("modal-open");
+}
+
+/**
+ * Renderiza las notas de release de forma segura (solo textContent, nunca
+ * HTML del servidor): soporta títulos `#`/`##`, listas `- ` y negritas **…**.
+ */
+function renderNotes(notes) {
+  const wrap = el("div", "changelog-notes");
+  for (const rawLine of notes.split(/\r?\n/)) {
+    const line = rawLine.trimEnd();
+    if (!line.trim()) continue;
+    if (/^#{1,4}\s+/.test(line)) {
+      wrap.appendChild(el("h4", "changelog-h", line.replace(/^#{1,4}\s+/, "")));
+      continue;
+    }
+    const text = line.replace(/^[-*]\s+/, "");
+    const p = el("p", "changelog-line");
+    // Negritas **…** -> <strong> (alternando con nodos de texto).
+    const parts = text.split(/\*\*([^*]+)\*\*/g);
+    for (let i = 0; i < parts.length; i++) {
+      if (!parts[i]) continue;
+      if (i % 2 === 1) p.appendChild(el("strong", "", parts[i]));
+      else p.appendChild(document.createTextNode(parts[i]));
+    }
+    wrap.appendChild(p);
+  }
+  return wrap;
 }
 
 // ── Carga de estado ──
@@ -181,8 +533,16 @@ function render() {
   $("#stat-installed").textContent = ports.filter((p) => p.installed).length;
   $("#stat-mods").textContent = ports.reduce((total, p) => total + p.mods.length, 0);
   $("#stat-updates").textContent = ports.filter((p) => p.updateAvailable).length;
-  $("#cfg-roms-dir").textContent = `${t("footer.romsDir")}: ${state.cfg.romsDir}`;
+  const dirs = state.cfg.romsDirs || [state.cfg.romsDir];
+  const dirsLabel = dirs.length === 1 ? dirs[0] : `${dirs[0]} (+${dirs.length - 1})`;
+  $("#cfg-roms-dir").textContent = `${t("footer.romsDir")}: ${dirsLabel}`;
   $("#roms-hint").textContent = t("roms.hint", scan.matches.length);
+  const updates = ports.filter((p) => p.updateAvailable).length;
+  const updateAllBtn = $("#btn-update-all");
+  if (updateAllBtn) {
+    updateAllBtn.disabled = updates === 0 || updateAllRunning();
+    updateAllBtn.title = t("btn.updateAllHint", updates);
+  }
 
   const installed = ports.filter((p) => p.installed);
   const available = ports.filter((p) => !p.installed);
@@ -277,6 +637,15 @@ function portCard(p) {
   if (p.updateAvailable) {
     const badge = el("span", "badge update", `⬆ ${p.updateInfo.installed} → ${p.updateInfo.latest}`);
     badges.appendChild(badge);
+    // Botón de novedades: abre el changelog de la versión nueva (si hay notas).
+    if (p.updateInfo?.notes) {
+      const notesBtn = el("button", "badge update notes-btn", "📝");
+      notesBtn.title = t("changelog.button");
+      notesBtn.addEventListener("click", () =>
+        openChangelogModal({ title: m.name, version: p.updateInfo.latest, notes: p.updateInfo.notes }),
+      );
+      badges.appendChild(notesBtn);
+    }
   }
   top.appendChild(badges);
   card.appendChild(top);
@@ -312,19 +681,25 @@ function portCard(p) {
   }
   if (modsRow.children.length > 0) card.appendChild(modsRow);
 
+  // Mientras haya una tarea en marcha para el port, se bloquean las acciones.
+  const busy = busyPortIds.has(p.manifest.id);
+
   // Fila de acciones secundarias: añadir mods, abrir archivos y desinstalar
   // comparten la misma fila. En ports no instalados solo aparece "Añadir mods".
   const actions = el("div", "port-actions");
   const addModsBtn = el("button", "btn ghost sm mods-add-btn", t("mod.addMods"));
   addModsBtn.title = t("mod.addModsHint", p.modsRoot);
+  addModsBtn.disabled = busy;
   addModsBtn.addEventListener("click", () => openPortModsFolder(p));
   actions.appendChild(addModsBtn);
   if (p.installed) {
     const files = el("button", "btn ghost sm", t("port.openFolder"));
     files.title = t("port.openFolderHint");
+    files.disabled = busy;
     files.addEventListener("click", () => openPortFolder(p));
     actions.appendChild(files);
     const un = el("button", "btn red sm", t("port.uninstall"));
+    un.disabled = busy;
     un.addEventListener("click", () => doUninstall(p));
     actions.appendChild(un);
   }
@@ -334,29 +709,49 @@ function portCard(p) {
   const mainActions = el("div", "port-actions main");
   if (p.installed) {
     const upd = el("button", "btn sm", t("port.update"));
-    upd.disabled = !p.updateAvailable;
+    upd.disabled = busy || !p.updateAvailable;
     upd.addEventListener("click", () => doUpdate(p));
     mainActions.appendChild(upd);
     if (p.updateAvailable) {
       const up = el("button", "btn warn sm", t("port.updateAndPlay"));
+      up.disabled = busy;
       up.addEventListener("click", () => doUpdateAndLaunch(p));
       mainActions.appendChild(up);
     }
     const launch = el("button", "btn green sm", t("port.launch"));
+    launch.disabled = busy;
     launch.addEventListener("click", () => doLaunch(p));
     mainActions.appendChild(launch);
   } else {
     const inst = el("button", "btn sm", p.hasRom ? t("port.install") : t("port.installNoRom"));
+    inst.disabled = busy;
     inst.addEventListener("click", () => doInstall(p));
     mainActions.appendChild(inst);
   }
   card.appendChild(mainActions);
 
-  // Progress bar
-  if (busyPortIds.has(p.manifest.id)) {
+  // Progress real: barra con % de la tarea + etapa + botón cancelar.
+  if (busyPortIds.has(p.manifest.id) || taskForPort(p.manifest.id)) {
+    const task = taskForPort(p.manifest.id);
+    const wrap = el("div", "progress-wrap");
     const progress = el("div", "progress");
-    progress.appendChild(el("div", "bar"));
-    card.appendChild(progress);
+    const bar = el("div", "bar");
+    bar.dataset.task = task ? task.id : "";
+    if (task && task.pct > 0) {
+      bar.style.width = `${task.pct}%`;
+    } else {
+      bar.classList.add("indeterminate");
+    }
+    progress.appendChild(bar);
+    wrap.appendChild(progress);
+    if (task && task.status === "running") {
+      wrap.appendChild(el("span", "progress-stage", `${task.label}: ${taskStageLabel(task.stage)}`));
+      const cancel = el("button", "btn red sm cancel-btn", t("task.cancel"));
+      cancel.title = t("task.cancel");
+      cancel.addEventListener("click", () => cancelTask(task.id));
+      wrap.appendChild(cancel);
+    }
+    card.appendChild(wrap);
   }
 
   return card;
@@ -417,15 +812,25 @@ function openPortFolder(p) {
 function renderSelfUpdate(self) {
   const chip = $("#app-version");
   const btn = $("#btn-self-update");
+  const notesBtn = $("#btn-self-changelog");
   if (!self) {
     chip.textContent = "";
     btn.hidden = true;
+    notesBtn.hidden = true;
     return;
   }
   chip.textContent = t("self.version", self.current);
   const show = self.available && self.supported;
   btn.hidden = !show;
   btn.disabled = false;
+  // Botón de novedades: visible si hay release nueva con notas, aunque el
+  // auto-update no esté soportado en esta build (p. ej. CLI plano).
+  notesBtn.hidden = !self.available || !self.notes;
+  if (!notesBtn.hidden) {
+    notesBtn.title = t("changelog.button");
+    notesBtn.dataset.latest = self.latest;
+    notesBtn.dataset.notes = self.notes;
+  }
   if (show) {
     btn.textContent = t("self.updateBtn", self.latest);
     btn.title = t("self.updateAvailable", self.latest);
@@ -714,11 +1119,8 @@ async function busyRun(id, fn) {
 }
 
 function doInstall(p) {
-  busyRun(p.manifest.id, async () => {
-    toast(t("toast.installing", p.manifest.name));
-    const data = await api("/api/install", { id: p.manifest.id });
-    toast(t("toast.installed", p.manifest.name, data.state.version), "ok");
-  });
+  toast(t("toast.installing", p.manifest.name));
+  startPortTask(p, "/api/install", "install");
 }
 
 function doUninstall(p) {
@@ -736,20 +1138,30 @@ function doUninstall(p) {
 }
 
 function doUpdate(p) {
-  busyRun(p.manifest.id, async () => {
-    toast(t("toast.installing", p.manifest.name));
-    const data = await api("/api/update", { id: p.manifest.id });
-    toast(t("toast.updated", p.manifest.name, data.info.latest), "ok");
-  });
+  toast(t("toast.installing", p.manifest.name));
+  startPortTask(p, "/api/update", "update");
 }
 
 function doUpdateAndLaunch(p) {
-  busyRun(p.manifest.id, async () => {
-    toast(t("toast.installing", p.manifest.name));
-    const data = await api("/api/update", { id: p.manifest.id });
-    toast(`${t("toast.updated", p.manifest.name, data.info.latest)} · ${t("toast.launching", p.manifest.name)}`, "ok");
+  toast(t("toast.installing", p.manifest.name));
+  startPortTask(p, "/api/update", "update", () => {
+    toast(t("toast.launching", p.manifest.name), "ok");
     launchPort(p.manifest.id);
   });
+}
+
+/** Actualiza todos los ports instalados con actualización disponible (una tarea). */
+function doUpdateAll() {
+  if (updateAllRunning()) return;
+  toast(t("toast.updatingAll"));
+  api("/api/update-all", {})
+    .then((data) => {
+      if (!data.task) throw new Error(t("toast.error"));
+      trackTask(data.task, null, null);
+      render();
+      updateGlobalTaskUI();
+    })
+    .catch((e) => toast(e.message, "error"));
 }
 
 function doLaunch(p) {
@@ -870,6 +1282,24 @@ function closeConfirmModal() {
   document.body.classList.remove("modal-open");
 }
 
+function initChangelogModal() {
+  $("#changelog-modal-close").addEventListener("click", closeChangelogModal);
+  $("#changelog-modal").addEventListener("click", (e) => {
+    if (e.target === $("#changelog-modal")) closeChangelogModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && $("#changelog-modal").classList.contains("show")) closeChangelogModal();
+  });
+  $("#btn-self-changelog").addEventListener("click", () => {
+    const btn = $("#btn-self-changelog");
+    openChangelogModal({
+      title: t("brand.title"),
+      version: btn.dataset.latest ?? "",
+      notes: btn.dataset.notes ?? "",
+    });
+  });
+}
+
 function initModsModal() {
   $("#mods-modal-close").addEventListener("click", closeModsModal);
   $("#mods-modal").addEventListener("click", (e) => {
@@ -914,17 +1344,23 @@ async function init() {
       /* localStorage may be unavailable */
     }
   }
-  initLocaleSwitcher();
+  initSettings();
   initTabs();
   // Solo en el primer arranque se abre la ayuda sin persistir la pestaña.
   if (firstRun) switchTab("help", false);
   initPortsTools();
   initViewToggles();
   initModsModal();
+  initChangelogModal();
   initConfirmModal();
   initDropZone();
   initRomPicker();
   initManifestTools();
+  $("#btn-update-all").addEventListener("click", doUpdateAll);
+  $("#global-task-cancel").addEventListener("click", () => {
+    const id = $("#global-task").dataset.task;
+    if (id) cancelTask(id);
+  });
   $("#btn-open-folder").addEventListener("click", () => {
     api("/api/open-folder", {}).catch((e) => toast(e.message, "error"));
   });

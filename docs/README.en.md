@@ -206,6 +206,23 @@ unset STEAM_RUNTIME
 
 > One launcher per installed port: if a port supports several ROM variants (e.g. SoH base + Master Quest), all variants run the same launcher with whatever ROM is linked in the port folder.
 
+## Publishing a release (CI/CD)
+
+GitHub Actions builds and publishes the releases for you — no need to build on your PC:
+
+1. Go to **Actions → Release → Run workflow**.
+2. `version`: leave empty to bump the patch from the last tag (`0.3.8` → `0.3.9`), or type an exact version (`1.2.3` or `v1.2.3`).
+3. Optionally mark `prerelease` or add extra notes.
+
+The workflow: runs the tests, bumps `package.json`, generates `CHANGELOG.md` from conventional commits (`feat:`, `fix:`, …), creates the tag, builds the **Linux AppImage** and the **Windows installer** on native runners, and publishes the **release with the changelog as its notes**.
+
+Local helpers:
+
+- `node scripts/bump-version.mjs [version]` — set/bump the version (dry-run with `--dry-run`).
+- `npm run changelog` — print the changelog locally; `node scripts/changelog.mjs <version> --write` updates `CHANGELOG.md`.
+
+The **GUI shows the release notes**: when a new version of Brisa or of a port is available, the **📝** button opens the changelog of that release.
+
 ## Development
 
 ### Requirements
@@ -314,6 +331,7 @@ When **uninstalling** a port these patterns are respected too: everything is del
 - Install, update, uninstall and launch ports with one click.
 - Link/unlink individual mods.
 - **Language switcher** (Español / English) in the header. Languages live in `src/web/lang/*.json` — add a new file and the switcher will show it automatically.
+- **Release notes**: the **📝** button opens the changelog of the pending release (Brisa update or port update).
 
 ## Platform notes
 

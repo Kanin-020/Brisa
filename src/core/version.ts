@@ -45,7 +45,8 @@ export function appVersion(): string {
  */
 export function normalizeVersion(version: string | null | undefined): string | null {
   if (!version) return null;
-  return version.replace(/^v/i, "").trim();
+  const cleaned = version.trim().replace(/^v/i, "");
+  return cleaned || null;
 }
 
 /**

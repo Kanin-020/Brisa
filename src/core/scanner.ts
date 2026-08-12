@@ -32,9 +32,8 @@ export interface ScanResult {
   missing: Manifest[];
 }
 
-/** Walk the roms dir recursively. */
+/** Walk every roms dir recursively. */
 export function collectRomFiles(cfg: AppConfig): string[] {
-  if (!fs.existsSync(cfg.romsDir)) return [];
   const out: string[] = [];
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -43,7 +42,10 @@ export function collectRomFiles(cfg: AppConfig): string[] {
       else if (entry.isFile()) out.push(full);
     }
   };
-  walk(cfg.romsDir);
+  for (const dir of cfg.romsDirs) {
+    if (!fs.existsSync(dir)) continue;
+    walk(dir);
+  }
   return out;
 }
 

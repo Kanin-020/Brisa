@@ -3,7 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
   <title>Brisa</title>
+  <script>
+    // Aplica el tema antes del primer paint para evitar parpadeo (FOUC).
+    (function () {
+      var theme = "dark";
+      try {
+        theme = localStorage.getItem("brisa-theme");
+        if (!theme) {
+          theme =
+            window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches
+              ? "light"
+              : "dark";
+        }
+      } catch (e) {
+        theme = "dark";
+      }
+      document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+    })();
+  </script>
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" type="image/png" href="/icon.png" />
 </head>
@@ -21,9 +40,8 @@
         <span id="platform-chip" class="chip"></span>
         <span id="app-version" class="chip"></span>
         <button id="btn-self-update" class="btn sm update-app" hidden>⬆</button>
-        <div class="locale-selector" id="locale-selector">
-          <!-- Locale buttons rendered dynamically by app.js -->
-        </div>
+        <button id="btn-self-changelog" class="btn ghost sm" title="Novedades" hidden>📝</button>
+        <button id="btn-settings" class="btn ghost sm settings-btn" title="Ajustes">⚙️</button>
         <button id="btn-refresh" class="btn ghost" title="⟳ Refrescar">⟳ Refrescar</button>
       </div>
     </header>
@@ -60,11 +78,19 @@
       </div>
     </div>
 
+    <!-- Barra global de tareas sin port (p. ej. Actualizar todos): progreso + cancelar -->
+    <div id="global-task" class="global-task" hidden>
+      <div class="progress"><div class="bar" id="global-task-bar"></div></div>
+      <span id="global-task-stage" class="progress-stage"></span>
+      <button id="global-task-cancel" class="btn red sm cancel-btn"></button>
+    </div>
+
     <main>
       <section class="section tab-pane active" data-tab="installed" role="tabpanel" aria-labelledby="tab-label-installed">
         <div class="section-head">
           <span id="ports-hint-installed" class="hint"></span>
           <div class="section-tools">
+            <button id="btn-update-all" class="btn ghost sm" title="" disabled>⬆</button>
             <input id="ports-search-installed" class="search-input" type="search" placeholder="Buscar…" autocomplete="off" spellcheck="false" />
             <div class="view-toggle" id="ports-view-toggle-installed">
               <button class="view-btn active" data-view="cards" title="Vista tarjetas">▦</button>
@@ -140,6 +166,26 @@
         <button id="confirm-modal-cancel" class="btn ghost sm"></button>
         <button id="confirm-modal-ok" class="btn red sm"></button>
       </div>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal modal-settings">
+      <div class="modal-head">
+        <h3 id="settings-modal-title"></h3>
+        <button id="settings-modal-close" class="modal-close" title="Cerrar">✕</button>
+      </div>
+      <div id="settings-modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="changelog-modal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal modal-changelog">
+      <div class="modal-head">
+        <h3 id="changelog-modal-title"></h3>
+        <button id="changelog-modal-close" class="modal-close" title="Cerrar">✕</button>
+      </div>
+      <div id="changelog-modal-body" class="modal-body changelog-body"></div>
     </div>
   </div>
 

@@ -18,20 +18,35 @@ function requirePortId(body: unknown, res: ServerResponse): string | null {
 }
 
 export function registerPortsRoutes(router: ApiRouter, app: App): void {
+  // Instalación como tarea en segundo plano: responde 202 con la tarea y el
+  // progreso se consulta por GET /api/tasks (barra real + cancelación).
   router.post("/api/install", async (_req, res, body) => {
     const id = requirePortId(body, res);
     if (!id) return;
     try {
       const manifest = app.manifest(id);
       if (!manifest) return sendJson(res, 404, { error: "port not found" });
+      if (app.tasks.hasRunning(id)) {
+        return sendJson(res, 409, { error: "Ya hay una operación en curso para este port" });
+      }
       const { scan } = await app.status();
       const roms: Record<string, RomFile> = {};
       for (const match of scan.matches) {
         if (match.manifest.id === id) roms[match.requirement.id] = match.rom;
       }
-      const state = await app.install(id, { roms });
-      const relinked = app.relinkMods(id);
-      sendJson(res, 200, { state, relinked });
+      const { info } = app.tasks.start(
+        { type: "install", portId: id, label: manifest.name },
+        async (ctx) => {
+          const state = await app.install(
+            id,
+            { roms, signal: ctx.signal },
+            (stage, done, total) => ctx.update(stage, done, total),
+          );
+          app.relinkMods(id);
+          return { version: state.version, name: manifest.name };
+        },
+      );
+      sendJson(res, 202, { task: info });
     } catch (e) {
       sendJson(res, 500, { error: (e as Error).message });
     }
@@ -44,13 +59,28 @@ export function registerPortsRoutes(router: ApiRouter, app: App): void {
     sendJson(res, 200, { ok: true });
   });
 
+  // Actualización como tarea en segundo plano (progreso + cancelación).
   router.post("/api/update", async (_req, res, body) => {
     const id = requirePortId(body, res);
     if (!id) return;
     try {
-      const info = await app.update(id);
-      app.relinkMods(id);
-      sendJson(res, 200, { info });
+      const manifest = app.manifest(id);
+      if (!manifest) return sendJson(res, 404, { error: "port not found" });
+      if (app.tasks.hasRunning(id)) {
+        return sendJson(res, 409, { error: "Ya hay una operación en curso para este port" });
+      }
+      const { info } = app.tasks.start(
+        { type: "update", portId: id, label: manifest.name },
+        async (ctx) => {
+          const applied = await app.update(id, {
+            signal: ctx.signal,
+            onProgress: (stage, done, total) => ctx.update(stage, done, total),
+          });
+          app.relinkMods(id);
+          return { name: manifest.name, latest: applied.latest };
+        },
+      );
+      sendJson(res, 202, { task: info });
     } catch (e) {
       sendJson(res, 500, { error: (e as Error).message });
     }

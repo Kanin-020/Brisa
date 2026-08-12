@@ -4,7 +4,13 @@ import * as path from "node:path";
 export interface AppConfig {
   /** Root of the tool (contains package.json, manifests/, roms/, mods/). */
   root: string;
+  /**
+   * Carpeta de ROMs principal (la primera de `romsDirs`). Se mantiene para
+   * compatibilidad con el código que asume una única carpeta.
+   */
   romsDir: string;
+  /** Una o más carpetas de ROMs (todas se escanean en busca de ROMs). */
+  romsDirs: string[];
   modsDir: string;
   portsDir: string;
   cacheDir: string;
@@ -35,9 +41,11 @@ export function projectRoot(): string {
 
 export function defaultConfig(): AppConfig {
   const root = projectRoot();
+  const romsDir = path.join(root, "roms");
   return {
     root,
-    romsDir: path.join(root, "roms"),
+    romsDir,
+    romsDirs: [romsDir],
     modsDir: path.join(root, "mods"),
     portsDir: path.join(root, "ports"),
     cacheDir: path.join(root, "cache"),
@@ -58,7 +66,13 @@ export function loadConfig(): AppConfig {
   try {
     if (fs.existsSync(file)) {
       const raw = JSON.parse(fs.readFileSync(file, "utf8")) as Partial<AppConfig>;
-      if (raw.romsDir) cfg.romsDir = path.resolve(cfg.root, raw.romsDir);
+      // `romsDirs` gana; si no existe, se migra el antiguo `romsDir` único.
+      if (Array.isArray(raw.romsDirs) && raw.romsDirs.length > 0) {
+        cfg.romsDirs = raw.romsDirs.map((d) => path.resolve(cfg.root, String(d)));
+      } else if (raw.romsDir) {
+        cfg.romsDirs = [path.resolve(cfg.root, raw.romsDir)];
+      }
+      cfg.romsDir = cfg.romsDirs[0];
       if (raw.modsDir) cfg.modsDir = path.resolve(cfg.root, raw.modsDir);
       if (raw.portsDir) cfg.portsDir = path.resolve(cfg.root, raw.portsDir);
       if (raw.cacheDir) cfg.cacheDir = path.resolve(cfg.root, raw.cacheDir);
@@ -78,7 +92,7 @@ export function loadConfig(): AppConfig {
 }
 
 export function ensureDirs(cfg: AppConfig): void {
-  for (const d of [cfg.romsDir, cfg.modsDir, cfg.portsDir, cfg.cacheDir, cfg.stateDir]) {
+  for (const d of [...cfg.romsDirs, cfg.modsDir, cfg.portsDir, cfg.cacheDir, cfg.stateDir]) {
     fs.mkdirSync(d, { recursive: true });
   }
 }
@@ -86,7 +100,10 @@ export function ensureDirs(cfg: AppConfig): void {
 export function saveConfig(cfg: AppConfig): void {
   const file = path.join(cfg.root, CONFIG_FILE);
   const out: Record<string, unknown> = {
-    romsDir: path.relative(cfg.root, cfg.romsDir),
+    // Se guardan ambos: `romsDirs` (nuevo) y `romsDir` (compatibilidad con
+    // versiones anteriores que solo leen el campo antiguo).
+    romsDir: path.relative(cfg.root, cfg.romsDirs[0]),
+    romsDirs: cfg.romsDirs.map((d) => path.relative(cfg.root, d)),
     modsDir: path.relative(cfg.root, cfg.modsDir),
     portsDir: path.relative(cfg.root, cfg.portsDir),
     cacheDir: path.relative(cfg.root, cfg.cacheDir),

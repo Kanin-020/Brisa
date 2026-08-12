@@ -11,6 +11,8 @@ export interface ReleaseAsset {
 export interface ReleaseInfo {
   tag: string;
   name: string;
+  /** Notas de la release (cuerpo del release de GitHub, markdown). */
+  body: string;
   publishedAt: string;
   assets: ReleaseAsset[];
 }
@@ -18,6 +20,7 @@ export interface ReleaseInfo {
 interface RawRelease {
   tag_name?: string;
   name?: string;
+  body?: string | null;
   published_at?: string;
   draft?: boolean;
   prerelease?: boolean;
@@ -35,6 +38,7 @@ function parseRelease(data: RawRelease): ReleaseInfo {
   return {
     tag: normalizeVersion(data.tag_name) ?? "unknown",
     name: data.name ?? data.tag_name ?? "unknown",
+    body: data.body ?? "",
     publishedAt: data.published_at ?? "",
     assets: (data.assets ?? [])
       .filter((asset) => asset.name && asset.browser_download_url)

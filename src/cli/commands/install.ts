@@ -25,7 +25,7 @@ export function registerInstallCommand(program: Command, app: App): void {
       );
       if (missingRequired.length > 0 && !opts.force) {
         console.error(
-          `No se encontraron todos los ROMs requeridos para ${manifest.name}. Ponlos en ${app.cfg.romsDir} o usa --force.`,
+          `No se encontraron todos los ROMs requeridos para ${manifest.name}. Ponlos en ${app.cfg.romsDirs.join(", ")} o usa --force.`,
         );
         console.error(`  Faltan: ${missingRequired.map((requirement) => requirement.name).join(", ")}`);
         process.exit(1);

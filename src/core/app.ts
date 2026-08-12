@@ -7,6 +7,7 @@ import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unli
 import { scanRoms, type RomMatch, type ScanResult, type RomFile } from "./scanner";
 import { readState, listStates } from "./state";
 import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
+import { TaskManager, throwIfAborted } from "./tasks";
 import { checkSelfUpdate, applySelfUpdate, type SelfUpdateInfo } from "./selfupdate";
 import { detectPlatform } from "./platform";
 import { ensureSelfImageCopy, syncLaunchers, writeImagenHelper } from "./launchers";
@@ -49,6 +50,8 @@ export interface PortStatus {
  */
 export class App {
   readonly cfg: AppConfig;
+  /** Tareas de larga duración con progreso y cancelación (usadas por el servidor web). */
+  readonly tasks = new TaskManager();
 
   constructor() {
     this.cfg = loadConfig();
@@ -123,12 +126,14 @@ export class App {
         hasRom: roms.filter((slot) => slot.required).every((slot) => slot.matched),
         updateAvailable: !!updateInfo?.available,
         // Normaliza también lo cacheados (escritos por versiones anteriores),
-        // para que el frontend siempre reciba versiones "x.x.x".
+        // para que el frontend siempre reciba versiones "x.x.x" y notas
+        // (caches viejos sin el campo).
         updateInfo: updateInfo
           ? {
               ...updateInfo,
               installed: normalizeVersion(updateInfo.installed) ?? updateInfo.installed,
               latest: normalizeVersion(updateInfo.latest) ?? updateInfo.latest,
+              notes: updateInfo.notes ?? "",
             }
           : null,
         mods,
@@ -146,6 +151,7 @@ export class App {
             ...self,
             current: normalizeVersion(self.current) ?? self.current,
             latest: normalizeVersion(self.latest) ?? self.latest,
+            notes: self.notes ?? "",
           }
         : null,
     };
@@ -153,7 +159,7 @@ export class App {
 
   async install(
     id: string,
-    opts: { roms?: Record<string, RomFile> } = {},
+    opts: { roms?: Record<string, RomFile>; signal?: AbortSignal } = {},
     onProgress?: (stage: string, done: number, total: number) => void,
   ) {
     const manifest = this.manifest(id);
@@ -174,10 +180,39 @@ export class App {
     return launchExecutable(this.cfg, id);
   }
 
-  async update(id: string): Promise<UpdateInfo> {
+  async update(
+    id: string,
+    opts: { signal?: AbortSignal; onProgress?: (stage: string, done: number, total: number) => void } = {},
+  ): Promise<UpdateInfo> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    return applyUpdate(this.cfg, manifest);
+    return applyUpdate(this.cfg, manifest, opts);
+  }
+
+  /**
+   * Actualiza todos los ports instalados que tengan una versión más reciente
+   * (secuencialmente, respetando cancelación y reportando por port).
+   */
+  async updateAll(opts: {
+    signal?: AbortSignal;
+    onPortStart?: (name: string) => void;
+    onProgress?: (stage: string, done: number, total: number) => void;
+  } = {}): Promise<{ updated: number; results: UpdateInfo[] }> {
+    const { signal, onPortStart, onProgress } = opts;
+    const results: UpdateInfo[] = [];
+    let updated = 0;
+    for (const state of listStates(this.cfg)) {
+      throwIfAborted(signal);
+      const manifest = this.manifest(state.id);
+      if (!manifest) continue;
+      // Check con caché (no fuerza GitHub): respeta el límite de 60 req/h sin token.
+      const info = await checkUpdate(this.cfg, manifest);
+      if (!info || !info.available) continue;
+      onPortStart?.(manifest.name);
+      results.push(await applyUpdate(this.cfg, manifest, { signal, onProgress }));
+      updated++;
+    }
+    return { updated, results };
   }
 
   /** Estado de actualización de la propia app (Brisa), cacheado 30 min. */

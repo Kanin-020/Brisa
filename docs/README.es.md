@@ -206,6 +206,23 @@ unset STEAM_RUNTIME
 
 > Un launcher por port instalado: si un port soporta varias variantes de ROM (p. ej. SoH base + Master Quest), todas las variantes ejecutan el mismo launcher con el ROM que esté enlazado en la carpeta del port.
 
+## Publicar una release (CI/CD)
+
+GitHub Actions compila y publica las releases por ti — no necesitas construir en tu PC:
+
+1. Ve a **Actions → Release → Run workflow**.
+2. `version`: vacío sube el patch desde el último tag (`0.3.8` → `0.3.9`); o escribe una versión exacta (`1.2.3` o `v1.2.3`).
+3. Opcionalmente marca `prerelease` o añade notas extra.
+
+El workflow: pasa los tests, sube la versión en `package.json`, genera `CHANGELOG.md` desde los commits convencionales (`feat:`, `fix:`, …), crea el tag, buildea la **AppImage de Linux** y el **instalador de Windows** en runners nativos, y publica la **release con el changelog como notas**.
+
+Utilidades locales:
+
+- `node scripts/bump-version.mjs [version]` — fija/sube la versión (dry-run con `--dry-run`).
+- `npm run changelog` — imprime el changelog localmente; `node scripts/changelog.mjs <version> --write` actualiza `CHANGELOG.md`.
+
+La **GUI muestra las novedades**: cuando hay una versión nueva de Brisa o de un port, el botón **📝** abre el changelog de esa release.
+
 ## Desarrollo
 
 ### Requisitos
@@ -314,6 +331,7 @@ Al **desinstalar** un port también se respetan estos patrones: se borra todo ex
 - Instalar, actualizar, desinstalar y lanzar ports con un clic.
 - Enlazar/desenlazar mods individualmente.
 - **Selector de idioma** (Español / English) en la cabecera. Los idiomas viven en `src/web/lang/*.json` — añade un archivo nuevo y el selector lo mostrará automáticamente.
+- **Novedades**: el botón **📝** abre el changelog de la release pendiente (actualización de Brisa o de un port).
 
 ## Notas por plataforma
 

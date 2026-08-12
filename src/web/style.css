@@ -16,9 +16,28 @@
   --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
+/* Tema claro (GitHub light) — el dark es el de :root por defecto. */
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --bg-soft: #eaeef2;
+  --card: #ffffff;
+  --card-hover: #eef1f4;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-dim: #59636e;
+  --accent: #0969da;
+  --accent-2: #0969da;
+  --green: #1a7f37;
+  --red: #cf222e;
+  --yellow: #9a6700;
+  --purple: #8250df;
+  --shadow: 0 8px 24px rgba(140, 149, 159, 0.28);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
+  color-scheme: dark;
   font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
   background:
     radial-gradient(1200px 500px at 80% -10%, rgba(47, 129, 247, 0.12), transparent 60%),
@@ -51,16 +70,30 @@ body {
 .tagline { color: var(--text-dim); font-size: 13px; }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
 
-/* Locale selector */
-.locale-selector { display: flex; align-items: center; gap: 2px; }
-.locale-btn {
-  background: none; border: none; color: var(--text-dim); cursor: pointer;
-  font-size: 12px; padding: 4px 6px; border-radius: 6px; transition: all 0.15s ease;
-  font-weight: 500;
+/* Botón de ajustes (⚙) — abre el popup de preferencias */
+.settings-btn { font-size: 15px; padding: 6px 11px; }
+
+/* Popup de ajustes: idioma, tema y vistas en controles segmentados */
+.modal-settings { width: min(460px, 100%); }
+.settings-group { margin-bottom: 18px; }
+.settings-group:last-child { margin-bottom: 0; }
+.settings-label {
+  font-size: 11px; font-weight: 700; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px;
 }
-.locale-btn:hover { color: var(--text); background: var(--card-hover); }
-.locale-btn.active { color: var(--accent); font-weight: 700; }
-.locale-divider { color: var(--border); font-size: 12px; user-select: none; }
+.seg {
+  display: flex; gap: 4px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: 10px; padding: 4px;
+}
+.seg-btn {
+  flex: 1; background: none; border: none; cursor: pointer;
+  color: var(--text-dim); font-size: 13px; font-weight: 600;
+  padding: 8px 10px; border-radius: 7px;
+  white-space: nowrap; transition: all 0.15s ease;
+}
+.seg-btn:hover { color: var(--text); }
+.seg-btn.active { background: var(--accent-2); color: #fff; }
 .chip {
   background: var(--bg-soft); border: 1px solid var(--border);
   padding: 6px 12px; border-radius: 999px; font-size: 12px; color: var(--text-dim);
@@ -335,6 +368,32 @@ body {
 }
 body.modal-open { overflow: hidden; }
 
+/* Modal de novedades (changelog de releases) */
+.modal-changelog { width: min(560px, 100%); }
+.changelog-head {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.changelog-app { font-size: 14px; font-weight: 700; }
+.changelog-notes {
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  max-height: 45vh; overflow-y: auto;
+  font-size: 13px; line-height: 1.6;
+}
+.changelog-h { font-size: 13px; margin: 10px 0 4px; color: var(--accent); }
+.changelog-h:first-child { margin-top: 0; }
+.changelog-line { margin-bottom: 6px; }
+.changelog-line:last-child { margin-bottom: 0; }
+.changelog-empty { color: var(--text-dim); font-size: 13px; }
+
+/* Botón de novedades de las tarjetas de port (junto al badge de update) */
+.notes-btn {
+  cursor: pointer; border: none; font-family: inherit;
+  padding: 3px 9px; border-radius: 999px; font-size: 11px; line-height: 1.2;
+  transition: all 0.15s ease;
+}
+.notes-btn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
 .port-actions { display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
 .port-actions .spacer { flex: 1; }
 /* Fila principal de acciones (update / play): alineada a la derecha y fija al
@@ -343,9 +402,39 @@ body.modal-open { overflow: hidden; }
 .grid:not(.list) .port-actions.main { margin-top: auto; padding-top: 6px; }
 
 .progress {
-  height: 6px; background: var(--bg-soft); border-radius: 999px; overflow: hidden;
+  height: 6px; background: var(--bg-soft); border-radius: 999px; overflow: hidden; flex: 1;
 }
-.progress .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--purple)); transition: width 0.2s ease; }
+.progress .bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-2), var(--purple)); transition: width 0.25s ease; }
+.progress .bar.indeterminate { width: 40%; animation: progress-slide 1.1s ease infinite; }
+@keyframes progress-slide {
+  0% { margin-left: -40%; }
+  100% { margin-left: 100%; }
+}
+
+/* Progreso real por tarea: barra + etapa + botón cancelar */
+.progress-wrap {
+  display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--border); border-radius: 12px;
+  background: var(--bg-soft); padding: 10px 12px;
+  animation: help-pop 0.2s ease;
+}
+.progress-stage {
+  font-size: 11px; color: var(--text-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.progress-wrap .cancel-btn { align-self: flex-end; padding: 4px 12px; }
+
+/* Barra global de tareas sin port (update-all) */
+.global-task {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg-soft); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 14px; margin-bottom: 18px;
+  animation: help-pop 0.2s ease;
+}
+.global-task[hidden] { display: none; }
+.global-task .progress { flex: 1; }
+.global-task .progress-stage { flex: 0 1 auto; }
+.global-task .cancel-btn { padding: 4px 12px; }
 
 /* ROMs — vista tarjetas / lista */
 .roms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
@@ -446,6 +535,16 @@ body.modal-open { overflow: hidden; }
 .toast.warn { border-color: var(--yellow); }
 .toast.clickable { cursor: pointer; }
 .toast.clickable:hover { border-color: var(--yellow); filter: brightness(1.1); }
+
+[data-theme="light"] body {
+  color-scheme: light;
+}
+
+/* En tema claro el amarillo es más oscuro: el texto claro da mejor contraste. */
+[data-theme="light"] .btn.warn,
+[data-theme="light"] .btn.update-app {
+  color: #fff;
+}
 
 @media (max-width: 640px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
