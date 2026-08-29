@@ -11,7 +11,7 @@ export function registerUninstallCommand(program: Command, app: App): void {
     )
     .action((portId: string) => {
       app.uninstall(portId);
-      const dir = portDir(app.cfg, portId);
+      const dir = portDir(app.config, portId);
       if (fs.existsSync(dir)) {
         console.info(
           `✓ ${portId} desinstalado. Se conservaron los archivos de preserve en: ${dir}`,

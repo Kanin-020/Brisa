@@ -87,11 +87,11 @@ test("tasks: cancelling an in-flight download cleans the partial file", async ()
     res.on("close", () => clearInterval(timer));
   });
   const url = await listen(server);
-  const cfg = { cacheDir: fs.mkdtempSync(path.join(os.tmpdir(), "brisa-tasks-")) } as AppConfig;
-  const dest = path.join(cfg.cacheDir, "big.bin");
+  const config = { cacheDir: fs.mkdtempSync(path.join(os.tmpdir(), "brisa-tasks-")) } as AppConfig;
+  const dest = path.join(config.cacheDir, "big.bin");
   const tm = new TaskManager();
   const { id } = tm.start({ type: "download", label: "big" }, async (ctx) => {
-    await download(cfg, url + "/big.bin", dest, undefined, { signal: ctx.signal });
+    await download(config, url + "/big.bin", dest, undefined, { signal: ctx.signal });
     return true;
   });
   // Cancela a mitad de la descarga (servidor manda ~2.5 MB en 400 ms).

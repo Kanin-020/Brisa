@@ -27,8 +27,8 @@ export interface SelfUpdateInfo {
 }
 
 /** Cache idéntica a la de los ports: como mucho 1 llamada a GitHub cada 30 min. */
-const selfCache = (cfg: AppConfig) =>
-  new JsonCache<SelfUpdateInfo>(path.join(cfg.cacheDir, 'update-check'));
+const selfCache = (config: AppConfig) =>
+  new JsonCache<SelfUpdateInfo>(path.join(config.cacheDir, 'update-check'));
 
 const SELF_CACHE_ID = 'self';
 
@@ -38,8 +38,8 @@ const SELF_CACHE_ID = 'self';
  * el OS de Windows es `win` (no `windows`) y el AppImage de Linux usa `x86_64`
  * (no `x64`), por eso el patrón tolera ambas variantes de arch.
  */
-export function selfAssetPattern(cfg: AppConfig): string {
-  if (cfg.selfAssetPattern) return cfg.selfAssetPattern;
+export function selfAssetPattern(config: AppConfig): string {
+  if (config.selfAssetPattern) return config.selfAssetPattern;
   const p = detectPlatform();
   const os = p.os === 'windows' ? 'win' : p.os;
   const arch = p.arch === 'x64' ? '{x64,x86_64}' : p.arch === 'arm64' ? '{arm64,aarch64}' : p.arch;
@@ -68,12 +68,12 @@ function parseParts(v: string): number[] {
   return [Number(m[1] ?? 0), Number(m[2] ?? 0), Number(m[3] ?? 0)];
 }
 
-function readCache(cfg: AppConfig): SelfUpdateInfo | null {
-  return selfCache(cfg).readStale(SELF_CACHE_ID);
+function readCache(config: AppConfig): SelfUpdateInfo | null {
+  return selfCache(config).readStale(SELF_CACHE_ID);
 }
 
-function writeCache(cfg: AppConfig, info: SelfUpdateInfo): void {
-  selfCache(cfg).write(SELF_CACHE_ID, info);
+function writeCache(config: AppConfig, info: SelfUpdateInfo): void {
+  selfCache(config).write(SELF_CACHE_ID, info);
 }
 
 /**
@@ -94,7 +94,7 @@ function refreshCached(cached: SelfUpdateInfo): SelfUpdateInfo {
 
 /** Sin repo configurado o fallo de red: info con available=false. */
 function unavailable(
-  cfg: AppConfig,
+  config: AppConfig,
   latest: string,
   cached?: SelfUpdateInfo | null,
 ): SelfUpdateInfo {
@@ -116,25 +116,25 @@ function unavailable(
  * `force` salta la caché (usado por el comando explícito y antes de actualizar).
  */
 export async function checkSelfUpdate(
-  cfg: AppConfig,
+  config: AppConfig,
   force = false,
 ): Promise<SelfUpdateInfo | null> {
-  if (!cfg.selfRepo) return null;
+  if (!config.selfRepo) return null;
   // read() solo devuelve entradas frescas (guardadas hace < 30 min); readStale
   // se usa como último recurso si la red falla.
-  const cached = force ? null : selfCache(cfg).read(SELF_CACHE_ID);
+  const cached = force ? null : selfCache(config).read(SELF_CACHE_ID);
   if (cached) {
     // `current` y `supported` se recalculan siempre: una caché escrita por una
     // versión anterior (o con la detección rota de AppImage por execPath) no
     // debe mostrar una versión instalada vieja.
     return refreshCached(cached);
   }
-  const stale = readCache(cfg);
+  const stale = readCache(config);
   try {
     // allowPrerelease: el repo de la app publica sus releases como pre-release;
     // /releases/latest daría 404 y el check fallaría sin esta opción.
-    const rel = await getLatestRelease(cfg, cfg.selfRepo, { allowPrerelease: true });
-    const pattern = selfAssetPattern(cfg);
+    const rel = await getLatestRelease(config, config.selfRepo, { allowPrerelease: true });
+    const pattern = selfAssetPattern(config);
     const asset = pickAsset(rel, pattern);
     const info: SelfUpdateInfo = {
       current: appVersion(),
@@ -149,15 +149,15 @@ export async function checkSelfUpdate(
       downloadUrl: asset?.url ?? '',
       checkedAt: Date.now(),
     };
-    writeCache(cfg, info);
+    writeCache(config, info);
     return info;
   } catch {
     // Fallo de red / sin release estable: devolver lo último conocido con
     // `current` y `supported` actualizados, y refrescar la caché SIEMPRE para
     // que una copia obsoleta (p. ej. escrita por una versión antigua de la
     // app) no quede atascada mostrando una versión vieja indefinidamente.
-    const info = stale ? refreshCached(stale) : unavailable(cfg, '?');
-    writeCache(cfg, info);
+    const info = stale ? refreshCached(stale) : unavailable(config, '?');
+    writeCache(config, info);
     return info;
   }
 }
@@ -168,7 +168,7 @@ export async function checkSelfUpdate(
  * (o lo termina), reemplaza/instala la versión nueva y relanza la app.
  */
 export async function applySelfUpdate(
-  cfg: AppConfig,
+  config: AppConfig,
   onProgress?: ProgressFn,
 ): Promise<SelfUpdateInfo> {
   if (!isSelfUpdateSupported()) {
@@ -177,22 +177,22 @@ export async function applySelfUpdate(
         '(AppImage de Linux o instalador de Windows). Descarga la última versión desde GitHub.',
     );
   }
-  const info = await checkSelfUpdate(cfg, true);
+  const info = await checkSelfUpdate(config, true);
   if (!info) throw new Error('No hay selfRepo configurado (config-set selfRepo <owner/repo>).');
   if (!info.available) return info;
 
-  const dest = path.join(cfg.cacheDir, 'downloads', 'self', info.assetName);
+  const dest = path.join(config.cacheDir, 'downloads', 'self', info.assetName);
   if (!fs.existsSync(dest) || fs.statSync(dest).size !== info.size) {
-    await download(cfg, info.downloadUrl, dest, onProgress);
+    await download(config, info.downloadUrl, dest, onProgress);
   }
   if (fs.statSync(dest).size !== info.size) {
     throw new Error(`Descarga incompleta de ${info.assetName} (${info.size} bytes esperados).`);
   }
 
   if (process.platform === 'win32') {
-    spawnWindowsUpdater(cfg, dest);
+    spawnWindowsUpdater(config, dest);
   } else {
-    spawnLinuxUpdater(cfg, dest);
+    spawnLinuxUpdater(config, dest);
   }
   return info;
 }
@@ -201,12 +201,12 @@ export async function applySelfUpdate(
  * Linux (AppImage): lanza un updater shell desacoplado que espera a que este
  * proceso salga (o lo termina a los 15 s), reemplaza la AppImage y la relanza.
  */
-function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
+function spawnLinuxUpdater(config: AppConfig, dest: string): void {
   // Dentro de una AppImage process.execPath apunta al mount temporal (de solo
   // lectura); hay que reemplazar el archivo real, que expone $APPIMAGE.
   const oldPath = appImagePath() ?? path.resolve(process.execPath);
-  const updater = path.join(cfg.cacheDir, 'downloads', 'self', 'brisa-updater.sh');
-  const log = path.join(cfg.cacheDir, 'downloads', 'self', 'updater.log');
+  const updater = path.join(config.cacheDir, 'downloads', 'self', 'brisa-updater.sh');
+  const log = path.join(config.cacheDir, 'downloads', 'self', 'updater.log');
   fs.writeFileSync(updater, updaterScript(String(process.pid), dest, oldPath, log));
   fs.chmodSync(updater, EXECUTABLE_MODE);
   try {
@@ -225,9 +225,9 @@ function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
  * ejecuta el instalador en silencio (/S); al terminar, el instalador relanza
  * la app automáticamente (comportamiento por defecto de electron-builder).
  */
-function spawnWindowsUpdater(cfg: AppConfig, dest: string): void {
-  const updater = path.join(cfg.cacheDir, 'downloads', 'self', 'brisa-updater.cmd');
-  const log = path.join(cfg.cacheDir, 'downloads', 'self', 'updater.log');
+function spawnWindowsUpdater(config: AppConfig, dest: string): void {
+  const updater = path.join(config.cacheDir, 'downloads', 'self', 'brisa-updater.cmd');
+  const log = path.join(config.cacheDir, 'downloads', 'self', 'updater.log');
   fs.writeFileSync(updater, windowsUpdaterScript(String(process.pid), dest));
   try {
     // La salida del .cmd se redirige al log para poder depurar.

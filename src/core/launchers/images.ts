@@ -4,8 +4,8 @@ import type { AppConfig } from '../config';
 import { appImagePath } from '../version';
 
 /** Carpeta image/: copia de la propia Brisa + ayudante `imagen`/`imagen.cmd`. */
-export function imagesDir(cfg: AppConfig): string {
-  return path.join(cfg.root, 'image');
+export function imagesDir(config: AppConfig): string {
+  return path.join(config.root, 'image');
 }
 
 /**
@@ -14,9 +14,9 @@ export function imagesDir(cfg: AppConfig): string {
  * Si el symlink apunta a un destino que ya no existe (p. ej. tras un
  * self-update que borró la AppImage vieja), se ignora.
  */
-export function selfImagePath(cfg: AppConfig): string | null {
+export function selfImagePath(config: AppConfig): string | null {
   try {
-    const dir = imagesDir(cfg);
+    const dir = imagesDir(config);
     if (!fs.existsSync(dir)) return null;
     const files = fs
       .readdirSync(dir)
@@ -46,11 +46,11 @@ export function selfImagePath(cfg: AppConfig): string | null {
  * las copias completas de versiones anteriores se reemplazan por symlinks.
  * Best-effort: un fallo aquí nunca debe impedir que Brisa arranque.
  */
-export function ensureSelfImageCopy(cfg: AppConfig): string | null {
+export function ensureSelfImageCopy(config: AppConfig): string | null {
   const source = appImagePath();
   if (!source) return null;
   try {
-    const dir = imagesDir(cfg);
+    const dir = imagesDir(config);
     fs.mkdirSync(dir, { recursive: true });
     const link = path.join(dir, path.basename(source));
     // Mantener image/ limpio: borrar cualquier AppImage que no sea el

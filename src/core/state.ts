@@ -24,8 +24,8 @@ function normalizeState(state: PortState): PortState {
   return { ...state, version: normalizeVersion(state.version) ?? state.version };
 }
 
-export function readState(cfg: AppConfig, id: string): PortState | null {
-  const file = path.join(cfg.stateDir, `${id}.json`);
+export function readState(config: AppConfig, id: string): PortState | null {
+  const file = path.join(config.stateDir, `${id}.json`);
   try {
     return normalizeState(JSON.parse(fs.readFileSync(file, 'utf8')) as PortState);
   } catch {
@@ -33,20 +33,20 @@ export function readState(cfg: AppConfig, id: string): PortState | null {
   }
 }
 
-export function writeState(cfg: AppConfig, state: PortState): void {
-  fs.mkdirSync(cfg.stateDir, { recursive: true });
-  fs.writeFileSync(path.join(cfg.stateDir, `${state.id}.json`), JSON.stringify(state, null, 2));
+export function writeState(config: AppConfig, state: PortState): void {
+  fs.mkdirSync(config.stateDir, { recursive: true });
+  fs.writeFileSync(path.join(config.stateDir, `${state.id}.json`), JSON.stringify(state, null, 2));
 }
 
-export function listStates(cfg: AppConfig): PortState[] {
-  if (!fs.existsSync(cfg.stateDir)) return [];
+export function listStates(config: AppConfig): PortState[] {
+  if (!fs.existsSync(config.stateDir)) return [];
   return fs
-    .readdirSync(cfg.stateDir)
+    .readdirSync(config.stateDir)
     .filter((f) => f.endsWith('.json'))
     .map((f) => {
       try {
         return normalizeState(
-          JSON.parse(fs.readFileSync(path.join(cfg.stateDir, f), 'utf8')) as PortState,
+          JSON.parse(fs.readFileSync(path.join(config.stateDir, f), 'utf8')) as PortState,
         );
       } catch {
         return null;

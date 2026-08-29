@@ -10,11 +10,11 @@ export function registerHashCommand(program: Command): void {
       'Calcula el SHA1 de un archivo (útil para rellenar el campo sha1 de un manifiesto).',
     )
     .action(async (file: string) => {
-      const abs = path.resolve(file);
-      if (!fs.existsSync(abs)) {
-        console.error('Archivo no encontrado:', abs);
+      const absolutePath = path.resolve(file);
+      if (!fs.existsSync(absolutePath)) {
+        console.error('Archivo no encontrado:', absolutePath);
         process.exit(1);
       }
-      console.info(await sha1File(abs));
+      console.info(await sha1File(absolutePath));
     });
 }

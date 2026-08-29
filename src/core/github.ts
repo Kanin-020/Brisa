@@ -28,10 +28,10 @@ interface RawRelease {
   assets?: Array<{ name?: string; browser_download_url?: string; size?: number }>;
 }
 
-function githubHeaders(cfg: AppConfig): Record<string, string> {
+function githubHeaders(config: AppConfig): Record<string, string> {
   return {
     'User-Agent': USER_AGENT,
-    ...(cfg.githubToken ? { Authorization: `Bearer ${cfg.githubToken}` } : {}),
+    ...(config.githubToken ? { Authorization: `Bearer ${config.githubToken}` } : {}),
   };
 }
 
@@ -59,14 +59,14 @@ function parseRelease(data: RawRelease): ReleaseInfo {
  * significa "sin release estable" y no se ofrecen pre-releases como update.
  */
 export async function getLatestRelease(
-  cfg: AppConfig,
+  config: AppConfig,
   repo: string,
   opts: { allowPrerelease?: boolean } = {},
 ): Promise<ReleaseInfo> {
   const url = `${GITHUB_API_BASE}/repos/${repo}/releases/latest`;
-  const res = await fetch(url, { headers: githubHeaders(cfg) });
+  const res = await fetch(url, { headers: githubHeaders(config) });
   if (res.status === 404 && opts.allowPrerelease) {
-    return getLatestReleaseFallback(cfg, repo);
+    return getLatestReleaseFallback(config, repo);
   }
   if (!res.ok) {
     throw new Error(
@@ -77,9 +77,9 @@ export async function getLatestRelease(
 }
 
 /** Última release publicada (la API las ordena de más reciente a más antigua), saltando drafts. */
-async function getLatestReleaseFallback(cfg: AppConfig, repo: string): Promise<ReleaseInfo> {
+async function getLatestReleaseFallback(config: AppConfig, repo: string): Promise<ReleaseInfo> {
   const url = `${GITHUB_API_BASE}/repos/${repo}/releases?per_page=5`;
-  const res = await fetch(url, { headers: githubHeaders(cfg) });
+  const res = await fetch(url, { headers: githubHeaders(config) });
   if (!res.ok) {
     throw new Error(
       `GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`,

@@ -10,11 +10,11 @@ export function registerStatusRoute(router: ApiRouter, app: App): void {
       ports,
       self,
       platform: app.platform,
-      cfg: {
-        romsDir: app.cfg.romsDir,
-        romsDirs: app.cfg.romsDirs,
-        modsDir: app.cfg.modsDir,
-        portsDir: app.cfg.portsDir,
+      config: {
+        romsDir: app.config.romsDir,
+        romsDirs: app.config.romsDirs,
+        modsDir: app.config.modsDir,
+        portsDir: app.config.portsDir,
       },
     });
   });

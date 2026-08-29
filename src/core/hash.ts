@@ -20,7 +20,7 @@ export function fileFingerprint(file: string): { size: number; mtimeMs: number }
 }
 
 /** Cache file path for the SHA1 of a ROM file (keyed by a sanitized absolute path). */
-export function hashCacheFile(cfg: AppConfig, file: string): string {
+export function hashCacheFile(config: AppConfig, file: string): string {
   const key = file.replace(/[^a-zA-Z0-9]/g, '_');
-  return path.join(cfg.cacheDir, 'hashes', `${key}.json`);
+  return path.join(config.cacheDir, 'hashes', `${key}.json`);
 }

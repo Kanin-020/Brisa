@@ -42,7 +42,7 @@ export function registerSelfUpdateCommand(program: Command, app: App): void {
           'El auto-update solo funciona en builds empaquetadas (AppImage de Linux o instalador de Windows).',
         );
         console.error(
-          '  Descárgala desde: https://github.com/' + app.cfg.selfRepo + '/releases/latest',
+          '  Descárgala desde: https://github.com/' + app.config.selfRepo + '/releases/latest',
         );
         process.exit(1);
       }

@@ -6,7 +6,7 @@ export function registerRegistryCommand(program: Command, app: App): void {
     .command('registry')
     .description('Actualiza los manifiestos remotos desde registryUrl (config.json).')
     .action(async () => {
-      if (!app.cfg.registryUrl) {
+      if (!app.config.registryUrl) {
         console.error(
           'No hay registryUrl configurada. Edita config.json o usa: brisa config-set registryUrl <url>',
         );

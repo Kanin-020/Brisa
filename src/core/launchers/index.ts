@@ -35,8 +35,8 @@ export { ensureSelfImageCopy, selfImagePath, imagesDir } from './images';
 export { launcherScriptForPlatform, writeImagenHelper, helperPath, shQuote } from './scripts';
 
 /** Carpeta de launchers, junto al resto de datos de Brisa (roms/, mods/, …). */
-export function launchersDir(cfg: AppConfig): string {
-  return path.join(cfg.root, 'launchers');
+export function launchersDir(config: AppConfig): string {
+  return path.join(config.root, 'launchers');
 }
 
 /** Extensión del launcher según el SO (Windows: .cmd; resto: .sh). */
@@ -58,11 +58,11 @@ export function launcherTitle(game: string): string {
  * (p. ej. los dos de Super Mario 64), se desambigua con el nombre del port o
  * su id.
  */
-export function computeLauncherNames(cfg: AppConfig): Map<string, string> {
+export function computeLauncherNames(config: AppConfig): Map<string, string> {
   const names = new Map<string, string>();
   const used = new Set<string>();
-  for (const state of listStates(cfg)) {
-    const manifest = loadManifest(cfg, state.id);
+  for (const state of listStates(config)) {
+    const manifest = loadManifest(config, state.id);
     const base = launcherTitle(manifest?.launcher || manifest?.game || manifest?.name || state.id);
     let title = base;
     let key = title.toLowerCase();
@@ -88,23 +88,23 @@ export function computeLauncherNames(cfg: AppConfig): Map<string, string> {
  * disco) NO debe romper la instalación/actualización del port, que ya tuvo
  * éxito.
  */
-export function writeLauncher(cfg: AppConfig, state: PortState): string | null {
+export function writeLauncher(config: AppConfig, state: PortState): string | null {
   try {
-    const root = path.join(cfg.portsDir, state.id);
+    const root = path.join(config.portsDir, state.id);
     const executable = state.executable;
     if (!fs.existsSync(root) || !fs.existsSync(path.join(root, executable))) return null;
-    const title = computeLauncherNames(cfg).get(state.id);
+    const title = computeLauncherNames(config).get(state.id);
     if (!title) return null;
     // Si el título cambió (p. ej. el manifiesto añadió `launcher`), borrar el
     // archivo viejo de este mismo port antes de escribir el nuevo.
-    removeLauncher(cfg, state.id);
-    const dir = launchersDir(cfg);
+    removeLauncher(config, state.id);
+    const dir = launchersDir(config);
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${title}${launcherExtension()}`);
-    fs.writeFileSync(file, launcherScriptForPlatform(cfg, state.id, state.version));
+    fs.writeFileSync(file, launcherScriptForPlatform(config, state.id, state.version));
     if (launcherExtension() !== '.cmd') fs.chmodSync(file, EXECUTABLE_MODE);
     // Asegurar que el ayudante image/imagen exista para que el launcher funcione.
-    writeImagenHelper(cfg);
+    writeImagenHelper(config);
     return file;
   } catch {
     return null;
@@ -119,18 +119,18 @@ export function writeLauncher(cfg: AppConfig, state: PortState): string | null {
  * el launcher quedaría roto). Para regenerarlos todos usa `brisa srm-config`.
  * Best-effort: devuelve cuántos se crearon o refrescaron.
  */
-export function syncLaunchers(cfg: AppConfig): number {
+export function syncLaunchers(config: AppConfig): number {
   let created = 0;
-  const titles = computeLauncherNames(cfg);
-  const dir = launchersDir(cfg);
+  const titles = computeLauncherNames(config);
+  const dir = launchersDir(config);
   // Solo se refrescan referencias cuando hay una AppImage real en image/ (en
   // dev no existe y reescribir los launchers iría y vendría según el entorno).
-  const executable = selfImagePath(cfg);
-  for (const state of listStates(cfg)) {
+  const executable = selfImagePath(config);
+  for (const state of listStates(config)) {
     const title = titles.get(state.id);
     if (!title) continue;
     const file = path.join(dir, `${title}${launcherExtension()}`);
-    if (launcherNeedsRefresh(cfg, state, file, executable) && writeLauncher(cfg, state) !== null) {
+    if (launcherNeedsRefresh(config, state, file, executable) && writeLauncher(config, state) !== null) {
       created++;
     }
   }
@@ -145,7 +145,7 @@ export function syncLaunchers(cfg: AppConfig): number {
  * (el port se actualizó y el launcher quedó desactualizado).
  */
 function launcherNeedsRefresh(
-  cfg: AppConfig,
+  config: AppConfig,
   state: PortState,
   file: string,
   executable: string | null,
@@ -185,9 +185,9 @@ function parseLauncherMarkers(content: string): {
  * Borra el launcher de un port (busca el marcador "(port: <id>)" del script).
  * Best-effort: un fallo aquí nunca debe impedir la desinstalación.
  */
-export function removeLauncher(cfg: AppConfig, portId: string): void {
+export function removeLauncher(config: AppConfig, portId: string): void {
   try {
-    const dir = launchersDir(cfg);
+    const dir = launchersDir(config);
     if (!fs.existsSync(dir)) return;
     const marker = `(port: ${portId})`;
     for (const file of fs.readdirSync(dir)) {

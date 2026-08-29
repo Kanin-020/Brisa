@@ -142,8 +142,8 @@ server.listen(0, "127.0.0.1", async () => {
   const port = typeof addr === "object" && addr ? addr.port : 0;
   release.assets[0].browser_download_url = "http://127.0.0.1:" + port + "/" + ASSET;
   try {
-    const cfg = { ...defaultConfig(), cacheDir: CACHE, selfRepo: "prueba/prueba" };
-    const info = await checkSelfUpdate(cfg, true);
+    const config = { ...defaultConfig(), cacheDir: CACHE, selfRepo: "prueba/prueba" };
+    const info = await checkSelfUpdate(config, true);
     console.info("[test] check ->", JSON.stringify({ latest: info.latest, available: info.available, supported: info.supported, asset: info.assetName }));
     // El asset debe encontrarse SIEMPRE (protege el patrón de asset): si el
     // patrón estuviera roto, available=false y el test daría un falso positivo.
@@ -162,7 +162,7 @@ server.listen(0, "127.0.0.1", async () => {
       console.info("[test] Windows: check OK (asset encontrado). El updater NSIS (/S) requiere prueba manual.");
       process.exit(0);
     }
-    const applied = await applySelfUpdate(cfg, (d, t) => console.info("[test] descarga " + d + "/" + t));
+    const applied = await applySelfUpdate(config, (d, t) => console.info("[test] descarga " + d + "/" + t));
     console.info("[test] applySelfUpdate OK, latest =", applied.latest);
     process.exit(0);
   } catch (e) {

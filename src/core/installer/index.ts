@@ -42,13 +42,13 @@ export function resolveAssetForPlatform(manifest: Manifest): AssetDef | null {
 }
 
 /** Obtiene la ruta del directorio de un port por su id. */
-export function portDir(cfg: AppConfig, id: string): string {
-  return path.join(cfg.portsDir, id);
+export function portDir(config: AppConfig, id: string): string {
+  return path.join(config.portsDir, id);
 }
 
 /** Verifica si un port está instalado (tiene estado y directorio). */
-export function isInstalled(cfg: AppConfig, id: string): boolean {
-  return readState(cfg, id) !== null && fs.existsSync(portDir(cfg, id));
+export function isInstalled(config: AppConfig, id: string): boolean {
+  return readState(config, id) !== null && fs.existsSync(portDir(config, id));
 }
 
 /**
@@ -56,11 +56,11 @@ export function isInstalled(cfg: AppConfig, id: string): boolean {
  * Retorna null si no se puede acceder a la API (error de red, rate limit, etc.).
  */
 export async function getLatestInfo(
-  cfg: AppConfig,
+  config: AppConfig,
   manifest: Manifest,
 ): Promise<ReleaseInfo | null> {
   try {
-    return await getLatestRelease(cfg, manifest.repo);
+    return await getLatestRelease(config, manifest.repo);
   } catch (error) {
     console.warn(`[${manifest.id}] could not check releases: ${(error as Error).message}`);
     return null;
@@ -99,7 +99,7 @@ export function resolveExecutable(
  * 8. Guarda el estado y crea el launcher
  */
 export async function installPort(
-  cfg: AppConfig,
+  config: AppConfig,
   manifest: Manifest,
   opts: InstallOptions = {},
 ): Promise<PortState> {
@@ -110,7 +110,7 @@ export async function installPort(
 
   // Paso 1: Obtener release
   opts.onProgress?.('release', 0, 1);
-  const release = await getLatestInfo(cfg, manifest);
+  const release = await getLatestInfo(config, manifest);
   throwIfAborted(opts.signal);
 
   if (!release) {
@@ -125,13 +125,13 @@ export async function installPort(
   }
 
   // Paso 2: Descargar
-  const downloadedFile = await downloadAsset(cfg, manifest.id, assetName, opts);
+  const downloadedFile = await downloadAsset(config, manifest.id, assetName, opts);
 
   // Paso 3: Extraer
-  await extractToPort(cfg, manifest, asset, assetName, downloadedFile, opts);
+  await extractToPort(config, manifest, asset, assetName, downloadedFile, opts);
 
   // Paso 4: Configurar ejecutable y permisos
-  const portRoot = portDir(cfg, manifest.id);
+  const portRoot = portDir(config, manifest.id);
   const executable = resolveAndSetExecutable(portRoot, asset, assetName);
 
   // Paso 5: Crear symlinks de ROMs
@@ -139,8 +139,8 @@ export async function installPort(
 
   // Paso 6: Guardar estado y launcher
   const state = createPortState(manifest, release, assetName, portRoot, executable, linkedRoms);
-  writeState(cfg, state);
-  writeLauncher(cfg, state);
+  writeState(config, state);
+  writeLauncher(config, state);
 
   return state;
 }
@@ -150,20 +150,20 @@ export async function installPort(
  * Retorna la ruta del archivo descargado.
  */
 async function downloadAsset(
-  cfg: AppConfig,
+  config: AppConfig,
   portId: string,
   asset: { name: string; url: string; size: number },
   opts: InstallOptions,
 ): Promise<string> {
   opts.onProgress?.('download', 0, 1);
-  const destination = downloadPath(cfg, portId, asset.name);
+  const destination = downloadPath(config, portId, asset.name);
 
   if (fs.existsSync(destination) && fs.statSync(destination).size === asset.size) {
     return destination;
   }
 
   await download(
-    cfg,
+    config,
     asset.url,
     destination,
     (done, total) => {
@@ -181,7 +181,7 @@ async function downloadAsset(
  * Maneja backup del port anterior y restauración de datos de usuario.
  */
 async function extractToPort(
-  cfg: AppConfig,
+  config: AppConfig,
   manifest: Manifest,
   asset: AssetDef,
   assetName: { name: string },
@@ -189,8 +189,8 @@ async function extractToPort(
   opts: InstallOptions,
 ): Promise<void> {
   opts.onProgress?.('extract', 0, 1);
-  const portRoot = portDir(cfg, manifest.id);
-  const backupPath = path.join(cfg.cacheDir, 'old', manifest.id);
+  const portRoot = portDir(config, manifest.id);
+  const backupPath = path.join(config.cacheDir, 'old', manifest.id);
 
   // Crear backup del port anterior si existe
   if (fs.existsSync(portRoot)) {
@@ -330,12 +330,12 @@ function createPortState(
  * Si hay archivos preserve, se mantienen en el directorio para restauración
  * automática al reinstalar.
  */
-export function uninstallPort(cfg: AppConfig, id: string): void {
+export function uninstallPort(config: AppConfig, id: string): void {
   // Quitar launcher de Steam antes de borrar directorio/estado
-  removeLauncher(cfg, id);
+  removeLauncher(config, id);
 
-  const manifest = loadManifest(cfg, id);
-  const portPath = portDir(cfg, id);
+  const manifest = loadManifest(config, id);
+  const portPath = portDir(config, id);
 
   if (fs.existsSync(portPath)) {
     if (manifest?.preserve && manifest.preserve.length > 0) {
@@ -350,7 +350,7 @@ export function uninstallPort(cfg: AppConfig, id: string): void {
   }
 
   // Eliminar archivo de estado
-  const stateFile = path.join(cfg.cacheDir, 'state', `${id}.json`);
+  const stateFile = path.join(config.cacheDir, 'state', `${id}.json`);
   if (fs.existsSync(stateFile)) {
     fs.rmSync(stateFile, { force: true });
   }
@@ -360,11 +360,11 @@ export function uninstallPort(cfg: AppConfig, id: string): void {
  * Obtiene la ruta del ejecutable de un port instalado.
  * Retorna null si el port no está instalado o el ejecutable no existe.
  */
-export function launchExecutable(cfg: AppConfig, id: string): string | null {
-  const state = readState(cfg, id);
+export function launchExecutable(config: AppConfig, id: string): string | null {
+  const state = readState(config, id);
   if (!state) return null;
 
-  const executablePath = path.join(portDir(cfg, id), state.executable);
+  const executablePath = path.join(portDir(config, id), state.executable);
   if (!fs.existsSync(executablePath)) return null;
 
   ensureExecutable(executablePath);

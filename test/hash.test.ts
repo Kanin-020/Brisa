@@ -44,11 +44,11 @@ test("hash: fileFingerprint reports size and mtime", () => {
 });
 
 test("hash: hashCacheFile sanitizes the path and lives under cacheDir/hashes", () => {
-  const cfg = { cacheDir: path.join(os.tmpdir(), "brisa-cache") } as AppConfig;
+  const config = { cacheDir: path.join(os.tmpdir(), "brisa-cache") } as AppConfig;
   const file = path.join(os.tmpdir(), "my roms", "game.v1.2.z64");
-  const cache = hashCacheFile(cfg, file);
-  assert.ok(cache.startsWith(path.join(cfg.cacheDir, "hashes") + path.sep));
+  const cache = hashCacheFile(config, file);
+  assert.ok(cache.startsWith(path.join(config.cacheDir, "hashes") + path.sep));
   assert.ok(!cache.includes(" "), "cache path must not contain spaces");
   // Misma entrada para la misma ruta (determinista).
-  assert.strictEqual(cache, hashCacheFile(cfg, file));
+  assert.strictEqual(cache, hashCacheFile(config, file));
 });

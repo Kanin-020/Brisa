@@ -6,8 +6,8 @@ export function registerServeCommand(program: Command, app: App): void {
   program
     .command('serve')
     .description('Arranca la interfaz web local (GUI) en http://localhost:<puerto>')
-    .option('-p, --port <port>', 'puerto', String(app.cfg.serverPort))
+    .option('-p, --port <port>', 'puerto', String(app.config.serverPort))
     .action((opts: { port: string }) => {
-      startServer(app, parseInt(opts.port, 10) || app.cfg.serverPort);
+      startServer(app, parseInt(opts.port, 10) || app.config.serverPort);
     });
 }

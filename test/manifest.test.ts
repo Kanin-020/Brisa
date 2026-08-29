@@ -25,9 +25,9 @@ test("manifest: isValidManifestId accepts safe ids only", () => {
 });
 
 test("manifest: importManifests writes valid entries and skips invalid ones", () => {
-  const cfg = makeCfg();
+  const config = makeCfg();
   try {
-    const result = importManifests(cfg, [
+    const result = importManifests(config, [
       { id: "soh", name: "Ship of Harkinian" },
       { id: "bad id", name: "invalid" },
       null,
@@ -36,37 +36,37 @@ test("manifest: importManifests writes valid entries and skips invalid ones", ()
     ]);
     assert.strictEqual(result.imported, 1);
     assert.strictEqual(result.errors.length, 4);
-    const written = JSON.parse(fs.readFileSync(path.join(cfg.manifestsDir, "soh.json"), "utf8"));
+    const written = JSON.parse(fs.readFileSync(path.join(config.manifestsDir, "soh.json"), "utf8"));
     assert.strictEqual(written.name, "Ship of Harkinian");
   } finally {
-    fs.rmSync(cfg.manifestsDir, { recursive: true, force: true });
+    fs.rmSync(config.manifestsDir, { recursive: true, force: true });
   }
 });
 
 test("manifest: importManifests warns when a remote version exists", () => {
-  const cfg = makeCfg();
+  const config = makeCfg();
   try {
-    fs.mkdirSync(path.join(cfg.manifestsDir, "remote"), { recursive: true });
-    fs.writeFileSync(path.join(cfg.manifestsDir, "remote", "soh.json"), "{}");
-    const result = importManifests(cfg, [{ id: "soh", name: "SoH" }]);
+    fs.mkdirSync(path.join(config.manifestsDir, "remote"), { recursive: true });
+    fs.writeFileSync(path.join(config.manifestsDir, "remote", "soh.json"), "{}");
+    const result = importManifests(config, [{ id: "soh", name: "SoH" }]);
     assert.strictEqual(result.imported, 1);
     assert.strictEqual(result.warnings.length, 1);
     assert.match(result.warnings[0], /versión remota que tiene prioridad/);
   } finally {
-    fs.rmSync(cfg.manifestsDir, { recursive: true, force: true });
+    fs.rmSync(config.manifestsDir, { recursive: true, force: true });
   }
 });
 
 test("manifest: importManifests reports write errors per entry", () => {
-  const cfg = makeCfg();
+  const config = makeCfg();
   try {
     // Un id válido cuyo destino es un directorio: la escritura falla (EISDIR).
-    fs.mkdirSync(path.join(cfg.manifestsDir, "blocked.json"));
-    const result = importManifests(cfg, [{ id: "blocked", name: "X" }]);
+    fs.mkdirSync(path.join(config.manifestsDir, "blocked.json"));
+    const result = importManifests(config, [{ id: "blocked", name: "X" }]);
     assert.strictEqual(result.imported, 0);
     assert.strictEqual(result.errors.length, 1);
     assert.match(result.errors[0], /^blocked:/);
   } finally {
-    fs.rmSync(cfg.manifestsDir, { recursive: true, force: true });
+    fs.rmSync(config.manifestsDir, { recursive: true, force: true });
   }
 });

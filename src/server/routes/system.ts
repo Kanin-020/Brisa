@@ -32,7 +32,7 @@ export function registerSystemRoutes(router: ApiRouter, app: App): void {
   // Idiomas disponibles: escanea lang/ y devuelve los códigos de locale.
   router.get('/api/locales', async (_req, res) => {
     try {
-      const webRoot = process.env.BRISA_WEB_ROOT || path.join(app.cfg.root, 'src', 'web');
+      const webRoot = process.env.BRISA_WEB_ROOT || path.join(app.config.root, 'src', 'web');
       const langDir = path.join(webRoot, 'lang');
       const files = fs.existsSync(langDir)
         ? fs
@@ -47,7 +47,7 @@ export function registerSystemRoutes(router: ApiRouter, app: App): void {
   });
 
   // Persisted flag: ¿se mostró ya la guía de ayuda?
-  const helpSeenFile = path.join(app.cfg.stateDir, '.help-seen');
+  const helpSeenFile = path.join(app.config.stateDir, '.help-seen');
 
   router.get('/api/help-seen', async (_req, res) => {
     sendJson(res, 200, { seen: fs.existsSync(helpSeenFile) });

@@ -98,39 +98,39 @@ function romSlots(
 
 /** Compone el estado completo de un port (instalado, ROMs, mods, update). */
 async function buildPortStatus(
-  cfg: AppConfig,
+  config: AppConfig,
   manifest: Manifest,
   matches: Map<string, RomMatch>,
 ): Promise<PortStatus> {
-  const state = readState(cfg, manifest.id);
+  const state = readState(config, manifest.id);
   const roms = romSlots(manifest, matches);
-  const mods = listCentralMods(cfg, manifest);
-  const updateInfo = state ? await checkUpdate(cfg, manifest) : null;
+  const mods = listCentralMods(config, manifest);
+  const updateInfo = state ? await checkUpdate(config, manifest) : null;
   return {
     manifest,
-    installed: isInstalled(cfg, manifest.id),
+    installed: isInstalled(config, manifest.id),
     version: state?.version ?? null,
     roms,
     hasRom: roms.filter((slot) => slot.required).every((slot) => slot.matched),
     updateAvailable: !!updateInfo?.available,
     updateInfo: updateInfo ? normalizeUpdateInfo(updateInfo) : null,
     mods,
-    linkedMods: mods.filter((mod) => isModLinked(cfg, manifest, mod)),
-    modsRoot: centralModsRoot(cfg, manifest),
+    linkedMods: mods.filter((mod) => isModLinked(config, manifest, mod)),
+    modsRoot: centralModsRoot(config, manifest),
     platformSupported: !!resolveAssetForPlatform(manifest),
   };
 }
 
 /** Estado de todos los ports dado el scan (cada manifest -> PortStatus). */
 export async function buildPortStatuses(
-  cfg: AppConfig,
+  config: AppConfig,
   manifests: Manifest[],
   scan: ScanResult,
 ): Promise<PortStatus[]> {
   const matches = matchesByRequirement(scan);
   return Promise.all(
     manifests.map((manifest) =>
-      buildPortStatus(cfg, manifest, matches.get(manifest.id) ?? new Map()),
+      buildPortStatus(config, manifest, matches.get(manifest.id) ?? new Map()),
     ),
   );
 }

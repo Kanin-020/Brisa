@@ -11,8 +11,8 @@ import { detectPlatform } from './platform';
  * Each mod is symlinked into <portDir>/<mods.dir>/<modName>.
  */
 
-export function centralModsRoot(cfg: AppConfig, manifest: Manifest): string {
-  return path.join(cfg.modsDir, manifest.mods.gameDir);
+export function centralModsRoot(config: AppConfig, manifest: Manifest): string {
+  return path.join(config.modsDir, manifest.mods.gameDir);
 }
 
 /**
@@ -21,17 +21,17 @@ export function centralModsRoot(cfg: AppConfig, manifest: Manifest): string {
  * dir (e.g. Dusklight reads ~/.local/share/TwilitRealm/Dusklight/...).
  * Expands "~/..." and %ENV_VAR% prefixes.
  */
-export function modsLinkRoot(cfg: AppConfig, manifest: Manifest): string {
-  const config = manifest.mods.linkRoot;
+export function modsLinkRoot(config: AppConfig, manifest: Manifest): string {
+  const linkRootConfig = manifest.mods.linkRoot;
   const platformOs = detectPlatform().os;
-  const raw = typeof config === 'string' ? config : config?.[platformOs];
+  const raw = typeof linkRootConfig === 'string' ? linkRootConfig : linkRootConfig?.[platformOs];
   if (!raw) {
-    if (config) {
+    if (linkRootConfig) {
       console.warn(
         `[mods] ${manifest.id}: linkRoot has no entry for OS "${platformOs}" — using <portDir>/<dir>`,
       );
     }
-    return path.join(cfg.portsDir, manifest.id, manifest.mods.dir);
+    return path.join(config.portsDir, manifest.id, manifest.mods.dir);
   }
   if (raw === '~') return os.homedir();
   if (raw.startsWith('~/')) return path.join(os.homedir(), raw.slice(2));
@@ -43,8 +43,8 @@ export function modsLinkRoot(cfg: AppConfig, manifest: Manifest): string {
   return path.resolve(raw);
 }
 
-export function listCentralMods(cfg: AppConfig, manifest: Manifest): string[] {
-  const root = centralModsRoot(cfg, manifest);
+export function listCentralMods(config: AppConfig, manifest: Manifest): string[] {
+  const root = centralModsRoot(config, manifest);
   if (!fs.existsSync(root)) return [];
   return fs
     .readdirSync(root, { withFileTypes: true })
@@ -52,8 +52,8 @@ export function listCentralMods(cfg: AppConfig, manifest: Manifest): string[] {
     .sort();
 }
 
-export function isModLinked(cfg: AppConfig, manifest: Manifest, modName: string): boolean {
-  const link = path.join(modsLinkRoot(cfg, manifest), modName);
+export function isModLinked(config: AppConfig, manifest: Manifest, modName: string): boolean {
+  const link = path.join(modsLinkRoot(config, manifest), modName);
   return fs.existsSync(link);
 }
 
@@ -65,11 +65,11 @@ export function isModLinked(cfg: AppConfig, manifest: Manifest, modName: string)
  *     desarrollador) se copia el mod para que el juego pueda leerlo.
  *   - Linux/macOS: symlink normal.
  */
-export function linkMod(cfg: AppConfig, manifest: Manifest, modName: string): void {
-  const source = path.join(centralModsRoot(cfg, manifest), modName);
+export function linkMod(config: AppConfig, manifest: Manifest, modName: string): void {
+  const source = path.join(centralModsRoot(config, manifest), modName);
   if (!fs.existsSync(source))
     throw new Error(`Mod not found in MODS/${manifest.mods.gameDir}: ${modName}`);
-  const dest = path.join(modsLinkRoot(cfg, manifest), modName);
+  const dest = path.join(modsLinkRoot(config, manifest), modName);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   removeLinkedEntry(dest);
   if (fs.statSync(source).isDirectory()) {
@@ -116,18 +116,18 @@ function removeLinkedEntry(dest: string): void {
   }
 }
 
-export function unlinkMod(cfg: AppConfig, manifest: Manifest, modName: string): void {
-  removeLinkedEntry(path.join(modsLinkRoot(cfg, manifest), modName));
+export function unlinkMod(config: AppConfig, manifest: Manifest, modName: string): void {
+  removeLinkedEntry(path.join(modsLinkRoot(config, manifest), modName));
 }
 
 /** Link all centralized mods for a port (called after install/update/scan). */
-export function linkAllMods(cfg: AppConfig, manifest: Manifest): string[] {
-  if (!isInstalled(cfg, manifest.id)) return [];
+export function linkAllMods(config: AppConfig, manifest: Manifest): string[] {
+  if (!isInstalled(config, manifest.id)) return [];
   const linked: string[] = [];
-  for (const mod of listCentralMods(cfg, manifest)) {
-    if (!isModLinked(cfg, manifest, mod)) {
+  for (const mod of listCentralMods(config, manifest)) {
+    if (!isModLinked(config, manifest, mod)) {
       try {
-        linkMod(cfg, manifest, mod);
+        linkMod(config, manifest, mod);
         linked.push(mod);
       } catch {
         // skip broken
@@ -137,13 +137,13 @@ export function linkAllMods(cfg: AppConfig, manifest: Manifest): string[] {
   return linked;
 }
 
-export function unlinkAllMods(cfg: AppConfig, manifest: Manifest): void {
-  const destRoot = modsLinkRoot(cfg, manifest);
+export function unlinkAllMods(config: AppConfig, manifest: Manifest): void {
+  const destRoot = modsLinkRoot(config, manifest);
   if (!fs.existsSync(destRoot)) return;
   // Se borran los enlaces (junctions/symlinks) y las copias/archivos cuyo
   // nombre coincide con un mod central; los archivos propios del juego o del
   // usuario en el destino se respetan.
-  const managed = new Set(listCentralMods(cfg, manifest));
+  const managed = new Set(listCentralMods(config, manifest));
   for (const entry of fs.readdirSync(destRoot, { withFileTypes: true })) {
     const full = path.join(destRoot, entry.name);
     if (entry.isSymbolicLink() || managed.has(entry.name)) removeLinkedEntry(full);
@@ -156,13 +156,13 @@ export function unlinkAllMods(cfg: AppConfig, manifest: Manifest): void {
  * folders of uninstalled ones. Folders that contain user mods are
  * never deleted.
  */
-export function syncModsFolders(cfg: AppConfig, manifests: Manifest[]): void {
+export function syncModsFolders(config: AppConfig, manifests: Manifest[]): void {
   for (const manifest of manifests) {
-    const root = centralModsRoot(cfg, manifest);
-    if (isInstalled(cfg, manifest.id)) {
+    const root = centralModsRoot(config, manifest);
+    if (isInstalled(config, manifest.id)) {
       fs.mkdirSync(root, { recursive: true });
       // Also ensure the link destination exists (e.g. the game's OS data dir).
-      fs.mkdirSync(modsLinkRoot(cfg, manifest), { recursive: true });
+      fs.mkdirSync(modsLinkRoot(config, manifest), { recursive: true });
     } else if (fs.existsSync(root) && isEmptyDir(root)) {
       fs.rmSync(root, { recursive: true, force: true });
     }

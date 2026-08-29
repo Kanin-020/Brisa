@@ -11,8 +11,8 @@ export function isValidManifestId(id: unknown): id is string {
 }
 
 /** Ruta del manifiesto remoto (tiene prioridad sobre el local). */
-function remoteManifestPath(cfg: AppConfig, id: string): string {
-  return path.join(cfg.manifestsDir, 'remote', `${id}.json`);
+function remoteManifestPath(config: AppConfig, id: string): string {
+  return path.join(config.manifestsDir, 'remote', `${id}.json`);
 }
 
 /**
@@ -20,13 +20,13 @@ function remoteManifestPath(cfg: AppConfig, id: string): string {
  * Las entradas con id inválido o faltante se omiten y se reportan.
  */
 export function importManifests(
-  cfg: AppConfig,
+  config: AppConfig,
   items: unknown[],
 ): { imported: number; errors: string[]; warnings: string[] } {
   const errors: string[] = [];
   const warnings: string[] = [];
   let imported = 0;
-  fs.mkdirSync(cfg.manifestsDir, { recursive: true });
+  fs.mkdirSync(config.manifestsDir, { recursive: true });
   for (const item of items) {
     const raw = item as Record<string, unknown> | null;
     if (!raw || typeof raw !== 'object' || !isValidManifestId(raw.id)) {
@@ -35,11 +35,11 @@ export function importManifests(
     }
     try {
       fs.writeFileSync(
-        path.join(cfg.manifestsDir, `${raw.id}.json`),
+        path.join(config.manifestsDir, `${raw.id}.json`),
         JSON.stringify(raw, null, 2) + '\n',
       );
       imported++;
-      if (fs.existsSync(remoteManifestPath(cfg, raw.id))) {
+      if (fs.existsSync(remoteManifestPath(config, raw.id))) {
         warnings.push(`${raw.id}: existe una versión remota que tiene prioridad`);
       }
     } catch (e) {
@@ -135,11 +135,11 @@ export interface Manifest {
   preserve?: string[];
 }
 
-export function loadManifest(cfg: AppConfig, id: string): Manifest | null {
+export function loadManifest(config: AppConfig, id: string): Manifest | null {
   // Remote manifests override local ones (fresh registry wins).
   const dirs = [
-    path.join(cfg.manifestsDir, 'remote', `${id}.json`),
-    path.join(cfg.manifestsDir, `${id}.json`),
+    path.join(config.manifestsDir, 'remote', `${id}.json`),
+    path.join(config.manifestsDir, `${id}.json`),
   ];
   for (const file of dirs) {
     if (!fs.existsSync(file)) continue;
@@ -153,7 +153,7 @@ export function loadManifest(cfg: AppConfig, id: string): Manifest | null {
   return null;
 }
 
-export function listManifests(cfg: AppConfig): Manifest[] {
+export function listManifests(config: AppConfig): Manifest[] {
   const out: Manifest[] = [];
   const seen = new Set<string>();
   // Remote manifests take priority, so scan them first.
@@ -171,8 +171,8 @@ export function listManifests(cfg: AppConfig): Manifest[] {
       }
     }
   };
-  if (cfg.registryUrl) scan(path.join(cfg.manifestsDir, 'remote'));
-  scan(cfg.manifestsDir);
+  if (config.registryUrl) scan(path.join(config.manifestsDir, 'remote'));
+  scan(config.manifestsDir);
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
 

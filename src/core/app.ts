@@ -38,13 +38,13 @@ export type { PortStatus, RomSlotStatus, StatusResult };
  * se orquesta (patrón Facade sobre una arquitectura por capas).
  */
 export class App {
-  readonly cfg: AppConfig;
+  readonly config: AppConfig;
   /** Tareas de larga duración con progreso y cancelación (usadas por el servidor web). */
   readonly tasks = new TaskManager();
 
   constructor() {
-    this.cfg = loadConfig();
-    ensureDirs(this.cfg);
+    this.config = loadConfig();
+    ensureDirs(this.config);
   }
 
   /**
@@ -55,10 +55,10 @@ export class App {
   initialize(): void {
     // Primera ejecución: copiar el AppImage de la propia Brisa a image/ (en
     // Windows se crea el ayudante `image/imagen.cmd` para acceder al CLI).
-    ensureSelfImageCopy(this.cfg);
-    writeImagenHelper(this.cfg);
+    ensureSelfImageCopy(this.config);
+    writeImagenHelper(this.config);
     // Recrear los launchers que falten para ports ya instalados.
-    syncLaunchers(this.cfg);
+    syncLaunchers(this.config);
   }
 
   get platform() {
@@ -66,15 +66,15 @@ export class App {
   }
 
   manifests(): Manifest[] {
-    return listManifests(this.cfg);
+    return listManifests(this.config);
   }
 
   manifest(id: string): Manifest | null {
-    return loadManifest(this.cfg, id);
+    return loadManifest(this.config, id);
   }
 
   async scan(): Promise<ScanResult> {
-    return scanRoms(this.cfg);
+    return scanRoms(this.config);
   }
 
   /**
@@ -94,10 +94,10 @@ export class App {
 
   async status(): Promise<StatusResult> {
     const manifests = this.manifests();
-    syncModsFolders(this.cfg, manifests);
+    syncModsFolders(this.config, manifests);
     const scan = await this.scan();
-    const ports = await buildPortStatuses(this.cfg, manifests, scan);
-    const self = await checkSelfUpdate(this.cfg);
+    const ports = await buildPortStatuses(this.config, manifests, scan);
+    const self = await checkSelfUpdate(this.config);
     return {
       scan,
       ports,
@@ -112,20 +112,20 @@ export class App {
   ) {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    const state = await installPort(this.cfg, manifest, { ...opts, onProgress });
-    syncModsFolders(this.cfg, this.manifests());
+    const state = await installPort(this.config, manifest, { ...opts, onProgress });
+    syncModsFolders(this.config, this.manifests());
     return state;
   }
 
   uninstall(id: string) {
     const manifest = this.manifest(id);
-    if (manifest) unlinkAllMods(this.cfg, manifest);
-    uninstallPort(this.cfg, id);
-    syncModsFolders(this.cfg, this.manifests());
+    if (manifest) unlinkAllMods(this.config, manifest);
+    uninstallPort(this.config, id);
+    syncModsFolders(this.config, this.manifests());
   }
 
   launch(id: string): string | null {
-    return launchExecutable(this.cfg, id);
+    return launchExecutable(this.config, id);
   }
 
   async update(
@@ -137,7 +137,7 @@ export class App {
   ): Promise<UpdateInfo> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    return applyUpdate(this.cfg, manifest, opts);
+    return applyUpdate(this.config, manifest, opts);
   }
 
   /**
@@ -154,15 +154,15 @@ export class App {
     const { signal, onPortStart, onProgress } = opts;
     const results: UpdateInfo[] = [];
     let updated = 0;
-    for (const state of listStates(this.cfg)) {
+    for (const state of listStates(this.config)) {
       throwIfAborted(signal);
       const manifest = this.manifest(state.id);
       if (!manifest) continue;
       // Check con caché (no fuerza GitHub): respeta el límite de 60 req/h sin token.
-      const info = await checkUpdate(this.cfg, manifest);
+      const info = await checkUpdate(this.config, manifest);
       if (!info || !info.available) continue;
       onPortStart?.(manifest.name);
-      results.push(await applyUpdate(this.cfg, manifest, { signal, onProgress }));
+      results.push(await applyUpdate(this.config, manifest, { signal, onProgress }));
       updated++;
     }
     return { updated, results };
@@ -170,33 +170,33 @@ export class App {
 
   /** Estado de actualización de la propia app (Brisa), cacheado 30 min. */
   async selfUpdateInfo(force = false): Promise<SelfUpdateInfo | null> {
-    return checkSelfUpdate(this.cfg, force);
+    return checkSelfUpdate(this.config, force);
   }
 
   /** Descarga y aplica la nueva versión de Brisa (AppImage de Linux o instalador de Windows). */
   async selfUpdate(
     onProgress?: (stage: string, done: number, total: number) => void,
   ): Promise<SelfUpdateInfo> {
-    return applySelfUpdate(this.cfg, (done, total) => onProgress?.('download', done, total));
+    return applySelfUpdate(this.config, (done, total) => onProgress?.('download', done, total));
   }
 
   async checkUpdate(id: string, force = false): Promise<UpdateInfo | null> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    return checkUpdate(this.cfg, manifest, force);
+    return checkUpdate(this.config, manifest, force);
   }
 
   async updatesAll(): Promise<UpdateInfo[]> {
     const out: UpdateInfo[] = [];
     for (const manifest of this.manifests()) {
-      const info = await checkUpdate(this.cfg, manifest);
+      const info = await checkUpdate(this.config, manifest);
       if (info) out.push(info);
     }
     return out;
   }
 
   async refreshRegistry(): Promise<number> {
-    return refreshRemoteManifests(this.cfg);
+    return refreshRemoteManifests(this.config);
   }
 
   modsFor(id: string) {
@@ -204,38 +204,38 @@ export class App {
     if (!manifest) throw new Error(`Port not found: ${id}`);
     return {
       manifest,
-      root: centralModsRoot(this.cfg, manifest),
-      mods: listCentralMods(this.cfg, manifest),
+      root: centralModsRoot(this.config, manifest),
+      mods: listCentralMods(this.config, manifest),
     };
   }
 
   linkMod(id: string, modName: string) {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    linkMod(this.cfg, manifest, modName);
+    linkMod(this.config, manifest, modName);
   }
 
   unlinkMod(id: string, modName: string) {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    unlinkMod(this.cfg, manifest, modName);
+    unlinkMod(this.config, manifest, modName);
   }
 
   /** Desenlaza todos los mods centrales de un port (sin borrar los archivos). */
   unlinkAllMods(id: string) {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    unlinkAllMods(this.cfg, manifest);
+    unlinkAllMods(this.config, manifest);
   }
 
   relinkMods(id: string): string[] {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    return linkAllMods(this.cfg, manifest);
+    return linkAllMods(this.config, manifest);
   }
 
   installed(): ReturnType<typeof listStates> {
-    return listStates(this.cfg);
+    return listStates(this.config);
   }
 
   /** Stream an uploaded ROM file into the roms dir (see roms.saveRomFile). */
@@ -243,12 +243,12 @@ export class App {
     name: string,
     source: NodeJS.ReadableStream,
   ): Promise<{ saved: boolean; skipped: boolean; name: string }> {
-    return saveRomFile(this.cfg, name, source);
+    return saveRomFile(this.config, name, source);
   }
 
   /** Delete a ROM file (path-traversal guard + cached hash invalidation). */
   deleteRom(file: string): void {
-    deleteRom(this.cfg, file);
+    deleteRom(this.config, file);
   }
 
   /**
@@ -256,7 +256,7 @@ export class App {
    * Entries with a missing/invalid id are skipped and reported.
    */
   importManifests(items: unknown[]): { imported: number; errors: string[]; warnings: string[] } {
-    return importManifests(this.cfg, items);
+    return importManifests(this.config, items);
   }
 
   /** All manifests as plain data (for export). */
@@ -270,11 +270,11 @@ export class App {
    * (xdg-open / open / explorer) otherwise.
    */
   async openFolder(dir?: 'root' | 'roms' | 'mods' | 'manifests' | 'ports'): Promise<boolean> {
-    let target = this.cfg.root;
-    if (dir === 'roms') target = this.cfg.romsDir;
-    else if (dir === 'mods') target = this.cfg.modsDir;
-    else if (dir === 'manifests') target = this.cfg.manifestsDir;
-    else if (dir === 'ports') target = this.cfg.portsDir;
+    let target = this.config.root;
+    if (dir === 'roms') target = this.config.romsDir;
+    else if (dir === 'mods') target = this.config.modsDir;
+    else if (dir === 'manifests') target = this.config.manifestsDir;
+    else if (dir === 'ports') target = this.config.portsDir;
     return openPathInFileManager(target);
   }
 
@@ -285,7 +285,7 @@ export class App {
   async openPortModsFolder(id: string): Promise<boolean> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    return openPathInFileManager(centralModsRoot(this.cfg, manifest));
+    return openPathInFileManager(centralModsRoot(this.config, manifest));
   }
 
   /**
@@ -295,7 +295,7 @@ export class App {
   async openPortFolder(id: string): Promise<boolean> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    const dir = portDir(this.cfg, id);
+    const dir = portDir(this.config, id);
     if (!fs.existsSync(dir)) {
       throw new Error(`El port ${manifest.name} no está instalado.`);
     }

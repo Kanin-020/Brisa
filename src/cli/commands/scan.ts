@@ -9,13 +9,13 @@ export function registerScanCommand(program: Command, app: App): void {
       const { matches, missing } = await app.scan();
       console.info(`\nCoincidencias (${matches.length}):`);
       for (const match of matches) {
-        const how =
+        const matchMethod =
           match.matchedBy === 'hash'
             ? 'por hash'
             : match.matchedBy === 'gameid'
               ? 'por game ID'
               : 'por nombre';
-        console.info(`  ${match.manifest.name} <- ${match.rom.name} (${how})`);
+        console.info(`  ${match.manifest.name} <- ${match.rom.name} (${matchMethod})`);
       }
       console.info(`\nPorts sin ROM (${missing.length}):`);
       for (const manifest of missing) console.info(`  ${manifest.name}`);

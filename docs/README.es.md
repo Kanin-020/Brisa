@@ -19,6 +19,9 @@
 | Super Mario 64 |  sm64coopdx | [Github](https://github.com/coop-deluxe/sm64coopdx) |
 | Mario Kart 64 | SpaghettiKart | [Github](https://github.com/HarbourMasters/SpaghettiKart) |
 | Banjo Kazooie | Lighthouse | [Github](https://github.com/HarbourMasters/Lighthouse) |
+| Harvest Moon 64 | Harvest Moon 64: Recompiled | [Github](https://github.com/HarvestMoon64Recomp/HarvestMoon64Recomp) |
+| Bomberman 64 | Bomberman 64: Recompiled | [Github](https://github.com/RevoSucks/BM64Recomp) |
+| Snowboard Kids 2 | Snowboard Kids 2: Recompiled | [Github](https://github.com/cdlewis/snowboardkids2-recomp) |
 
 El proyecto es trivialmente extensible a cualquier port que publique releases en GitHub.
 
@@ -34,6 +37,8 @@ Doy especial agradecimiento a cada uno de los equipos de decompilación, sin ell
 | 4 | **Auto update** | Comprueba el último release de GitHub de cada port instalado y lo actualiza (`update`, botón en GUI). La **propia app** también se auto-actualiza: detecta la última AppImage en GitHub, la descarga, reemplaza y relanza sola (`self-update` o el botón de la GUI). |
 | 5 | **Manifiestos** | Cada port es un archivo JSON en `manifests/`. Para añadir un port nuevo solo necesitas: el repo de GitHub, los patrones de nombre/hash de su ROM y los patrones de sus assets por plataforma. |
 | 6 | **GUI web con i18n** | Interfaz web local con selector de idioma **Español / English** (y cualquier idioma que añadas a `src/web/lang/`). |
+| 7 | **Modo juego con control** | Interfaz a pantalla completa optimizada para gamepads: navega ports con D-pad/palanca, instala, actualiza, lanza y detiene juegos con A/B, cambia pestañas con R1/R2, alterna cuadricula/carousel con X, abre configs con Start. Se activa automaticamente al conectar un control. |
+| 8 | **Gestion de procesos** | Los juegos lanzados desde el modo juego son rastreados por PID. Presiona el boton de accion sobre un juego en ejecucion para detenerlo al instante. |
 
 ## Instalación
 
@@ -252,7 +257,7 @@ npm link                # opcional: expone el comando `brisa` globalmente
 5. **Auto-update del registro**: `registryUrl` permite añadir ports nuevos sin tocar el código, solo con JSON.
 
 Para más detalle sobre la estructura del código y las convenciones, ver
-[Arquitectura de Brisa](ARCHITECTURE.md).
+[Arquitectura de Brisa](ARCHITECTURE.es.md) ([English](ARCHITECTURE.en.md)).
 
 ## Crear un manifiesto
 
@@ -334,7 +339,44 @@ Al **desinstalar** un port también se respetan estos patrones: se borra todo ex
 - Instalar, actualizar, desinstalar y lanzar ports con un clic.
 - Enlazar/desenlazar mods individualmente.
 - **Selector de idioma** (Español / English) en la cabecera. Los idiomas viven en `src/web/lang/*.json` — añade un archivo nuevo y el selector lo mostrará automáticamente.
-- **Novedades**: el botón **📝** abre el changelog de la release pendiente (actualización de Brisa o de un port).
+- **Novedades**: el boton de changelog abre el changelog de la release pendiente (actualizacion de Brisa o de un port).
+
+### Modo juego
+
+El modo juego proporciona una interfaz a pantalla completa optimizada para uso con gamepad. Se activa automaticamente al conectar un control, o manualmente via el boton de gamepad en la interfaz normal.
+
+**Mapeo del control:**
+
+| Boton | Accion |
+|-------|--------|
+| A / Cross | Confirmar: instalar, lanzar o detener un juego |
+| B / Circle | Sin accion (no sale del modo juego) |
+| X / Square | Alternar vista cuadricula / carousel |
+| Y / Triangle | Cambiar entre pestanas Instalados / Disponibles |
+| R1 / RT | Pestana siguiente |
+| R2 / LT | Pestana anterior |
+| D-pad / Palanca izquierda | Navegar ports |
+| Select / Back | Salir del modo juego |
+| Start | Abrir panel de configuracion |
+
+**Panel de configuracion** (se abre con Start):
+
+- Layout: cambiar entre vistas de cuadricula y carousel.
+- Tema: alternar modo claro / oscuro.
+- Idioma: cambiar el idioma de la interfaz.
+- Salir: dejar el modo juego y volver a la interfaz normal.
+
+Navega la configuracion con D-pad Arriba/Abajo (entre grupos) y Izquierda/Derecha (dentro de un grupo). Presiona A para confirmar, B o Select para cerrar.
+
+**Navegacion en cuadricula:**
+
+- Arriba/Abajo mueve entre filas.
+- Izquierda/Derecha mueve dentro de una fila; presionar Derecha en el ultimo elemento de una fila salta al primero de la siguiente fila, y viceversa.
+- Cuando esta en la primera fila, presionar Arriba mueve el foco al header de pestanas.
+
+**Detencion de procesos:**
+
+Los juegos lanzados desde el modo juego son rastreados por su ID de proceso. Cuando un juego esta en ejecucion, su tarjeta muestra un badge de "Running" y el boton de accion se convierte en un boton rojo de "Stop". Presiona A sobre un juego en ejecucion para terminar el proceso al instante.
 
 ## Notas por plataforma
 

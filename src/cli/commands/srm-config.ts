@@ -23,48 +23,48 @@ export function registerSrmConfigCommand(program: Command, app: App): void {
     .action((outDir: string | undefined, opts: { out?: string }) => {
       // Por defecto, junto al resto de datos de Brisa (roms/, mods/, ports/…):
       // la raíz de datos, no la carpeta desde donde se ejecuta el comando.
-      const dir = path.resolve(outDir ?? opts.out ?? path.join(app.cfg.root, 'launchers'));
-      fs.mkdirSync(dir, { recursive: true });
+      const outputDirectory = path.resolve(outDir ?? opts.out ?? path.join(app.config.root, 'launchers'));
+      fs.mkdirSync(outputDirectory, { recursive: true });
       const states = app.installed();
       if (states.length === 0) {
         console.error('No hay ports instalados. Instala uno primero: brisa install <id>');
         process.exit(1);
       }
-      const names = computeLauncherNames(app.cfg);
-      const ext = launcherExtension();
+      const launcherNames = computeLauncherNames(app.config);
+      const extension = launcherExtension();
       let generated = 0;
       for (const state of states) {
         const manifest = app.manifest(state.id);
         if (!manifest) continue;
-        const root = portDir(app.cfg, state.id);
-        if (!fs.existsSync(root)) {
-          console.warn(`  ⚠ ${manifest.name}: carpeta del port no encontrada (${root}).`);
+        const portInstallationDir = portDir(app.config, state.id);
+        if (!fs.existsSync(portInstallationDir)) {
+          console.warn(`  ⚠ ${manifest.name}: carpeta del port no encontrada (${portInstallationDir}).`);
           continue;
         }
         const executable = state.executable;
-        if (!fs.existsSync(path.join(root, executable))) {
+        if (!fs.existsSync(path.join(portInstallationDir, executable))) {
           console.warn(
             `  ⚠ ${manifest.name}: ejecutable no encontrado (${executable}). Reinstala el port.`,
           );
           continue;
         }
-        const title = names.get(state.id) ?? state.id;
-        const file = path.join(dir, `${title}${ext}`);
-        fs.writeFileSync(file, launcherScriptForPlatform(app.cfg, state.id, state.version));
-        if (ext !== '.cmd') fs.chmodSync(file, 0o755);
+        const title = launcherNames.get(state.id) ?? state.id;
+        const launcherFile = path.join(outputDirectory, `${title}${extension}`);
+        fs.writeFileSync(launcherFile, launcherScriptForPlatform(app.config, state.id, state.version));
+        if (extension !== '.cmd') fs.chmodSync(launcherFile, 0o755);
         generated++;
         const linked = Object.values(state.romsLinked ?? {}).find(Boolean) ?? state.romLinked;
         console.info(
-          `  ✓ ${title}${ext}` +
+          `  ✓ ${title}${extension}` +
             (linked ? '' : '  ⚠ sin ROM enlazado: el juego no arrancará hasta que enlaces su ROM'),
         );
       }
       // Asegurar que el ayudante image/imagen exista (invoca el CLI de Brisa).
-      writeImagenHelper(app.cfg);
-      console.info(`\n✓ ${generated} launcher(s) generado(s) en: ${dir}\n`);
+      writeImagenHelper(app.config);
+      console.info(`\n✓ ${generated} launcher(s) generado(s) en: ${outputDirectory}\n`);
       console.info('Cómo usarlos:');
       console.info(
-        '  1) Steam → Agregar un juego → Agregar un juego no Steam… → Examinar → elige los ' + ext,
+        '  1) Steam → Agregar un juego → Agregar un juego no Steam… → Examinar → elige los ' + extension,
       );
       console.info('     (también sirven como ejecutable de un parser Glob en Steam ROM Manager).');
       console.info(

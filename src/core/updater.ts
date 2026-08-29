@@ -20,28 +20,28 @@ export interface UpdateInfo {
 }
 
 /** Caché de comprobaciones por port (JsonCache con el intervalo global de 30 min). */
-const updateCache = (cfg: AppConfig) =>
-  new JsonCache<UpdateInfo>(path.join(cfg.cacheDir, 'update-check'));
+const updateCache = (config: AppConfig) =>
+  new JsonCache<UpdateInfo>(path.join(config.cacheDir, 'update-check'));
 
 /**
  * Cached update check: only hits the GitHub API at most once per 30 min.
  * `force` bypasses the cache (used by the explicit `update` command).
  */
 export async function checkUpdate(
-  cfg: AppConfig,
+  config: AppConfig,
   manifest: Manifest,
   force = false,
 ): Promise<UpdateInfo | null> {
-  const state = readState(cfg, manifest.id);
+  const state = readState(config, manifest.id);
   if (!state) return null;
-  const cache = updateCache(cfg);
+  const cache = updateCache(config);
   const cached = cache.read(manifest.id);
   if (!force && cached) {
     // Caches escritos por versiones anteriores no tienen `notes`.
     return { ...cached, notes: cached.notes ?? '' };
   }
   try {
-    const release = await getLatestRelease(cfg, manifest.repo);
+    const release = await getLatestRelease(config, manifest.repo);
     const info: UpdateInfo = {
       id: manifest.id,
       name: manifest.name,
@@ -76,12 +76,12 @@ export interface ApplyUpdateOptions {
 }
 
 export async function applyUpdate(
-  cfg: AppConfig,
+  config: AppConfig,
   manifest: Manifest,
   opts: ApplyUpdateOptions = {},
 ): Promise<UpdateInfo> {
   // Reinstall over the existing install dir (installer handles backup + rom relink).
-  const state = readState(cfg, manifest.id);
+  const state = readState(config, manifest.id);
   // Multirom: re-link every previously linked ROM. Old single-rom states only
   // store romLinked, which maps to the first requirement (the required base).
   const linked: Record<string, string> = { ...(state?.romsLinked ?? {}) };
@@ -104,7 +104,7 @@ export async function applyUpdate(
       };
     }
   }
-  const newState = await installPort(cfg, manifest, {
+  const newState = await installPort(config, manifest, {
     roms,
     signal: opts.signal,
     onProgress: opts.onProgress,
@@ -118,20 +118,20 @@ export async function applyUpdate(
     notes: '',
     checkedAt: Date.now(),
   };
-  updateCache(cfg).write(manifest.id, info);
+  updateCache(config).write(manifest.id, info);
   return info;
 }
 
 /**
  * Remote manifest registry: fetch an index (JSON array of {id,url}) from
- * cfg.registryUrl and store each manifest under manifests/remote/<id>.json.
+ * config.registryUrl and store each manifest under manifests/remote/<id>.json.
  */
-export async function refreshRemoteManifests(cfg: AppConfig): Promise<number> {
-  if (!cfg.registryUrl) return 0;
-  const res = await fetch(cfg.registryUrl, { headers: { 'User-Agent': USER_AGENT } });
+export async function refreshRemoteManifests(config: AppConfig): Promise<number> {
+  if (!config.registryUrl) return 0;
+  const res = await fetch(config.registryUrl, { headers: { 'User-Agent': USER_AGENT } });
   if (!res.ok) throw new Error(`Registry fetch failed: HTTP ${res.status}`);
   const data = (await res.json()) as Array<{ id: string; url: string }>;
-  const dir = path.join(cfg.manifestsDir, 'remote');
+  const dir = path.join(config.manifestsDir, 'remote');
   fs.mkdirSync(dir, { recursive: true });
   let count = 0;
   for (const entry of data) {

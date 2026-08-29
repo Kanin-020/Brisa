@@ -116,7 +116,7 @@ export interface AppState {
     supported: boolean;
     notes?: string;
   };
-  cfg: {
+  config: {
     romsDir: string;
     romsDirs?: string[];
   };

@@ -28,8 +28,8 @@ export const PORT_VERSION_MARKER = 'brisa-port-version';
  * Ruta del ayudante `image/imagen` (POSIX) o `image/imagen.cmd` (Windows) que
  * los launchers usan para invocar el CLI de la propia Brisa.
  */
-export function helperPath(cfg: AppConfig): string {
-  return path.join(cfg.root, 'image', detectPlatform().os === 'windows' ? 'imagen.cmd' : 'imagen');
+export function helperPath(config: AppConfig): string {
+  return path.join(config.root, 'image', detectPlatform().os === 'windows' ? 'imagen.cmd' : 'imagen');
 }
 
 /** Ids de port seguros para incrustar sin comillas en los scripts de los launchers. */
@@ -49,8 +49,8 @@ function batQuote(s: string): string {
  * Ruta que el launcher .sh invoca: la AppImage copiada si existe, o el
  * ayudante `image/imagen`.
  */
-function launchTarget(cfg: AppConfig): string {
-  return selfImagePath(cfg) ?? helperPath(cfg);
+function launchTarget(config: AppConfig): string {
+  return selfImagePath(config) ?? helperPath(config);
 }
 
 /**
@@ -59,8 +59,8 @@ function launchTarget(cfg: AppConfig): string {
  * `update <port>` y `launch <port> --wait`. Si aún no hay copia del AppImage
  * (modo desarrollo), cae al ayudante `image/imagen`.
  */
-export function launcherScript(cfg: AppConfig, portId: string, portVersion: string): string {
-  const executable = launchTarget(cfg);
+export function launcherScript(config: AppConfig, portId: string, portVersion: string): string {
+  const executable = launchTarget(config);
   // El id del port va sin comillas (ids normales); solo se protege con comillas
   // un id inusual que rompería la sintaxis del script.
   const safeId = SAFE_ID_PATTERN.test(portId) ? portId : shQuote(portId);
@@ -85,8 +85,8 @@ ${shQuote(executable)} launch ${safeId} --wait || exit 1
  * en `image/imagen.cmd`, que invoca el exe de la propia Brisa con `update
  * <port>` y `launch <port> --wait`.
  */
-export function launcherScriptWin(cfg: AppConfig, portId: string, portVersion: string): string {
-  const helper = batQuote(helperPath(cfg));
+export function launcherScriptWin(config: AppConfig, portId: string, portVersion: string): string {
+  const helper = batQuote(helperPath(config));
   const safeId = SAFE_ID_PATTERN.test(portId) ? portId : portId.replace(/[^\w.-]/g, '_');
   return [
     '@echo off',
@@ -109,13 +109,13 @@ export function launcherScriptWin(cfg: AppConfig, portId: string, portVersion: s
 
 /** Devuelve el contenido del launcher adecuado para el SO actual. */
 export function launcherScriptForPlatform(
-  cfg: AppConfig,
+  config: AppConfig,
   portId: string,
   portVersion: string,
 ): string {
   return detectPlatform().os === 'windows'
-    ? launcherScriptWin(cfg, portId, portVersion)
-    : launcherScript(cfg, portId, portVersion);
+    ? launcherScriptWin(config, portId, portVersion)
+    : launcherScript(config, portId, portVersion);
 }
 
 /**
@@ -128,13 +128,13 @@ export function launcherScriptForPlatform(
  * Se elige la AppImage más reciente por mtime (el nombre cambia con la
  * versión); si no hay ninguna (dev), cae al comando `brisa` del PATH.
  */
-export function imagenHelperScript(cfg: AppConfig): string {
+export function imagenHelperScript(config: AppConfig): string {
   return `#!/bin/sh
 # Ayudante de Brisa (generado por Brisa — no editar a mano).
 # Uso: imagen <subcomando> <port> [args...]
 # Ejecuta el CLI de la propia Brisa (su AppImage en image/) con los argumentos
 # recibidos, p. ej. imagen update <port> o imagen launch <port> --wait.
-ROOT=${shQuote(cfg.root)}
+ROOT=${shQuote(config.root)}
 APPIMAGE="$(ls -t "$ROOT"/image/Brisa-*.AppImage 2>/dev/null | head -n 1)"
 if [ -z "$APPIMAGE" ]; then
   if command -v brisa >/dev/null 2>&1; then
@@ -176,9 +176,9 @@ export function imagenHelperScriptWin(_cfg: AppConfig): string {
  * o de una versión anterior). Best-effort: devuelve la ruta o null; un fallo
  * aquí no debe romper la instalación del port.
  */
-export function writeImagenHelper(cfg: AppConfig): string | null {
+export function writeImagenHelper(config: AppConfig): string | null {
   try {
-    const dir = imagesDir(cfg);
+    const dir = imagesDir(config);
     fs.mkdirSync(dir, { recursive: true });
     const win = detectPlatform().os === 'windows';
     const file = path.join(dir, win ? 'imagen.cmd' : 'imagen');
@@ -190,7 +190,7 @@ export function writeImagenHelper(cfg: AppConfig): string | null {
         // ok
       }
     }
-    fs.writeFileSync(file, win ? imagenHelperScriptWin(cfg) : imagenHelperScript(cfg));
+    fs.writeFileSync(file, win ? imagenHelperScriptWin(config) : imagenHelperScript(config));
     if (!win) fs.chmodSync(file, EXECUTABLE_MODE);
     return file;
   } catch {

@@ -20,7 +20,7 @@ export function registerInstallCommand(program: Command, app: App): void {
       );
       if (missingRequired.length > 0 && !opts.force) {
         console.error(
-          `No se encontraron todos los ROMs requeridos para ${manifest.name}. Ponlos en ${app.cfg.romsDirs.join(', ')} o usa --force.`,
+          `No se encontraron todos los ROMs requeridos para ${manifest.name}. Ponlos en ${app.config.romsDirs.join(', ')} o usa --force.`,
         );
         console.error(
           `  Faltan: ${missingRequired.map((requirement) => requirement.name).join(', ')}`,
@@ -33,7 +33,7 @@ export function registerInstallCommand(program: Command, app: App): void {
         progress.report(stage, done, total),
       );
       const relinked = app.relinkMods(portId);
-      console.info(`✓ ${manifest.name} v${state.version} instalado en ${portDir(app.cfg, portId)}`);
+      console.info(`✓ ${manifest.name} v${state.version} instalado en ${portDir(app.config, portId)}`);
       const linked = state.romsLinked ?? {};
       if (Object.keys(linked).length > 0) {
         for (const [requirementId, romPath] of Object.entries(linked)) {
@@ -43,7 +43,7 @@ export function registerInstallCommand(program: Command, app: App): void {
         console.info(`  ROM enlazado: ${state.romLinked}`);
       }
       if (relinked.length) console.info(`  Mods enlazados: ${relinked.join(', ')}`);
-      const executable = resolveExecutable(portDir(app.cfg, portId), {
+      const executable = resolveExecutable(portDir(app.config, portId), {
         executable: state.executable,
       });
       if (executable) console.info(`  Ejecutable: ${executable}`);

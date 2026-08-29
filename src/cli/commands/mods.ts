@@ -14,7 +14,7 @@ export function registerModsCommands(program: Command, app: App): void {
         console.info('  (sin mods) — crea carpetas dentro de:', info.root);
       }
       for (const mod of info.mods) {
-        const linked = isModLinked(app.cfg, info.manifest, mod);
+        const linked = isModLinked(app.config, info.manifest, mod);
         console.info(`  ${mod}  ${linked ? '[enlazado]' : '[no enlazado]'}`);
       }
       console.info('');

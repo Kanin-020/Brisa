@@ -1,16 +1,16 @@
-/** Unidad de medida: 1024 bytes. */
-const KIB = 1024;
-/** Unidad de medida: 1024 * 1024 bytes. */
-const MIB = KIB * KIB;
+/** Unidad de medida: 1024 bytes (kibibyte). */
+const BYTES_PER_KIB = 1024;
+/** Unidad de medida: 1024 * 1024 bytes (mebibyte). */
+const BYTES_PER_MIB = BYTES_PER_KIB * BYTES_PER_KIB;
 
 /** Intervalo mínimo entre redibujados de la barra de progreso (~4 fps). */
 const PROGRESS_REPORT_INTERVAL_MS = 250;
 
 /** Formatea un número de bytes como texto legible (B / KB / MB). */
 export function formatBytes(bytes: number): string {
-  if (bytes < KIB) return `${bytes} B`;
-  if (bytes < MIB) return `${(bytes / KIB).toFixed(1)} KB`;
-  return `${(bytes / MIB).toFixed(1)} MB`;
+  if (bytes < BYTES_PER_KIB) return `${bytes} B`;
+  if (bytes < BYTES_PER_MIB) return `${(bytes / BYTES_PER_KIB).toFixed(1)} KB`;
+  return `${(bytes / BYTES_PER_MIB).toFixed(1)} MB`;
 }
 
 /**
@@ -25,9 +25,9 @@ export class ProgressReporter {
     const now = Date.now();
     if (now - this.lastDrawAt < PROGRESS_REPORT_INTERVAL_MS && done < total) return;
     this.lastDrawAt = now;
-    const pct = Math.round((done / total) * 100);
+    const percentage = Math.round((done / total) * 100);
     process.stderr.write(
-      `\r  descargando... ${pct}% (${(done / MIB).toFixed(1)}/${(total / MIB).toFixed(1)} MB)`,
+      `\r  descargando... ${percentage}% (${(done / BYTES_PER_MIB).toFixed(1)}/${(total / BYTES_PER_MIB).toFixed(1)} MB)`,
     );
     if (done >= total) process.stderr.write('\n');
   }

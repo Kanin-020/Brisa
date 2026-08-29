@@ -18,13 +18,13 @@ function isPathWithin(dir: string, target: string): boolean {
  * dropped file that already exists is reported as skipped.
  */
 export function saveRomFile(
-  cfg: AppConfig,
+  config: AppConfig,
   name: string,
   source: NodeJS.ReadableStream,
 ): Promise<{ saved: boolean; skipped: boolean; name: string }> {
   return new Promise((resolve, reject) => {
     const safe = path.basename(name);
-    const romsRoot = path.resolve(cfg.romsDir);
+    const romsRoot = path.resolve(config.romsDir);
     const dest = path.join(romsRoot, safe);
     if (!isPathWithin(romsRoot, dest)) {
       reject(new Error(`Nombre de archivo no válido: ${name}`));
@@ -74,10 +74,10 @@ export function saveRomFile(
  * traversal guard). Also invalidates the cached SHA1 so the next scan
  * starts clean.
  */
-export function deleteRom(cfg: AppConfig, file: string): void {
+export function deleteRom(config: AppConfig, file: string): void {
   const abs = path.resolve(file);
   // Con varias carpetas de ROMs, el archivo debe vivir dentro de alguna de ellas.
-  const withinAny = cfg.romsDirs.some((dir) => isPathWithin(dir, abs));
+  const withinAny = config.romsDirs.some((dir) => isPathWithin(dir, abs));
   if (!withinAny) {
     throw new Error(`Ruta fuera de las carpetas de ROMs: ${file}`);
   }
@@ -85,10 +85,10 @@ export function deleteRom(cfg: AppConfig, file: string): void {
     throw new Error(`No es un archivo: ${file}`);
   }
   fs.rmSync(abs, { force: true });
-  const cacheFile = hashCacheFile(cfg, abs);
+  const cacheFile = hashCacheFile(config, abs);
   if (fs.existsSync(cacheFile)) fs.rmSync(cacheFile, { force: true });
   // Quitar symlinks colgantes de ports instalados que apuntaban a este ROM.
-  removeSymlinksToDeletedRom(cfg, abs);
+  removeSymlinksToDeletedRom(config, abs);
 }
 
 /**
@@ -98,9 +98,9 @@ export function deleteRom(cfg: AppConfig, file: string): void {
  * el árbol del port y borra cualquier symlink cuyo destino real sea el
  * archivo borrado.
  */
-export function removeSymlinksToDeletedRom(cfg: AppConfig, deleted: string): void {
-  for (const state of listStates(cfg)) {
-    const portRoot = portDir(cfg, state.id);
+export function removeSymlinksToDeletedRom(config: AppConfig, deleted: string): void {
+  for (const state of listStates(config)) {
+    const portRoot = portDir(config, state.id);
     if (!fs.existsSync(portRoot)) continue;
     let changed = false;
 
@@ -137,11 +137,11 @@ export function removeSymlinksToDeletedRom(cfg: AppConfig, deleted: string): voi
       (state.romLinked !== null && path.resolve(state.romLinked) === deleted) ||
       Object.keys(links).length !== Object.keys(state.romsLinked ?? {}).length;
     if (changed || stateRefChanged) {
-      const stored = readState(cfg, state.id);
+      const stored = readState(config, state.id);
       if (stored) {
         stored.romsLinked = Object.keys(links).length > 0 ? links : undefined;
         stored.romLinked = null;
-        writeState(cfg, stored);
+        writeState(config, stored);
       }
     }
   }

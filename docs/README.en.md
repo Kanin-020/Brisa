@@ -19,6 +19,9 @@
 | Super Mario 64 |  sm64coopdx | [Github](https://github.com/coop-deluxe/sm64coopdx) |
 | Mario Kart 64 | SpaghettiKart | [Github](https://github.com/HarbourMasters/SpaghettiKart) |
 | Banjo Kazooie | Lighthouse | [Github](https://github.com/HarbourMasters/Lighthouse) |
+| Harvest Moon 64 | Harvest Moon 64: Recompiled | [Github](https://github.com/HarvestMoon64Recomp/HarvestMoon64Recomp) |
+| Bomberman 64 | Bomberman 64: Recompiled | [Github](https://github.com/RevoSucks/BM64Recomp) |
+| Snowboard Kids 2 | Snowboard Kids 2: Recompiled | [Github](https://github.com/cdlewis/snowboardkids2-recomp) |
 
 The project is trivially extensible to any port that publishes GitHub releases.
 
@@ -34,6 +37,8 @@ Special thanks to each of the decompilation teams — without them this project 
 | 4 | **Auto update** | Checks the latest GitHub release of each installed port and updates it (`update`, GUI button). The **app itself** also self-updates: it detects the latest AppImage on GitHub, downloads it, replaces itself and relaunches on its own (`self-update` or the GUI button). |
 | 5 | **Manifests** | Each port is a JSON file in `manifests/`. To add a new port you only need: the GitHub repo, the name/hash patterns of its ROM and its per-platform asset patterns. |
 | 6 | **i18n web GUI** | Local web interface with a **Español / English** language switcher (plus any language you add to `src/web/lang/`). |
+| 7 | **Game mode with controller** | Full-screen interface optimized for gamepads: navigate ports with D-pad/stick, install, update, launch and stop games with A/B buttons, switch tabs with R1/R2, toggle grid/carousel layout with X, open settings with Start. Auto-activates when a controller connects. |
+| 8 | **Process management** | Games launched from game mode are tracked by PID. Press the action button on a running game to stop it immediately. |
 
 ## Installation
 
@@ -251,7 +256,7 @@ npm link                # optional: exposes the `brisa` command globally
 4. **Updates**: compares the installed release tag with the latest on GitHub. On `update` it downloads the new version, makes an atomic backup and re-links ROM and mods. **Saves and configs inside the port are kept**: every file the new release does not ship is restored, and files matched by the manifest `preserve` patterns win over the release defaults.
 5. **Registry auto-update**: `registryUrl` allows adding new ports without touching code, JSON only.
 
-For more detail on the code structure and conventions, see [Brisa Architecture](ARCHITECTURE.md).
+For more detail on the code structure and conventions, see [Brisa Architecture](ARCHITECTURE.en.md).
 
 ## Creating a manifest
 
@@ -333,7 +338,44 @@ When **uninstalling** a port these patterns are respected too: everything is del
 - Install, update, uninstall and launch ports with one click.
 - Link/unlink individual mods.
 - **Language switcher** (Español / English) in the header. Languages live in `src/web/lang/*.json` — add a new file and the switcher will show it automatically.
-- **Release notes**: the **📝** button opens the changelog of the pending release (Brisa update or port update).
+- **Release notes**: the changelog button opens the changelog of the pending release (Brisa update or port update).
+
+### Game mode
+
+Game mode provides a full-screen interface optimized for gamepad use. It activates automatically when a controller connects, or manually via the gamepad button in the normal interface.
+
+**Controller mappings:**
+
+| Button | Action |
+|--------|--------|
+| A / Cross | Confirm: install, launch, or stop a game |
+| B / Circle | No action (does not exit game mode) |
+| X / Square | Toggle grid / carousel layout |
+| Y / Triangle | Switch between Installed / Available tabs |
+| R1 / RT | Next tab |
+| R2 / LT | Previous tab |
+| D-pad / Left stick | Navigate ports |
+| Select / Back | Exit game mode |
+| Start | Open settings panel |
+
+**Settings panel** (opened with Start):
+
+- Layout: switch between grid and carousel views.
+- Theme: toggle light / dark mode.
+- Language: change the interface language.
+- Exit: leave game mode and return to the normal interface.
+
+Navigate settings with D-pad Up/Down (between groups) and Left/Right (within a group). Press A to confirm, B or Select to close.
+
+**Grid navigation:**
+
+- Up/Down moves between rows.
+- Left/Right moves within a row; pressing Right on the last item of a row moves to the first item of the next row, and vice versa.
+- When at the first row, pressing Up moves focus to the tab header.
+
+**Process stop:**
+
+Games launched from game mode are tracked by their process ID. When a game is running, its card shows a "Running" badge and the action button becomes a red "Stop" button. Press A on a running game to terminate the process immediately.
 
 ## Platform notes
 

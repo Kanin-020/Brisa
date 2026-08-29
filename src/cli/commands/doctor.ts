@@ -78,92 +78,92 @@ export function registerDoctorCommand(program: Command, app: App): void {
     .command('doctor')
     .description('Diagnóstico del entorno (versiones, carpetas, permisos, red, GitHub).')
     .action(async () => {
-      const c = collector();
+      const diagnosticResults = collector();
 
       console.info(`\n== Diagnóstico de Brisa v${appVersion()} (${detectPlatform().key}) ==\n`);
 
       // ── Node / entorno ──
-      c.check(
+      diagnosticResults.check(
         `Node.js ${process.version} (mínimo ${MIN_NODE_VERSION})`,
         nodeVersionOk(process.version),
       );
       if (isSelfUpdateSupported()) {
-        c.warn('Auto-update de la app disponible (build empaquetada)');
+        diagnosticResults.warn('Auto-update de la app disponible (build empaquetada)');
       } else {
-        c.warn('Auto-update de la app NO disponible (build de desarrollo/CLI)');
+        diagnosticResults.warn('Auto-update de la app NO disponible (build de desarrollo/CLI)');
       }
 
       // ── Configuración ──
       console.info('\n  Configuración:');
-      console.info(`    Raíz: ${app.cfg.root}`);
-      console.info(`    Carpetas de ROMs: ${app.cfg.romsDirs.join(', ')}`);
-      console.info(`    Mods: ${app.cfg.modsDir}`);
-      console.info(`    Ports: ${app.cfg.portsDir}`);
-      console.info(`    Cache: ${app.cfg.cacheDir}`);
-      console.info(`    Manifests: ${app.cfg.manifestsDir}`);
+      console.info(`    Raíz: ${app.config.root}`);
+      console.info(`    Carpetas de ROMs: ${app.config.romsDirs.join(', ')}`);
+      console.info(`    Mods: ${app.config.modsDir}`);
+      console.info(`    Ports: ${app.config.portsDir}`);
+      console.info(`    Cache: ${app.config.cacheDir}`);
+      console.info(`    Manifests: ${app.config.manifestsDir}`);
       console.info(
-        `    Registry remoto: ${app.cfg.registryUrl ? app.cfg.registryUrl : '(no configurado)'}`,
+        `    Registry remoto: ${app.config.registryUrl ? app.config.registryUrl : '(no configurado)'}`,
       );
       console.info(
-        `    Token de GitHub: ${app.cfg.githubToken ? '(configurado)' : '(no configurado — 60 req/h)'}`,
+        `    Token de GitHub: ${app.config.githubToken ? '(configurado)' : '(no configurado — 60 req/h)'}`,
       );
 
       // ── Carpetas: existencia + escritura ──
-      const dirs: Array<[string, string]> = [
-        ...app.cfg.romsDirs.map((d): [string, string] => ['ROMs', d]),
-        ['Mods', app.cfg.modsDir],
-        ['Ports', app.cfg.portsDir],
-        ['Cache', app.cfg.cacheDir],
-        ['Manifests', app.cfg.manifestsDir],
+      const directoriesWithLabels: Array<[string, string]> = [
+        ...app.config.romsDirs.map((romDir): [string, string] => ['ROMs', romDir]),
+        ['Mods', app.config.modsDir],
+        ['Ports', app.config.portsDir],
+        ['Cache', app.config.cacheDir],
+        ['Manifests', app.config.manifestsDir],
       ];
-      for (const [label, dir] of dirs) {
-        const { exists, writable } = dirStatus(dir);
-        if (!exists) c.check(`${label} (${dir})`, false, 'no existe');
-        else if (!writable) c.check(`${label} (${dir})`, false, 'sin permisos de escritura');
-        else c.check(`${label} (${dir})`, true);
+      for (const [label, directory] of directoriesWithLabels) {
+        const { exists, writable } = dirStatus(directory);
+        if (!exists) diagnosticResults.check(`${label} (${directory})`, false, 'no existe');
+        else if (!writable) diagnosticResults.check(`${label} (${directory})`, false, 'sin permisos de escritura');
+        else diagnosticResults.check(`${label} (${directory})`, true);
       }
 
       // ── GitHub API ──
-      const { ok: ghOk, note: ghNote } = await githubRateLimitNote(app.cfg.githubToken);
-      c.warn(`GitHub API — ${ghNote}`);
-      if (ghOk && !app.cfg.githubToken) {
-        c.warn('Sin GITHUB_TOKEN: añade `githubToken` a config.json si sufres rate limits');
+      const { ok: githubApiReachable, note: githubApiNote } = await githubRateLimitNote(app.config.githubToken);
+      diagnosticResults.warn(`GitHub API — ${githubApiNote}`);
+      if (githubApiReachable && !app.config.githubToken) {
+        diagnosticResults.warn('Sin GITHUB_TOKEN: añade `githubToken` a config.json si sufres rate limits');
       }
-      if (!app.cfg.registryUrl) {
-        c.warn('registryUrl vacío: los manifiestos remotos no se refrescan (brisa registry)');
+      if (!app.config.registryUrl) {
+        diagnosticResults.warn('registryUrl vacío: los manifiestos remotos no se refrescan (brisa registry)');
       }
 
       // ── Estado ──
       const installed = app.installed();
       console.info(`\n  Ports instalados: ${installed.length}`);
       if (installed.length > 0) {
-        const missingDir = installed.filter(
-          (s) => !fs.existsSync(path.join(app.cfg.portsDir, s.id)),
+        const missingDirectories = installed.filter(
+          (state) => !fs.existsSync(path.join(app.config.portsDir, state.id)),
         );
-        if (missingDir.length > 0) {
-          c.check(
+        if (missingDirectories.length > 0) {
+          diagnosticResults.check(
             `Carpetas de ports instalados`,
             false,
-            `${missingDir.length} sin carpeta (reinstala: brisa install)`,
+            `${missingDirectories.length} sin carpeta (reinstala: brisa install)`,
           );
         } else {
-          c.check(`Carpetas de ports instalados (${installed.length})`, true);
+          diagnosticResults.check(`Carpetas de ports instalados (${installed.length})`, true);
         }
       }
 
       // ── Resumen ──
-      const print = (lines: string[], mark: string) =>
+      const printResults = (lines: string[], mark: string) =>
         lines.forEach((line) => console.info(`  ${mark} ${line}`));
-      print(c.ok, '✓');
-      print(c.warnings, '⚠');
-      print(c.fails, '✗');
+      printResults(diagnosticResults.ok, '✓');
+      printResults(diagnosticResults.warnings, '⚠');
+      printResults(diagnosticResults.fails, '✗');
       console.info('');
-      if (c.fails.length > 0) {
-        console.error(`✗ ${c.fails.length} problema(s) crítico(s) detectado(s).`);
+      if (diagnosticResults.fails.length > 0) {
+        console.error(`✗ ${diagnosticResults.fails.length} problema(s) crítico(s) detectado(s).`);
         process.exitCode = 1;
       } else {
         console.info(
-          `✓ Entorno OK${c.warnings.length > 0 ? ` (${c.warnings.length} aviso(s))` : ''}`,
+          `✓ Entorno OK${diagnosticResults.warnings.length > 0 ? ` (${diagnosticResults.warnings.length} aviso(s))` : ''}`,
         );
       }
     });

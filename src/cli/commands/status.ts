@@ -14,7 +14,7 @@ export function registerStatusCommand(program: Command, app: App): void {
       for (const rom of scan.roms)
         console.info(`  ${rom.name}  ${formatBytes(rom.size)}  [sha1 ${rom.sha1.slice(0, 8)}…]`);
       if (scan.roms.length === 0)
-        console.info('  (vacío) — copia tus ROMs a:', app.cfg.romsDirs.join(', '));
+        console.info('  (vacío) — copia tus ROMs a:', app.config.romsDirs.join(', '));
 
       console.info('\nPorts:');
       for (const port of ports) {

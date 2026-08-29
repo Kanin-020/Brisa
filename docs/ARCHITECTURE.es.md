@@ -42,7 +42,7 @@ consumen una única API de alto nivel.
   `CancelledError` de `src/core/tasks.ts`.
 - **Sin valores mágicos**: los números y cadenas repetidos son constantes
   nombradas (ver `src/core/constants.ts` y los bloques de constantes de
-  `src/cli/output.ts` y `src/web/app.js`).
+  `src/cli/output.ts` y `src/web/components/game-mode/game-mode.tsx`).
 
 ## Convenciones de código
 

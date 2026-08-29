@@ -95,49 +95,49 @@ function coerceScalar(raw: Partial<AppConfig>, key: ScalarKey): unknown {
 }
 
 export function loadConfig(): AppConfig {
-  const cfg = defaultConfig();
-  const file = path.join(cfg.root, CONFIG_FILE);
+  const config = defaultConfig();
+  const file = path.join(config.root, CONFIG_FILE);
   try {
-    if (!fs.existsSync(file)) return cfg;
+    if (!fs.existsSync(file)) return config;
     const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Partial<AppConfig>;
     // `romsDirs` gana; si no existe, se migra el antiguo `romsDir` único.
     if (Array.isArray(raw.romsDirs) && raw.romsDirs.length > 0) {
-      cfg.romsDirs = raw.romsDirs.map((d) => path.resolve(cfg.root, String(d)));
+      config.romsDirs = raw.romsDirs.map((dir) => path.resolve(config.root, String(dir)));
     } else if (raw.romsDir) {
-      cfg.romsDirs = [path.resolve(cfg.root, raw.romsDir)];
+      config.romsDirs = [path.resolve(config.root, raw.romsDir)];
     }
-    cfg.romsDir = cfg.romsDirs[0];
+    config.romsDir = config.romsDirs[0];
     for (const key of DIR_FIELDS) {
-      const resolved = resolveDirField(raw, key, cfg.root);
-      if (resolved) cfg[key] = resolved;
+      const resolved = resolveDirField(raw, key, config.root);
+      if (resolved) config[key] = resolved;
     }
     for (const key of Object.keys(SCALAR_FIELDS) as ScalarKey[]) {
       const value = coerceScalar(raw, key);
-      if (value !== null) (cfg as unknown as Record<string, unknown>)[key] = value;
+      if (value !== null) (config as unknown as Record<string, unknown>)[key] = value;
     }
-    cfg.stateDir = path.join(cfg.cacheDir, 'state');
+    config.stateDir = path.join(config.cacheDir, 'state');
   } catch {
     // Archivo corrupto o ilegible: se cae a los valores por defecto.
   }
-  return cfg;
+  return config;
 }
 
-export function ensureDirs(cfg: AppConfig): void {
-  for (const d of [...cfg.romsDirs, cfg.modsDir, cfg.portsDir, cfg.cacheDir, cfg.stateDir]) {
-    fs.mkdirSync(d, { recursive: true });
+export function ensureDirs(config: AppConfig): void {
+  for (const dir of [...config.romsDirs, config.modsDir, config.portsDir, config.cacheDir, config.stateDir]) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
-export function saveConfig(cfg: AppConfig): void {
-  const file = path.join(cfg.root, CONFIG_FILE);
+export function saveConfig(config: AppConfig): void {
+  const file = path.join(config.root, CONFIG_FILE);
   const out: Record<string, unknown> = {
     // Se guardan ambos: `romsDirs` (nuevo) y `romsDir` (compatibilidad con
     // versiones anteriores que solo leen el campo antiguo).
-    romsDir: path.relative(cfg.root, cfg.romsDirs[0]),
-    romsDirs: cfg.romsDirs.map((d) => path.relative(cfg.root, d)),
-    ...Object.fromEntries(DIR_FIELDS.map((key) => [key, path.relative(cfg.root, cfg[key])])),
+    romsDir: path.relative(config.root, config.romsDirs[0]),
+    romsDirs: config.romsDirs.map((dir) => path.relative(config.root, dir)),
+    ...Object.fromEntries(DIR_FIELDS.map((key) => [key, path.relative(config.root, config[key])])),
     ...Object.fromEntries(
-      (Object.keys(SCALAR_FIELDS) as ScalarKey[]).map((key) => [key, cfg[key]]),
+      (Object.keys(SCALAR_FIELDS) as ScalarKey[]).map((key) => [key, config[key]]),
     ),
   };
   fs.writeFileSync(file, JSON.stringify(out, null, 2) + '\n');
