@@ -15,6 +15,6 @@ export function registerHashCommand(program: Command): void {
         console.error('Archivo no encontrado:', abs);
         process.exit(1);
       }
-      console.log(await sha1File(abs));
+      console.info(await sha1File(abs));
     });
 }

@@ -54,32 +54,32 @@ export function registerSrmConfigCommand(program: Command, app: App): void {
         if (ext !== '.cmd') fs.chmodSync(file, 0o755);
         generated++;
         const linked = Object.values(state.romsLinked ?? {}).find(Boolean) ?? state.romLinked;
-        console.log(
+        console.info(
           `  ✓ ${title}${ext}` +
             (linked ? '' : '  ⚠ sin ROM enlazado: el juego no arrancará hasta que enlaces su ROM'),
         );
       }
       // Asegurar que el ayudante image/imagen exista (invoca el CLI de Brisa).
       writeImagenHelper(app.cfg);
-      console.log(`\n✓ ${generated} launcher(s) generado(s) en: ${dir}\n`);
-      console.log('Cómo usarlos:');
-      console.log(
+      console.info(`\n✓ ${generated} launcher(s) generado(s) en: ${dir}\n`);
+      console.info('Cómo usarlos:');
+      console.info(
         '  1) Steam → Agregar un juego → Agregar un juego no Steam… → Examinar → elige los ' + ext,
       );
-      console.log('     (también sirven como ejecutable de un parser Glob en Steam ROM Manager).');
-      console.log(
+      console.info('     (también sirven como ejecutable de un parser Glob en Steam ROM Manager).');
+      console.info(
         '  2) Cada launcher limpia las variables de Steam (LD_PRELOAD, STEAM_COMPAT_*, STEAM_RUNTIME)',
       );
-      console.log(
+      console.info(
         "     y delega en el CLI de Brisa (image/imagen o image/imagen.cmd): 'update <port>'",
       );
-      console.log(
+      console.info(
         "     comprueba/actualiza el port a la última versión y 'launch <port> --wait' lo",
       );
-      console.log('     lanza esperando a que cierre.');
-      console.log(
+      console.info('     lanza esperando a que cierre.');
+      console.info(
         '  3) Los launchers también se crean/actualizan solos al instalar o actualizar un',
       );
-      console.log('     port, y se borran al desinstalarlo. Regenera todos con: brisa srm-config');
+      console.info('     port, y se borran al desinstalarlo. Regenera todos con: brisa srm-config');
     });
 }

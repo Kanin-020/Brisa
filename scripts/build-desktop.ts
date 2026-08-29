@@ -33,7 +33,7 @@ const args = process.argv.slice(2);
 const onlyIdx = args.indexOf("--only");
 const ONLY = onlyIdx >= 0 ? args[onlyIdx + 1] : "all";
 
-const step = (msg) => console.log(`\n[build-desktop] ${msg}`);
+const step = (msg) => console.info(`\n[build-desktop] ${msg}`);
 
 function run(cmd, cargs, opts = {}) {
   if (process.platform === "win32" && cmd.endsWith(".cmd")) {
@@ -109,7 +109,7 @@ async function bundleCliEntry() {
   } finally {
     fs.rmSync(tmp, { recursive: true, force: true });
   }
-  console.log(`  → ${path.join(GUI_DIR, "cli-entry.cjs")}`);
+  console.info(`  → ${path.join(GUI_DIR, "cli-entry.cjs")}`);
 }
 
 function wineAvailable() {

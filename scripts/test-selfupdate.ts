@@ -73,7 +73,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function cleanup() {
   if (!KEEP) fs.rmSync(TMP, { recursive: true, force: true });
-  else console.log(`[selfupdate-test] conservado: ${TMP}`);
+  else console.info(`[selfupdate-test] conservado: ${TMP}`);
 }
 
 function fail(msg) {
@@ -144,13 +144,13 @@ server.listen(0, "127.0.0.1", async () => {
   try {
     const cfg = { ...defaultConfig(), cacheDir: CACHE, selfRepo: "prueba/prueba" };
     const info = await checkSelfUpdate(cfg, true);
-    console.log("[test] check ->", JSON.stringify({ latest: info.latest, available: info.available, supported: info.supported, asset: info.assetName }));
+    console.info("[test] check ->", JSON.stringify({ latest: info.latest, available: info.available, supported: info.supported, asset: info.assetName }));
     // El asset debe encontrarse SIEMPRE (protege el patrón de asset): si el
     // patrón estuviera roto, available=false y el test daría un falso positivo.
     if (!info.assetName || !info.downloadUrl) throw new Error("asset no encontrado (¿patrón roto?)");
     if (ALREADY_LATEST) {
       if (info.available) throw new Error("esperado available=false (ya en la última versión)");
-      console.log("[test] OK: ya en la última versión → sin descarga ni updater");
+      console.info("[test] OK: ya en la última versión → sin descarga ni updater");
       process.exit(0);
     }
     if (!info.available) throw new Error("el check no detectó la actualización");
@@ -159,11 +159,11 @@ server.listen(0, "127.0.0.1", async () => {
       // En Windows no lanzamos el updater en el test: el instalador falso no
       // es un PE válido y "start /wait" podría colgarse. Se comprueba solo
       // la detección; el flujo NSIS (/S) se prueba en una máquina Windows.
-      console.log("[test] Windows: check OK (asset encontrado). El updater NSIS (/S) requiere prueba manual.");
+      console.info("[test] Windows: check OK (asset encontrado). El updater NSIS (/S) requiere prueba manual.");
       process.exit(0);
     }
-    const applied = await applySelfUpdate(cfg, (d, t) => console.log("[test] descarga " + d + "/" + t));
-    console.log("[test] applySelfUpdate OK, latest =", applied.latest);
+    const applied = await applySelfUpdate(cfg, (d, t) => console.info("[test] descarga " + d + "/" + t));
+    console.info("[test] applySelfUpdate OK, latest =", applied.latest);
     process.exit(0);
   } catch (e) {
     console.error("[test] ERROR:", e.message);
@@ -189,8 +189,8 @@ fs.writeFileSync(
 // Bundle + ejecución
 // ---------------------------------------------------------------------------
 void (async () => {
-console.log(`[selfupdate-test] simulando release ${TAG} (actual: ${pkg.version}) en ${process.platform}-${process.arch}`);
-console.log(`[selfupdate-test] asset: ${ASSET_NAME}`);
+console.info(`[selfupdate-test] simulando release ${TAG} (actual: ${pkg.version}) en ${process.platform}-${process.arch}`);
+console.info(`[selfupdate-test] asset: ${ASSET_NAME}`);
 
 const { build } = await import("esbuild");
 const BUNDLE_PATH = path.join(TMP, "bundle.cjs");
@@ -217,10 +217,10 @@ const updaterLog = path.join(CACHE_DIR, "downloads", "self", "updater.log");
 if (ALREADY_LATEST) {
   await sleep(1500);
   if (fs.existsSync(updaterLog)) fail("no debería haberse lanzado el updater");
-  console.log("✓ ya en la última versión: sin descarga ni updater");
+  console.info("✓ ya en la última versión: sin descarga ni updater");
 } else if (isWin) {
   // El runner ya comprobó la detección y salió sin lanzar el updater.
-  console.log("✓ check OK en Windows. El updater NSIS (/S) se debe probar en una máquina Windows real.");
+  console.info("✓ check OK en Windows. El updater NSIS (/S) se debe probar en una máquina Windows real.");
 } else {
   // El updater desacoplado tarda ~2-3 s (espera al proceso, sleep, mv, relanzar).
   let logContent = "";
@@ -243,9 +243,9 @@ if (ALREADY_LATEST) {
   const mDeadline = Date.now() + 10000;
   while (!fs.existsSync(MARKER) && Date.now() < mDeadline) await sleep(300);
   if (!fs.existsSync(MARKER)) fail("la versión nueva no se relanzó");
-  console.log("✓ el binario fue reemplazado y la versión nueva se relanzó");
+  console.info("✓ el binario fue reemplazado y la versión nueva se relanzó");
 }
 
 cleanup();
-console.log("\nPASS ✅");
+console.info("\nPASS ✅");
 })();

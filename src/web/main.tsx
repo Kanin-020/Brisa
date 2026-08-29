@@ -111,6 +111,6 @@ if (window.location.hostname === 'localhost' || window.location.hostname === '12
 }
 
 // Wait for i18n translations to load before rendering
-void window.__i18n!.ready().then(() => {
+void window.__i18n?.ready().then(() => {
   render(<Root />, document.getElementById('app')!);
 });

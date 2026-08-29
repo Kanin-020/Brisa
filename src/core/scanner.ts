@@ -177,7 +177,7 @@ function findMatchingRom(
   if ((requirement.gameIds?.length ?? 0) > 0) {
     const matchedByGameId = availableRoms.find(
       (rom) =>
-        !usedRoms.has(rom.path) && rom.gameId !== null && requirement.gameIds!.includes(rom.gameId),
+        !usedRoms.has(rom.path) && rom.gameId !== null && requirement.gameIds?.includes(rom.gameId),
     );
     if (matchedByGameId) {
       return { rom: matchedByGameId, matchMethod: 'gameid' };

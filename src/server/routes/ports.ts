@@ -2,7 +2,6 @@ import * as path from 'node:path';
 import { spawn } from 'node:child_process';
 import type { App } from '../../core/app';
 import { cleanLaunchEnv } from '../../core/env';
-import type { RomFile } from '../../core/scanner';
 import { requireId, sendError, sendJson } from '../http';
 import type { ApiRouter } from '../router';
 

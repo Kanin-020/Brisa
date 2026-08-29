@@ -9,7 +9,7 @@ export function registerConfigCommands(program: Command, app: App): void {
     .command('config')
     .description('Muestra la configuración actual.')
     .action(() => {
-      console.log(
+      console.info(
         JSON.stringify(
           {
             root: app.cfg.root,
@@ -69,6 +69,6 @@ export function registerConfigCommands(program: Command, app: App): void {
         process.exit(1);
       }
       saveConfig(cfg);
-      console.log(`✓ ${key} = ${key === 'romsDirs' ? cfg.romsDirs.join(', ') : value}`);
+      console.info(`✓ ${key} = ${key === 'romsDirs' ? cfg.romsDirs.join(', ') : value}`);
     });
 }

@@ -13,10 +13,12 @@ export function registerUninstallCommand(program: Command, app: App): void {
       app.uninstall(portId);
       const dir = portDir(app.cfg, portId);
       if (fs.existsSync(dir)) {
-        console.log(`✓ ${portId} desinstalado. Se conservaron los archivos de preserve en: ${dir}`);
-        console.log('  Se restaurarán automáticamente si vuelves a instalar el port.');
+        console.info(
+          `✓ ${portId} desinstalado. Se conservaron los archivos de preserve en: ${dir}`,
+        );
+        console.info('  Se restaurarán automáticamente si vuelves a instalar el port.');
       } else {
-        console.log(`✓ ${portId} desinstalado.`);
+        console.info(`✓ ${portId} desinstalado.`);
       }
     });
 }

@@ -13,6 +13,6 @@ export function registerRegistryCommand(program: Command, app: App): void {
         process.exit(1);
       }
       const count = await app.refreshRegistry();
-      console.log(`✓ ${count} manifiestos remotos actualizados.`);
+      console.info(`✓ ${count} manifiestos remotos actualizados.`);
     });
 }

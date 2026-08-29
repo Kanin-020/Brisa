@@ -17,7 +17,7 @@ export function registerLaunchCommand(program: Command, app: App): void {
         if (installed.length > 0) console.error(`  Ports instalados: ${installed.join(', ')}`);
         process.exit(1);
       }
-      console.log(`Lanzando ${executable}...`);
+      console.info(`Lanzando ${executable}...`);
       await launchPortProcess(executable, !!opts.wait);
     });
 }

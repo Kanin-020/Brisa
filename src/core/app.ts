@@ -1,5 +1,4 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { loadConfig, ensureDirs, type AppConfig } from './config';
 import { installPort, launchExecutable, uninstallPort, portDir } from './installer';
 import { listManifests, loadManifest, importManifests, type Manifest } from './manifest';
@@ -10,7 +9,6 @@ import {
   linkMod,
   unlinkMod,
   unlinkAllMods,
-  isModLinked,
   syncModsFolders,
 } from './mods';
 import { scanRoms, type ScanResult, type RomFile } from './scanner';

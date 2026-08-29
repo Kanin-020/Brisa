@@ -22,20 +22,20 @@ export function registerSelfUpdateCommand(program: Command, app: App): void {
         console.error('No hay selfRepo configurado. Usa: brisa config-set selfRepo <owner/repo>');
         process.exit(1);
       }
-      console.log(
+      console.info(
         `Brisa v${info.current} (${info.supported ? 'auto-update disponible' : 'dev/CLI'})`,
       );
       if (!info.available) {
         if (!info.latest || info.latest === '?') {
-          console.log(
+          console.info(
             'No se pudo comprobar la última versión (revisa selfRepo o la conexión a GitHub).',
           );
         } else {
-          console.log(`✓ Ya estás en la última versión (${info.latest}).`);
+          console.info(`✓ Ya estás en la última versión (${info.latest}).`);
         }
         return;
       }
-      console.log(`⬆ Nueva versión disponible: ${info.latest}`);
+      console.info(`⬆ Nueva versión disponible: ${info.latest}`);
       if (opts.check) return;
       if (!info.supported) {
         console.error(
@@ -46,11 +46,11 @@ export function registerSelfUpdateCommand(program: Command, app: App): void {
         );
         process.exit(1);
       }
-      console.log(`Descargando ${info.assetName}…`);
+      console.info(`Descargando ${info.assetName}…`);
       const progress = new ProgressReporter();
       const applied = await app.selfUpdate((stage, done, total) =>
         progress.report(stage, done, total),
       );
-      console.log(`✓ Brisa v${applied.latest} descargada. La app se cerrará y se relanzará sola.`);
+      console.info(`✓ Brisa v${applied.latest} descargada. La app se cerrará y se relanzará sola.`);
     });
 }

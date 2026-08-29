@@ -39,14 +39,14 @@ function copyAll(): void {
       copyDir(path.join(src, entry.name), path.join(dest, entry.name));
     }
   }
-  console.log('copied src/web → dist/web (with Preact bundle)');
+  console.info('copied src/web → dist/web (with Preact bundle)');
 }
 
 copyAll();
 
 // --watch mode
 if (process.argv.includes('--watch')) {
-  console.log('watching src/web for changes...');
+  console.info('watching src/web for changes...');
   let timer: ReturnType<typeof setTimeout> | null = null;
   const schedule = (): void => {
     if (timer) clearTimeout(timer);

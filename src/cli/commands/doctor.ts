@@ -80,7 +80,7 @@ export function registerDoctorCommand(program: Command, app: App): void {
     .action(async () => {
       const c = collector();
 
-      console.log(`\n== Diagnóstico de Brisa v${appVersion()} (${detectPlatform().key}) ==\n`);
+      console.info(`\n== Diagnóstico de Brisa v${appVersion()} (${detectPlatform().key}) ==\n`);
 
       // ── Node / entorno ──
       c.check(
@@ -94,17 +94,17 @@ export function registerDoctorCommand(program: Command, app: App): void {
       }
 
       // ── Configuración ──
-      console.log('\n  Configuración:');
-      console.log(`    Raíz: ${app.cfg.root}`);
-      console.log(`    Carpetas de ROMs: ${app.cfg.romsDirs.join(', ')}`);
-      console.log(`    Mods: ${app.cfg.modsDir}`);
-      console.log(`    Ports: ${app.cfg.portsDir}`);
-      console.log(`    Cache: ${app.cfg.cacheDir}`);
-      console.log(`    Manifests: ${app.cfg.manifestsDir}`);
-      console.log(
+      console.info('\n  Configuración:');
+      console.info(`    Raíz: ${app.cfg.root}`);
+      console.info(`    Carpetas de ROMs: ${app.cfg.romsDirs.join(', ')}`);
+      console.info(`    Mods: ${app.cfg.modsDir}`);
+      console.info(`    Ports: ${app.cfg.portsDir}`);
+      console.info(`    Cache: ${app.cfg.cacheDir}`);
+      console.info(`    Manifests: ${app.cfg.manifestsDir}`);
+      console.info(
         `    Registry remoto: ${app.cfg.registryUrl ? app.cfg.registryUrl : '(no configurado)'}`,
       );
-      console.log(
+      console.info(
         `    Token de GitHub: ${app.cfg.githubToken ? '(configurado)' : '(no configurado — 60 req/h)'}`,
       );
 
@@ -135,7 +135,7 @@ export function registerDoctorCommand(program: Command, app: App): void {
 
       // ── Estado ──
       const installed = app.installed();
-      console.log(`\n  Ports instalados: ${installed.length}`);
+      console.info(`\n  Ports instalados: ${installed.length}`);
       if (installed.length > 0) {
         const missingDir = installed.filter(
           (s) => !fs.existsSync(path.join(app.cfg.portsDir, s.id)),
@@ -153,16 +153,16 @@ export function registerDoctorCommand(program: Command, app: App): void {
 
       // ── Resumen ──
       const print = (lines: string[], mark: string) =>
-        lines.forEach((line) => console.log(`  ${mark} ${line}`));
+        lines.forEach((line) => console.info(`  ${mark} ${line}`));
       print(c.ok, '✓');
       print(c.warnings, '⚠');
       print(c.fails, '✗');
-      console.log('');
+      console.info('');
       if (c.fails.length > 0) {
         console.error(`✗ ${c.fails.length} problema(s) crítico(s) detectado(s).`);
         process.exitCode = 1;
       } else {
-        console.log(
+        console.info(
           `✓ Entorno OK${c.warnings.length > 0 ? ` (${c.warnings.length} aviso(s))` : ''}`,
         );
       }

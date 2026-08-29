@@ -9,14 +9,14 @@ export function registerStatusCommand(program: Command, app: App): void {
     .description('Escanea los ROMs, muestra ports disponibles/instalados, mods y actualizaciones.')
     .action(async () => {
       const { scan, ports } = await app.status();
-      console.log(`\n== Brisa (${detectPlatform().key}) ==\n`);
-      console.log(`ROMs encontrados (${scan.roms.length}):`);
+      console.info(`\n== Brisa (${detectPlatform().key}) ==\n`);
+      console.info(`ROMs encontrados (${scan.roms.length}):`);
       for (const rom of scan.roms)
-        console.log(`  ${rom.name}  ${formatBytes(rom.size)}  [sha1 ${rom.sha1.slice(0, 8)}…]`);
+        console.info(`  ${rom.name}  ${formatBytes(rom.size)}  [sha1 ${rom.sha1.slice(0, 8)}…]`);
       if (scan.roms.length === 0)
-        console.log('  (vacío) — copia tus ROMs a:', app.cfg.romsDirs.join(', '));
+        console.info('  (vacío) — copia tus ROMs a:', app.cfg.romsDirs.join(', '));
 
-      console.log('\nPorts:');
+      console.info('\nPorts:');
       for (const port of ports) {
         const roms = port.roms
           .map((slot) => {
@@ -30,11 +30,11 @@ export function registerStatusCommand(program: Command, app: App): void {
             ? `  ⬆ ${port.updateInfo?.installed} → ${port.updateInfo?.latest}`
             : '';
         const mods = port.mods.length > 0 ? `  mods: ${port.mods.join(', ')}` : '';
-        console.log(
+        console.info(
           `  [${port.installed ? '✓ instalado' : '—'}] ${port.manifest.name}${port.version ? ` v${port.version}` : ''}${update}`,
         );
-        console.log(`      ROM: ${roms}${mods}`);
+        console.info(`      ROM: ${roms}${mods}`);
       }
-      console.log('');
+      console.info('');
     });
 }

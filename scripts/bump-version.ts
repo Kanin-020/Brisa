@@ -72,4 +72,4 @@ if (!dryRun) {
   }
 }
 // Solo la versión en stdout: el CI la parsea con sed y no debe llevar sufijos.
-console.log(`version=${version}`);
+console.info(`version=${version}`);

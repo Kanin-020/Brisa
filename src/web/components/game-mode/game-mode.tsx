@@ -264,20 +264,6 @@ export function GameMode({ onExit }: GameModeProps) {
     });
   }, []);
 
-  // ── Theme toggle helper ──
-  const toggleTheme = useCallback(() => {
-    setCurrentTheme((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = next;
-      try {
-        localStorage.setItem('brisa-theme', next);
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
-
   // ── Settings helpers (named to avoid JSX parser issues with complex inline handlers) ──
   const applyLayout = (mode: 'grid' | 'carousel') => {
     setLayoutMode(mode);

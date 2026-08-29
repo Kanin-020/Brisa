@@ -216,7 +216,7 @@ function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
     });
     child.unref();
   } catch (e) {
-    throw new Error(`No se pudo lanzar el updater: ${(e as Error).message}`);
+    throw new Error(`No se pudo lanzar el updater: ${(e as Error).message}`, { cause: e });
   }
 }
 
@@ -242,7 +242,7 @@ function spawnWindowsUpdater(cfg: AppConfig, dest: string): void {
     });
     child.unref();
   } catch (e) {
-    throw new Error(`No se pudo lanzar el updater: ${(e as Error).message}`);
+    throw new Error(`No se pudo lanzar el updater: ${(e as Error).message}`, { cause: e });
   }
 }
 

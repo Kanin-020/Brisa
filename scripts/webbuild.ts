@@ -32,10 +32,10 @@ async function main(): Promise<void> {
   if (process.argv.includes('--watch')) {
     const ctx = await context(shared);
     await ctx.watch();
-    console.log('Watching web sources for changes...');
+    console.info('Watching web sources for changes...');
   } else {
     await build(shared);
-    console.log('Web bundle built → dist/web/bundle.js + bundle.css');
+    console.info('Web bundle built → dist/web/bundle.js + bundle.css');
   }
 }
 

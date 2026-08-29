@@ -8,16 +8,16 @@ export function registerModsCommands(program: Command, app: App): void {
     .description('Muestra los mods centralizados de un port y su estado de enlace.')
     .action((portId: string) => {
       const info = app.modsFor(portId);
-      console.log(`\nMods de ${info.manifest.name} -> MODS/${info.manifest.mods.gameDir}/`);
-      console.log(`Raíz: ${info.root}`);
+      console.info(`\nMods de ${info.manifest.name} -> MODS/${info.manifest.mods.gameDir}/`);
+      console.info(`Raíz: ${info.root}`);
       if (info.mods.length === 0) {
-        console.log('  (sin mods) — crea carpetas dentro de:', info.root);
+        console.info('  (sin mods) — crea carpetas dentro de:', info.root);
       }
       for (const mod of info.mods) {
         const linked = isModLinked(app.cfg, info.manifest, mod);
-        console.log(`  ${mod}  ${linked ? '[enlazado]' : '[no enlazado]'}`);
+        console.info(`  ${mod}  ${linked ? '[enlazado]' : '[no enlazado]'}`);
       }
-      console.log('');
+      console.info('');
     });
 
   program
@@ -25,7 +25,7 @@ export function registerModsCommands(program: Command, app: App): void {
     .description('Enlaza todos los mods centralizados del port dentro de su carpeta de mods.')
     .action((portId: string) => {
       const linked = app.relinkMods(portId);
-      console.log(`Enlazados: ${linked.length ? linked.join(', ') : '(ninguno nuevo)'}`);
+      console.info(`Enlazados: ${linked.length ? linked.join(', ') : '(ninguno nuevo)'}`);
     });
 
   program
@@ -39,10 +39,10 @@ export function registerModsCommands(program: Command, app: App): void {
       }
       if (modName) {
         app.unlinkMod(portId, modName);
-        console.log(`Desenlazado: ${modName}`);
+        console.info(`Desenlazado: ${modName}`);
       } else {
         app.unlinkAllMods(portId);
-        console.log('Todos los mods desenlazados.');
+        console.info('Todos los mods desenlazados.');
       }
     });
 }

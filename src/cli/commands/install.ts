@@ -1,7 +1,6 @@
 import type { Command } from 'commander';
 import type { App } from '../../core/app';
 import { portDir, resolveExecutable } from '../../core/installer';
-import type { RomFile } from '../../core/scanner';
 import { ProgressReporter } from '../output';
 
 export function registerInstallCommand(program: Command, app: App): void {
@@ -28,25 +27,25 @@ export function registerInstallCommand(program: Command, app: App): void {
         );
         process.exit(1);
       }
-      console.log(`Instalando ${manifest.name}...`);
+      console.info(`Instalando ${manifest.name}...`);
       const progress = new ProgressReporter();
       const state = await app.install(portId, { roms: romsByRequirement }, (stage, done, total) =>
         progress.report(stage, done, total),
       );
       const relinked = app.relinkMods(portId);
-      console.log(`✓ ${manifest.name} v${state.version} instalado en ${portDir(app.cfg, portId)}`);
+      console.info(`✓ ${manifest.name} v${state.version} instalado en ${portDir(app.cfg, portId)}`);
       const linked = state.romsLinked ?? {};
       if (Object.keys(linked).length > 0) {
         for (const [requirementId, romPath] of Object.entries(linked)) {
-          console.log(`  ROM enlazado (${requirementId}): ${romPath}`);
+          console.info(`  ROM enlazado (${requirementId}): ${romPath}`);
         }
       } else if (state.romLinked) {
-        console.log(`  ROM enlazado: ${state.romLinked}`);
+        console.info(`  ROM enlazado: ${state.romLinked}`);
       }
-      if (relinked.length) console.log(`  Mods enlazados: ${relinked.join(', ')}`);
+      if (relinked.length) console.info(`  Mods enlazados: ${relinked.join(', ')}`);
       const executable = resolveExecutable(portDir(app.cfg, portId), {
         executable: state.executable,
       });
-      if (executable) console.log(`  Ejecutable: ${executable}`);
+      if (executable) console.info(`  Ejecutable: ${executable}`);
     });
 }

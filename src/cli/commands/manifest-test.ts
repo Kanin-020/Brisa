@@ -7,6 +7,6 @@ export function registerManifestTestCommand(program: Command): void {
     .description('Prueba un patrón glob contra un nombre (para depurar manifiestos).')
     .action((pattern: string) => {
       const re = globToRegExp(pattern);
-      console.log('RegExp:', re.source);
+      console.info('RegExp:', re.source);
     });
 }
