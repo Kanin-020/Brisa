@@ -2,6 +2,13 @@
 
 Todas las versiones notables de Brisa.
 
+## 0.6.1 (2026-08-29)
+
+### 🔧 Otros
+- Copy image fix. (`b370629`)
+
+[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.6.0...0.6.1)
+
 ## 0.6.0 (2026-08-29)
 
 ### 🔧 Otros
