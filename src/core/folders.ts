@@ -11,7 +11,7 @@ export async function openPathInFileManager(target: string): Promise<boolean> {
 
   // Desktop (proceso principal de Electron): usar shell.openPath.
   try {
-    const electron = require('electron') as { shell?: { openPath(p: string): Promise<string> } };
+    const electron = (await import('electron')) as { shell?: { openPath(p: string): Promise<string> } };
     if (electron && typeof electron === 'object' && electron.shell) {
       const err = await electron.shell.openPath(target);
       return err === '' || err === undefined;

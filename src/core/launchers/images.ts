@@ -31,8 +31,8 @@ export function selfImagePath(cfg: AppConfig): string | null {
         }
         return full;
       })
-      .filter(Boolean)
-      .sort((a, b) => fs.statSync(b!).mtimeMs - fs.statSync(a!).mtimeMs);
+      .filter((x): x is string => x !== null)
+      .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
     return files[0] ?? null;
   } catch {
     return null;

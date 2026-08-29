@@ -6,7 +6,7 @@ import type { AppConfig } from './config';
 import { getLatestRelease } from './github';
 import { installPort } from './installer';
 import type { Manifest } from './manifest';
-import { readState, writeState } from './state';
+import { readState } from './state';
 
 export interface UpdateInfo {
   id: string;

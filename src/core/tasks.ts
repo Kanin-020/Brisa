@@ -158,7 +158,8 @@ export class TaskManager {
   }
 
   private publicInfo(entry: TaskEntry): TaskInfo {
-    const { controller: _controller, ...info } = entry;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { controller: _, ...info } = entry;
     return info;
   }
 

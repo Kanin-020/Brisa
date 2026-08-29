@@ -86,7 +86,7 @@ export function BrisaApp() {
   // ── Subscribe to locale changes ──
   useEffect(() => {
     if (window.__i18n?.onLocaleChange) {
-      return window.__i18n!.onLocaleChange((loc: string) => {
+      return window.__i18n?.onLocaleChange((loc: string) => {
         setCurrentLocale(loc);
         document.documentElement.lang = loc;
       });
@@ -505,7 +505,7 @@ export function BrisaApp() {
 
   // ── Help steps ──
   const helpSteps: I18nHelpStep[] = window.__i18n?.tRaw
-    ? ((window.__i18n!.tRaw('help.steps') as I18nHelpStep[]) ?? [])
+    ? ((window.__i18n?.tRaw('help.steps') as I18nHelpStep[]) ?? [])
     : [];
 
   return (
@@ -547,8 +547,8 @@ export function BrisaApp() {
               title={ti('changelog.button')}
               onClick={() => {
                 setChangelogTitle(ti('brand.title'));
-                setChangelogVersion(state.self!.latest);
-                setChangelogNotes(state.self!.notes ?? '');
+                setChangelogVersion(state.self?.latest ?? '');
+                setChangelogNotes(state.self?.notes ?? '');
                 setChangelogOpen(true);
               }}
             >

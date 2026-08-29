@@ -17,6 +17,7 @@ export function appVersion(): string {
   try {
     // En modo CLI (ELECTRON_RUN_AS_NODE) require("electron") devuelve un string
     // (la ruta del binario), no el API, así que esto solo acierta en Electron.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS sync context, no se puede usar import() async
     const electron = require('electron') as { app?: { getVersion?(): string } } | undefined;
     if (
       electron &&

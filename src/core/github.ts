@@ -44,8 +44,8 @@ function parseRelease(data: RawRelease): ReleaseInfo {
     assets: (data.assets ?? [])
       .filter((asset) => asset.name && asset.browser_download_url)
       .map((asset) => ({
-        name: asset.name!,
-        url: asset.browser_download_url!,
+        name: asset.name ?? '',
+        url: asset.browser_download_url ?? '',
         size: asset.size ?? 0,
       })),
   };

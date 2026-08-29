@@ -58,6 +58,7 @@ export class JsonCache<T> {
 
 /** Quita el campo interno savedAt de la entrada devuelta al llamador. */
 function stripSavedAt<T>(entry: T & { savedAt?: number }): T {
-  const { savedAt: _savedAt, ...data } = entry;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { savedAt: _, ...data } = entry;
   return data as T;
 }
