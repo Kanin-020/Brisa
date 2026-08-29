@@ -188,6 +188,7 @@ fs.writeFileSync(
 // ---------------------------------------------------------------------------
 // Bundle + ejecución
 // ---------------------------------------------------------------------------
+void (async () => {
 console.log(`[selfupdate-test] simulando release ${TAG} (actual: ${pkg.version}) en ${process.platform}-${process.arch}`);
 console.log(`[selfupdate-test] asset: ${ASSET_NAME}`);
 
@@ -247,3 +248,4 @@ if (ALREADY_LATEST) {
 
 cleanup();
 console.log("\nPASS ✅");
+})();

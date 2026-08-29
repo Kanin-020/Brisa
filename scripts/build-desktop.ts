@@ -157,11 +157,13 @@ async function runBuilder() {
 // Main
 // ---------------------------------------------------------------------------
 
-if (["all", "linux", "windows"].includes(ONLY)) {
-  await bundleCliEntry();
-  await runBuilder();
-  step("3/3 ¡Listo! Artefactos en release/ (AppImage para Linux, .zip para Windows)");
-} else {
-  console.error("Opción --only inválida. Usa: linux | windows");
-  process.exit(1);
-}
+(async () => {
+  if (["all", "linux", "windows"].includes(ONLY)) {
+    await bundleCliEntry();
+    await runBuilder();
+    step("3/3 ¡Listo! Artefactos en release/ (AppImage para Linux, .zip para Windows)");
+  } else {
+    console.error("Opción --only inválida. Usa: linux | windows");
+    process.exit(1);
+  }
+})();
