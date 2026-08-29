@@ -1,16 +1,15 @@
-/** @jsx h */
 import { h } from 'preact';
 import { useEffect, useCallback } from 'preact/hooks';
-import { t } from '../../helpers.js';
+import { t } from '../../helpers';
+import type { ModalProps } from '../../types';
 
-/**
- * Reusable modal dialog.
- * @param {{ open: boolean, title: string, onClose: Function, onConfirm?: Function, children }} props
- */
-export function BrisaModal({ open, title, onClose, onConfirm, children }) {
-  const handleEscape = useCallback((e) => {
-    if (e.key === 'Escape') onClose?.();
-  }, [onClose]);
+export function BrisaModal({ open, title, onClose, onConfirm, children }: ModalProps) {
+  const handleEscape = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose?.();
+    },
+    [onClose],
+  );
 
   useEffect(() => {
     if (open) {
@@ -30,13 +29,19 @@ export function BrisaModal({ open, title, onClose, onConfirm, children }) {
       <div class="modal" onClick={(e) => e.stopPropagation()}>
         <div class="modal-head">
           <h3>{title}</h3>
-          <button class="modal-close" title="Cerrar" onClick={onClose}>✕</button>
+          <button class="modal-close" title={t('settings.close')} onClick={onClose}>
+            ✕
+          </button>
         </div>
         <div class="modal-body">{children}</div>
         {onConfirm && (
           <div class="modal-foot">
-            <button class="btn ghost sm" onClick={onClose}>Cancelar</button>
-            <button class="btn red sm" onClick={onConfirm}>Aceptar</button>
+            <button class="btn ghost sm" onClick={onClose}>
+              {t('confirm.cancel')}
+            </button>
+            <button class="btn red sm" onClick={onConfirm}>
+              {t('confirm.uninstall')}
+            </button>
           </div>
         )}
       </div>

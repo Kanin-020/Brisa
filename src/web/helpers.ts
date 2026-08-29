@@ -1,16 +1,16 @@
-// Shared helpers for Preact components
-/** @jsx h */
-import { h } from "preact";
+/**
+ * Shared helpers for Preact components.
+ */
 
 /** i18n helper — reads from window.__i18n */
-export function t(key, ...args) {
+export function t(key: string, ...args: (string | number)[]): string {
   if (window.__i18n?.t) return window.__i18n.t(key, ...args);
   return key;
 }
 
 /** Format bytes to human-readable size */
-export function formatSize(bytes) {
-  if (bytes === 0) return "0 B";
+export function formatSize(bytes: number): string {
+  if (bytes === 0) return '0 B';
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;

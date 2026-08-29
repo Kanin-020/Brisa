@@ -1,12 +1,8 @@
-/** @jsx h */
 import { h } from 'preact';
-import { t } from '../../helpers.js';
+import { t } from '../../helpers';
+import type { ModChipProps } from '../../types';
 
-/**
- * Mod chip with linked/unlinked indicator and toggle button.
- * @param {{ name: string, linked: boolean, portId: string, onToggle?: Function }} props
- */
-export function BrisaModChip({ name, linked, portId, onToggle }) {
+export function BrisaModChip({ name, linked, portId, onToggle }: ModChipProps) {
   const icon = linked ? '✕' : '＋';
   const title = linked ? t('mod.unlink') : t('mod.link');
   const btnClass = linked ? 'unlink' : 'link';

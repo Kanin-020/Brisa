@@ -1,13 +1,9 @@
-/** @jsx h */
 import { h, Fragment } from 'preact';
-import { t, MAX_MODS_INLINE } from '../../helpers.js';
-import { BrisaModChip } from './mod-chip.jsx';
-import { BrisaProgressBar } from '../progress-bar/progress-bar.jsx';
+import { t, MAX_MODS_INLINE } from '../../helpers';
+import { BrisaModChip } from './mod-chip';
+import { BrisaProgressBar } from '../progress-bar/progress-bar';
+import type { PortCardProps } from '../../types';
 
-/**
- * Port card showing status, ROMs, mods, actions and progress.
- * @param {{ port: object, busy?: boolean, task?: object, onInstall?: Function, onUpdate?: Function, onUpdateAndPlay?: Function, onLaunch?: Function, onUninstall?: Function, onOpenFolder?: Function, onOpenMods?: Function, onToggleMod?: Function, onCancelTask?: Function }} props
- */
 export function BrisaPortCard({
   port,
   busy = false,
@@ -21,14 +17,15 @@ export function BrisaPortCard({
   onOpenMods,
   onToggleMod,
   onCancelTask,
-}) {
+}: PortCardProps) {
   const manifest = port.manifest;
   const isInstalled = port.installed;
-  const isBusy = busy || (task && task.status === 'running');
+  const isBusy = busy || (task?.status === 'running');
 
-  const repoUrl = manifest.repo && /^[A-Za-z0-9._/-]+$/.test(manifest.repo)
-    ? `https://github.com/${manifest.repo}`
-    : '';
+  const repoUrl =
+    manifest.repo && /^[A-Za-z0-9._/-]+$/.test(manifest.repo)
+      ? `https://github.com/${manifest.repo}`
+      : '';
 
   return (
     <div class={`port-card ${isInstalled ? 'installed' : ''}`}>
@@ -39,8 +36,16 @@ export function BrisaPortCard({
             class="port-icon"
             src={`assets/${manifest.id}.png`}
             alt={manifest.name}
-            onerror={(e) => { e.target.src = 'assets/default.png'; }}
-            {...(repoUrl ? { title: `Source: github.com/${manifest.repo}`, onClick: () => window.open(repoUrl, '_blank', 'noopener') } : {})}
+            onError={(e: h.JSX.TargetedEvent<HTMLImageElement>) => {
+              const target = e.target as HTMLImageElement;
+              target.src = 'assets/default.png';
+            }}
+            {...(repoUrl
+              ? {
+                  title: `Source: github.com/${manifest.repo}`,
+                  onClick: () => window.open(repoUrl, '_blank', 'noopener'),
+                }
+              : {})}
           />
           <div>
             <div class="port-title">{manifest.name}</div>
@@ -51,8 +56,10 @@ export function BrisaPortCard({
           {isInstalled && !port.updateAvailable && (
             <span class="badge version">{port.version}</span>
           )}
-          {port.updateAvailable && (
-            <span class="badge update">⬆ {port.updateInfo.installed} → {port.updateInfo.latest}</span>
+          {port.updateAvailable && port.updateInfo && (
+            <span class="badge update">
+              ⬆ {port.updateInfo.installed} → {port.updateInfo.latest}
+            </span>
           )}
         </div>
       </div>
@@ -63,8 +70,13 @@ export function BrisaPortCard({
       {/* ROMs */}
       {port.roms?.map((slot, i) => (
         <div key={i} class="rom-line">
-          <span class={`badge ${slot.matched ? 'rom-ok' : 'rom-missing'}`}>{slot.matched ? t('port.romOk') : t('port.romMissing')}</span>
-          <span>{slot.name}{slot.required ? '' : ' ' + t('port.optional')}</span>
+          <span class={`badge ${slot.matched ? 'rom-ok' : 'rom-missing'}`}>
+            {slot.matched ? t('port.romOk') : t('port.romMissing')}
+          </span>
+          <span>
+            {slot.name}
+            {slot.required ? '' : ' ' + t('port.optional')}
+          </span>
           {slot.matched && <span>— {slot.romName}</span>}
         </div>
       ))}
@@ -100,7 +112,7 @@ export function BrisaPortCard({
           {t('mod.addMods')}
         </button>
         {isInstalled && (
-          <>
+          <Fragment>
             <button
               class="btn ghost sm"
               disabled={isBusy}
@@ -115,17 +127,17 @@ export function BrisaPortCard({
             >
               {t('port.uninstall')}
             </button>
-          </>
+          </Fragment>
         )}
       </div>
 
       {/* Main actions */}
       <div class="port-actions main">
         {isInstalled ? (
-          <>
+          <Fragment>
             <button
               class="btn sm"
-              disabled={isBusy || !port.updateAvailable}
+              disabled={isBusy || !port.updateAvailable || false}
               onClick={() => onUpdate?.(port)}
             >
               {t('port.update')}
@@ -139,20 +151,12 @@ export function BrisaPortCard({
                 {t('port.updateAndPlay')}
               </button>
             )}
-            <button
-              class="btn green sm"
-              disabled={isBusy}
-              onClick={() => onLaunch?.(port)}
-            >
+            <button class="btn green sm" disabled={isBusy} onClick={() => onLaunch?.(port)}>
               {t('port.launch')}
             </button>
-          </>
+          </Fragment>
         ) : (
-          <button
-            class="btn sm"
-            disabled={isBusy}
-            onClick={() => onInstall?.(port)}
-          >
+          <button class="btn sm" disabled={isBusy} onClick={() => onInstall?.(port)}>
             {port.hasRom ? t('port.install') : t('port.installNoRom')}
           </button>
         )}

@@ -12,19 +12,24 @@
   },
   "main": "dist/desktop/main.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json && node scripts/copy-web.js",
+    "build": "tsc -p tsconfig.json && npx tsx scripts/copy-web.ts",
     "typecheck": "tsc --noEmit",
     "dev": "tsx src/cli.ts",
     "start": "node dist/cli.js",
-    "serve": "npm run build; concurrently -k -n build,web,server \"tsc -p tsconfig.json --watch --preserveWatchOutput\" \"node scripts/copy-web.js --watch\" \"nodemon\"",
+    "serve": "npm run build; concurrently -k -n build,web,server \"tsc -p tsconfig.json --watch --preserveWatchOutput\" \"npx tsx scripts/copy-web.ts --watch\" \"nodemon\"",
     "desktop": "npm run build && electron .",
-    "package": "npm run build && node scripts/build-desktop.mjs",
-    "package:linux": "npm run build && node scripts/build-desktop.mjs --only linux",
-    "package:windows": "npm run build && node scripts/build-desktop.mjs --only windows",
+    "package": "npm run build && npx tsx scripts/build-desktop.ts",
+    "package:linux": "npm run build && npx tsx scripts/build-desktop.ts --only linux",
+    "package:windows": "npm run build && npx tsx scripts/build-desktop.ts --only windows",
     "test": "tsx --test test/glob.test.ts test/version.test.ts test/hash.test.ts test/preserve.test.ts test/tasks.test.ts test/config.test.ts test/cache.test.ts test/manifest.test.ts test/output.test.ts test/status.test.ts",
-    "test:selfupdate": "node scripts/test-selfupdate.mjs",
-    "changelog": "node scripts/changelog.mjs",
-    "test:selfupdate:latest": "node scripts/test-selfupdate.mjs --already-latest"
+    "test:selfupdate": "npx tsx scripts/test-selfupdate.ts",
+    "changelog": "npx tsx scripts/changelog.ts",
+    "test:selfupdate:latest": "npx tsx scripts/test-selfupdate.ts --already-latest",
+    "lint": "eslint 'src/**/*.ts' 'src/**/*.tsx'",
+    "lint:fix": "eslint 'src/**/*.ts' 'src/**/*.tsx' --fix",
+    "format": "prettier --write 'src/**/*.ts' 'src/**/*.tsx' 'src/**/*.css'",
+    "format:check": "prettier --check 'src/**/*.ts' 'src/**/*.tsx' 'src/**/*.css'",
+    "typecheck:web": "tsc -p tsconfig.web.json --noEmit"
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
@@ -33,6 +38,7 @@
     "tar": "^6.2.1"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/adm-zip": "^0.5.7",
     "@types/node": "^22.10.1",
     "@types/tar": "^6.1.13",
@@ -40,8 +46,13 @@
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
     "esbuild": "^0.28.0",
+    "eslint": "^10.9.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
     "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.68.0"
   }
 }
