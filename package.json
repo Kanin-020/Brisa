@@ -1,6 +1,6 @@
 {
   "name": "brisa",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Recopilador y gestor de ports nativos de PC al estilo EmuDeck, basado en manifiestos.",
   "license": "MIT",
   "author": "Kanin",
