@@ -2,6 +2,20 @@
  * La capa de red vive en api.js y las utilidades en utils.js.
  * (api, uploadRom, launchPort, fmtSize, copyHash están definidas ahí.) */
 
+/** Claves de localStorage (persistencia de preferencias de la GUI). */
+const LS_PORTS_VIEW = "brisa-ports-view";
+const LS_ROMS_VIEW = "brisa-roms-view";
+const LS_ACTIVE_TAB = "brisa-active-tab";
+const LS_THEME = "brisa-theme";
+const LS_HELP_SEEN = "brisa-help-seen";
+
+/** Intervalo de polling de /api/tasks (ms). */
+const POLL_INTERVAL_MS = 700;
+/** Recarga automática de estado cuando no hay tareas en marcha (ms). */
+const AUTO_REFRESH_MS = 8000;
+/** Duración por defecto de los toasts (ms). */
+const TOAST_DURATION_MS = 3200;
+
 let state = null;
 let busyPortIds = new Set();
 
@@ -10,6 +24,7 @@ let activeTasks = new Map();
 let pollTimer = null;
 let polling = false;
 
+/** Máximo de chips de mod inline por tarjeta antes de mostrar "Open all". */
 const MAX_MODS_INLINE = 3;
 
 let allPorts = [];
@@ -22,25 +37,35 @@ let modsModalPort = null;
 let selfToastShown = false;
 /** True en el primer arranque (guía de ayuda destacada + auto-apertura). */
 let firstRun = false;
-try {
-  viewMode = localStorage.getItem("brisa-ports-view") === "list" ? "list" : "cards";
-} catch {
-  /* localStorage may be unavailable */
-}
-try {
-  romsViewMode = localStorage.getItem("brisa-roms-view") === "list" ? "list" : "cards";
-} catch {
-  /* localStorage may be unavailable */
-}
-try {
-  const savedTab = localStorage.getItem("brisa-active-tab");
-  if (savedTab === "installed" || savedTab === "available" || savedTab === "roms" || savedTab === "help") activeTab = savedTab;
-} catch {
-  /* localStorage may be unavailable */
+
+/** Lee una preferencia de localStorage con fallback seguro. */
+function readPreference(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
 }
 
+/** Escribe una preferencia en localStorage sin romper si no está disponible. */
+function writePreference(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* localStorage may be unavailable */
+  }
+}
+
+viewMode = readPreference(LS_PORTS_VIEW) === "list" ? "list" : "cards";
+romsViewMode = readPreference(LS_ROMS_VIEW) === "list" ? "list" : "cards";
+const savedTab = readPreference(LS_ACTIVE_TAB);
+if (savedTab === "installed" || savedTab === "available" || savedTab === "roms" || savedTab === "help") activeTab = savedTab;
+
+/** Atajo a document.querySelector. */
 const $ = (sel) => document.querySelector(sel);
+/** Atajo a document.querySelectorAll. */
 const $$ = (sel) => document.querySelectorAll(sel);
+/** Crea un elemento DOM con clase y texto opcionales. */
 const el = (tag, cls, text) => {
   const node = document.createElement(tag);
   if (cls) node.className = cls;
@@ -147,7 +172,7 @@ function trackTask(task, portId, onDone) {
 
 function schedulePoll() {
   if (pollTimer) return;
-  pollTimer = setInterval(pollTasks, 700);
+  pollTimer = setInterval(pollTasks, POLL_INTERVAL_MS);
 }
 
 function stopPoll() {
@@ -295,7 +320,8 @@ function updateAllRunning() {
 
 // ── Toast ──
 
-function toast(msg, kind = "ok", duration = 3200, onClick = null) {
+/** Muestra un toast efímero (mensaje + tipo + duración + acción al hacer clic). */
+function toast(msg, kind = "ok", duration = TOAST_DURATION_MS, onClick = null) {
   const node = $("#toast");
   node.textContent = msg;
   node.className = `toast show ${kind}`;
@@ -348,11 +374,7 @@ function syncSettingsUI() {
 /** Aplica el tema (claro/oscuro) y lo persiste. */
 function applyTheme(theme) {
   document.documentElement.dataset.theme = theme;
-  try {
-    localStorage.setItem("brisa-theme", theme);
-  } catch {
-    /* ignore */
-  }
+  writePreference(LS_THEME, theme);
   syncSettingsUI();
 }
 
@@ -434,11 +456,7 @@ function initSettings() {
       applyTheme(value);
     } else if (key === "view") {
       const isRoms = !!btn.closest("#settings-view-roms");
-      try {
-        localStorage.setItem(isRoms ? "brisa-roms-view" : "brisa-ports-view", value);
-      } catch {
-        /* ignore */
-      }
+      writePreference(isRoms ? LS_ROMS_VIEW : LS_PORTS_VIEW, value);
       if (isRoms) {
         romsViewMode = value;
         if (state) renderRoms(state.scan);
@@ -523,6 +541,7 @@ async function load() {
 
 // ── Render ──
 
+/** Renderiza el estado completo: estadísticas, self-update, ports y ROMs. */
 function render() {
   if (!state) return;
   const { ports, scan, platform } = state;
@@ -564,12 +583,14 @@ function render() {
   }
 }
 
+/** Renderiza las dos listas de ports (instalados y disponibles) con su filtro. */
 function renderPorts() {
   if (!state) return;
   renderPortsInto("#ports-grid-installed", allPorts.filter((p) => p.installed), installedQuery, t("ports.emptyInstalled"));
   renderPortsInto("#ports-grid-available", allPorts.filter((p) => !p.installed), availableQuery, t("ports.emptyAvailable"));
 }
 
+/** Pinta los ports de `list` en el contenedor aplicando el filtro de búsqueda. */
 function renderPortsInto(containerSelector, list, query, emptyMsg) {
   const grid = $(containerSelector);
   grid.classList.toggle("list", viewMode === "list");
@@ -587,6 +608,7 @@ function renderPortsInto(containerSelector, list, query, emptyMsg) {
   }
 }
 
+/** Construye la tarjeta de un port (estado, ROMs, mods, acciones y progreso). */
 function portCard(p) {
   const m = p.manifest;
   const card = el("div", `port-card${p.installed ? " installed" : ""}`);
@@ -602,7 +624,15 @@ function portCard(p) {
     icon.src = "assets/" + m.id + ".png";
     icon.alt = m.name;
     icon.loading = "lazy";
-    icon.addEventListener("error", () => icon.remove());
+    icon.addEventListener("error", function onError() {
+      icon.removeEventListener("error", onError);
+      // Si falla, usar el icono por defecto una sola vez.
+      if (!icon.src.includes("assets/default.png")) {
+        icon.src = "assets/default.png";
+      } else {
+        icon.remove();
+      }
+    });
     // La imagen abre el repositorio del port en el navegador por defecto.
     // En la app de escritorio desktop/window.ts redirige window.open a
     // shell.openExternal; en navegador abre una pestaña nueva.
@@ -757,6 +787,7 @@ function portCard(p) {
   return card;
 }
 
+/** Chip de un mod con su estado de enlace y botón para alternarlo. */
 function modChip(p, mod) {
   const linked = p.linkedMods.includes(mod);
   const chip = el("span", "mod-chip");
@@ -769,6 +800,7 @@ function modChip(p, mod) {
   return chip;
 }
 
+/** Abre el modal de mods de un port (habilitar/deshabilitar todos o uno a uno). */
 function openModsModal(p) {
   modsModalPort = p.manifest.id;
   $("#mods-modal-title").textContent = t("mod.modalTitle", p.manifest.name);
@@ -861,6 +893,7 @@ async function doSelfUpdate() {
   }
 }
 
+/** Renderiza la lista de ROMs (vista tarjetas o lista) con sus ports asociados. */
 function renderRoms(scan) {
   const list = $("#roms-list");
   list.classList.toggle("list", romsViewMode === "list");
@@ -975,6 +1008,7 @@ function renderHelp() {
 
 // ── ROMs: añadir, borrar, abrir carpeta ──
 
+/** Activa el overlay de drag & drop: arrastrar archivos a la ventana sube ROMs. */
 function initDropZone() {
   const overlay = $("#drop-overlay");
   let dragDepth = 0;
@@ -1004,6 +1038,7 @@ function initDropZone() {
   });
 }
 
+/** Conecta el botón "Add ROMs" con el input de archivo oculto. */
 function initRomPicker() {
   const input = $("#rom-file-input");
   $("#btn-add-roms").addEventListener("click", () => input.click());
@@ -1013,6 +1048,7 @@ function initRomPicker() {
   });
 }
 
+/** Sube los archivos seleccionados/arrastrados y resume el resultado en toasts. */
 async function uploadRoms(files) {
   let added = 0;
   let skipped = 0;
@@ -1036,6 +1072,7 @@ async function uploadRoms(files) {
   load();
 }
 
+/** Borra un ROM tras confirmación y refresca el estado. */
 async function deleteRom(rom) {
   if (!window.confirm(t("roms.deleteConfirm", rom.name))) return;
   try {
@@ -1049,6 +1086,7 @@ async function deleteRom(rom) {
 
 // ── Manifiestos: exportar / importar ──
 
+/** Descarga el ZIP con todos los manifiestos (GET /api/manifests/export). */
 async function exportManifests() {
   try {
     const res = await fetch("/api/manifests/export");
@@ -1078,6 +1116,7 @@ async function exportManifests() {
   }
 }
 
+/** Conecta los botones de exportar/importar manifiestos y gestiona el archivo importado. */
 function initManifestTools() {
   const fileInput = $("#manifest-file-input");
   $("#btn-import-manifests").addEventListener("click", () => fileInput.click());
@@ -1107,6 +1146,7 @@ function initManifestTools() {
 
 // ── Acciones de ports ──
 
+/** Marca un port como ocupado durante `fn` y recarga el estado al terminar. */
 async function busyRun(id, fn) {
   busyPortIds.add(id);
   render();
@@ -1118,11 +1158,13 @@ async function busyRun(id, fn) {
   }
 }
 
+/** Instala un port (tarea en segundo plano con progreso). */
 function doInstall(p) {
   toast(t("toast.installing", p.manifest.name));
   startPortTask(p, "/api/install", "install");
 }
 
+/** Desinstala un port tras confirmación del usuario. */
 function doUninstall(p) {
   // Confirmación explícita antes de desinstalar.
   openConfirmModal({
@@ -1137,11 +1179,13 @@ function doUninstall(p) {
   });
 }
 
+/** Actualiza un port a su última versión (tarea en segundo plano). */
 function doUpdate(p) {
   toast(t("toast.installing", p.manifest.name));
   startPortTask(p, "/api/update", "update");
 }
 
+/** Actualiza un port y lo lanza al terminar la actualización. */
 function doUpdateAndLaunch(p) {
   toast(t("toast.installing", p.manifest.name));
   startPortTask(p, "/api/update", "update", () => {
@@ -1164,6 +1208,7 @@ function doUpdateAll() {
     .catch((e) => toast(e.message, "error"));
 }
 
+/** Lanza un port y avisa con un toast si hay una versión nueva disponible. */
 function doLaunch(p) {
   api("/api/status").catch(() => {});
   toast(t("toast.launching", p.manifest.name), "ok");
@@ -1178,6 +1223,7 @@ function doLaunch(p) {
     .catch(() => {});
 }
 
+/** Enlaza o desenlaza un mod del port según su estado actual. */
 function toggleMod(p, mod, linked) {
   busyRun(p.manifest.id, async () => {
     await api(linked ? "/api/mods/unlink" : "/api/mods/link", { id: p.manifest.id, mod });
@@ -1195,6 +1241,7 @@ function toggleAllMods(p, enable) {
 
 // ── Init ──
 
+/** Conecta los buscadores de ports instalados y disponibles. */
 function initPortsTools() {
   $("#ports-search-installed").addEventListener("input", (e) => {
     installedQuery = e.target.value.trim();
@@ -1213,13 +1260,7 @@ function initPortsTools() {
  */
 function switchTab(tab, persist = true) {
   activeTab = tab;
-  if (persist) {
-    try {
-      localStorage.setItem("brisa-active-tab", tab);
-    } catch {
-      /* ignore */
-    }
-  }
+  if (persist) writePreference(LS_ACTIVE_TAB, tab);
   $$(".tab-btn").forEach((btn) => {
     const on = btn.dataset.tab === tab;
     btn.classList.toggle("active", on);
@@ -1228,6 +1269,7 @@ function switchTab(tab, persist = true) {
   $$(".tab-pane").forEach((pane) => pane.classList.toggle("active", pane.dataset.tab === tab));
 }
 
+/** Conecta las pestañas (instalados / disponibles / ROMs / ayuda). */
 function initTabs() {
   $$(".tab-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchTab(btn.dataset.tab));
@@ -1235,7 +1277,7 @@ function initTabs() {
   switchTab(activeTab);
 }
 
-/** Toggle tarjetas/lista para ports y ROMs (persistido en localStorage). */
+/** Conecta los toggles de vista tarjetas/lista para ports y ROMs (persistido). */
 function initViewToggles() {
   $$(".view-toggle").forEach((toggle) => {
     const isRoms = toggle.id === "roms-view-toggle";
@@ -1244,11 +1286,7 @@ function initViewToggles() {
         const mode = btn.dataset.view;
         if (isRoms) romsViewMode = mode;
         else viewMode = mode;
-        try {
-          localStorage.setItem(isRoms ? "brisa-roms-view" : "brisa-ports-view", mode);
-        } catch {
-          /* ignore */
-        }
+        writePreference(isRoms ? LS_ROMS_VIEW : LS_PORTS_VIEW, mode);
         syncViewActive();
         if (isRoms) {
           if (state) renderRoms(state.scan);
@@ -1282,6 +1320,7 @@ function closeConfirmModal() {
   document.body.classList.remove("modal-open");
 }
 
+/** Conecta los eventos del modal de novedades (cerrar, fondo, Escape, botón). */
 function initChangelogModal() {
   $("#changelog-modal-close").addEventListener("click", closeChangelogModal);
   $("#changelog-modal").addEventListener("click", (e) => {
@@ -1300,6 +1339,7 @@ function initChangelogModal() {
   });
 }
 
+/** Conecta los eventos del modal de mods (cerrar, fondo, Escape). */
 function initModsModal() {
   $("#mods-modal-close").addEventListener("click", closeModsModal);
   $("#mods-modal").addEventListener("click", (e) => {
@@ -1310,6 +1350,7 @@ function initModsModal() {
   });
 }
 
+/** Conecta los eventos del modal de confirmación (OK, cancelar, fondo, Escape). */
 function initConfirmModal() {
   $("#confirm-modal-close").addEventListener("click", closeConfirmModal);
   $("#confirm-modal-cancel").addEventListener("click", closeConfirmModal);
@@ -1328,21 +1369,22 @@ function initConfirmModal() {
 
 async function init() {
   await i18nReady();
-  // Primer arranque: marcar el flag ANTES de renderizar para que el banner de
-  // bienvenida salga en renderHelp(), y auto-abrir la guía al final.
+  // Primer arranque: el flag se persiste en el servidor (stateDir) para que
+  // sobreviva reinicios de Electron (localStorage no persiste con sandbox).
   let helpSeen = false;
   try {
-    helpSeen = localStorage.getItem("brisa-help-seen") === "1";
+    const data = await api("/api/help-seen");
+    helpSeen = data.seen;
   } catch {
-    /* localStorage may be unavailable */
+    // Si el endpoint no existe aún (versión antigua del servidor),
+    // fallback a localStorage.
+    helpSeen = readPreference(LS_HELP_SEEN) === "1";
   }
   if (!helpSeen) {
     firstRun = true;
-    try {
-      localStorage.setItem("brisa-help-seen", "1");
-    } catch {
-      /* localStorage may be unavailable */
-    }
+    // Marcar en servidor + localStorage (doble seguridad).
+    api("/api/help-seen", {}).catch(() => {});
+    writePreference(LS_HELP_SEEN, "1");
   }
   initSettings();
   initTabs();
@@ -1369,7 +1411,7 @@ async function init() {
   load();
   setInterval(() => {
     if (busyPortIds.size === 0) load();
-  }, 8000);
+  }, AUTO_REFRESH_MS);
 }
 
 init();

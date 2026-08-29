@@ -1,6 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { spawn } from "node:child_process";
+import { JsonCache } from "./cache";
+import { EXECUTABLE_MODE } from "./constants";
 import type { AppConfig } from "./config";
 import { download, type ProgressFn } from "./download";
 import { getLatestRelease, pickAsset } from "./github";
@@ -25,9 +27,9 @@ export interface SelfUpdateInfo {
 }
 
 /** Cache idéntica a la de los ports: como mucho 1 llamada a GitHub cada 30 min. */
-const CHECK_INTERVAL_MS = 30 * 60 * 1000;
+const selfCache = (cfg: AppConfig) => new JsonCache<SelfUpdateInfo>(path.join(cfg.cacheDir, "update-check"));
 
-const cacheFile = (cfg: AppConfig) => path.join(cfg.cacheDir, "update-check", "self.json");
+const SELF_CACHE_ID = "self";
 
 /**
  * Nombre del asset de Brisa según la plataforma (electron-builder artifactName
@@ -67,16 +69,11 @@ function parseParts(v: string): number[] {
 }
 
 function readCache(cfg: AppConfig): SelfUpdateInfo | null {
-  try {
-    return JSON.parse(fs.readFileSync(cacheFile(cfg), "utf8")) as SelfUpdateInfo;
-  } catch {
-    return null;
-  }
+  return selfCache(cfg).readStale(SELF_CACHE_ID);
 }
 
 function writeCache(cfg: AppConfig, info: SelfUpdateInfo): void {
-  fs.mkdirSync(path.dirname(cacheFile(cfg)), { recursive: true });
-  fs.writeFileSync(cacheFile(cfg), JSON.stringify(info));
+  selfCache(cfg).write(SELF_CACHE_ID, info);
 }
 
 /**
@@ -116,13 +113,16 @@ function unavailable(cfg: AppConfig, latest: string, cached?: SelfUpdateInfo | n
  */
 export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<SelfUpdateInfo | null> {
   if (!cfg.selfRepo) return null;
-  const cached = readCache(cfg);
-  if (!force && cached && Date.now() - cached.checkedAt < CHECK_INTERVAL_MS) {
+  // read() solo devuelve entradas frescas (guardadas hace < 30 min); readStale
+  // se usa como último recurso si la red falla.
+  const cached = force ? null : selfCache(cfg).read(SELF_CACHE_ID);
+  if (cached) {
     // `current` y `supported` se recalculan siempre: una caché escrita por una
     // versión anterior (o con la detección rota de AppImage por execPath) no
     // debe mostrar una versión instalada vieja.
     return refreshCached(cached);
   }
+  const stale = readCache(cfg);
   try {
     // allowPrerelease: el repo de la app publica sus releases como pre-release;
     // /releases/latest daría 404 y el check fallaría sin esta opción.
@@ -149,7 +149,7 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
     // `current` y `supported` actualizados, y refrescar la caché SIEMPRE para
     // que una copia obsoleta (p. ej. escrita por una versión antigua de la
     // app) no quede atascada mostrando una versión vieja indefinidamente.
-    const info = cached ? refreshCached(cached) : unavailable(cfg, "?");
+    const info = stale ? refreshCached(stale) : unavailable(cfg, "?");
     writeCache(cfg, info);
     return info;
   }
@@ -201,7 +201,7 @@ function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
   const updater = path.join(cfg.cacheDir, "downloads", "self", "brisa-updater.sh");
   const log = path.join(cfg.cacheDir, "downloads", "self", "updater.log");
   fs.writeFileSync(updater, updaterScript(String(process.pid), dest, oldPath, log));
-  fs.chmodSync(updater, 0o755);
+  fs.chmodSync(updater, EXECUTABLE_MODE);
   try {
     const child = spawn("/bin/sh", [updater], { detached: true, stdio: "ignore" });
     child.on("error", (err) => {

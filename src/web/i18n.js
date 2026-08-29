@@ -107,12 +107,6 @@
     "toast.updatingAll": "Updating all ports…",
     "toast.error": "Error",
 
-    "task.cancel": "Cancel",
-    "stage.start": "Starting…",
-    "stage.release": "Checking release…",
-    "stage.download": "Downloading…",
-    "stage.extract": "Extracting…",
-
     "self.version": "Brisa v{0}",
     "self.updateBtn": "⬆ Update Brisa v{0}",
     "self.updateAvailable": "New Brisa version available: v{0}",
@@ -293,24 +287,42 @@
   });
 
   /**
-   * Initialise: discover available locales by scanning the lang/ directory.
-   * We try common locales; the first successful fetch tells us the format.
-   * A more robust approach: fetch a manifest. But for simplicity, we try
-   * the detected locale first, then fall back to en, then discover others
-   * by checking all known .json files.
+   * Initialise: fetches the list of available locales from the server,
+   * loads them all, resolves the initial locale (pending changes apply)
+   * and notifies subscribers.
    */
   async function init() {
     const detected = detectLocale();
 
-    // Try to load the detected locale (e.g. "es"), and always load "en" as fallback.
-    const [enData, detectedData] = await Promise.all([
-      fetchLocale("en"),
-      detected !== "en" ? fetchLocale(detected) : Promise.resolve(null),
-    ]);
+    // Fetch the list of available locales from the server.
+    let available = ["en"];
+    try {
+      const res = await fetch("/api/locales");
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.locales) && data.locales.length > 0) {
+          available = data.locales;
+        }
+      }
+    } catch {
+      // Fallback: just en + detected
+    }
 
-    if (enData) _translations.en = enData;
-    else _translations.en = FALLBACK_EN; // hardcoded fallback
-    if (detectedData) _translations[detected] = detectedData;
+    // Ensure the detected locale is in the list (even if the server doesn't
+    // have a file for it yet, we'll try to load it).
+    if (detected !== "en" && !available.includes(detected)) {
+      available.push(detected);
+    }
+
+    // Load all available locales in parallel.
+    const entries = await Promise.all(
+      available.map(async (loc) => [loc, await fetchLocale(loc)]),
+    );
+    for (const [loc, data] of entries) {
+      if (data) _translations[loc] = data;
+    }
+    // Always ensure English is present (hardcoded fallback).
+    if (!_translations.en) _translations.en = FALLBACK_EN;
 
     // Determine the initial locale
     let initial = "en";

@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
+import { USER_AGENT } from "./constants";
 import type { AppConfig } from "./config";
 import { CancelledError, throwIfAborted } from "./tasks";
 
@@ -22,7 +23,7 @@ export async function download(
   const { signal } = opts;
   throwIfAborted(signal);
   const res = await fetch(url, {
-    headers: { "User-Agent": "brisa", Accept: "application/octet-stream" },
+    headers: { "User-Agent": USER_AGENT, Accept: "application/octet-stream" },
     redirect: "follow",
     signal,
   });

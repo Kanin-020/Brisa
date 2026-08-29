@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { MAX_FINISHED_TASKS } from "./constants";
 
 /** Error lanzado cuando una operación se cancela vía AbortController. */
 export class CancelledError extends Error {
@@ -56,8 +57,6 @@ interface TaskEntry extends TaskInfo {
  */
 export class TaskManager {
   private tasks = new Map<string, TaskEntry>();
-  /** Máximo de tareas terminadas que se conservan en la lista. */
-  private static readonly MAX_FINISHED = 20;
 
   /**
    * Arranca una tarea en segundo plano y devuelve su id e info inmediatamente.
@@ -164,8 +163,8 @@ export class TaskManager {
 
   private prune(): void {
     const finished = [...this.tasks.values()].filter((t) => t.status !== "running");
-    if (finished.length <= TaskManager.MAX_FINISHED) return;
-    const oldest = finished.slice(0, finished.length - TaskManager.MAX_FINISHED);
+    if (finished.length <= MAX_FINISHED_TASKS) return;
+    const oldest = finished.slice(0, finished.length - MAX_FINISHED_TASKS);
     for (const task of oldest) this.tasks.delete(task.id);
   }
 }

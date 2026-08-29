@@ -8,7 +8,14 @@
     {
       "id": "tmc",
       "name": "The Minish Cap (GBA)",
-      "patterns": ["baserom.gba", "baserom_eu.gba", "baserom_jp.gba", "*.gba", "*.gbc", "tmc.gba"],
+      "patterns": [
+        "baserom.gba",
+        "baserom_eu.gba",
+        "baserom_jp.gba",
+        "tmc.gba",
+        "minish cap*.gba",
+        "zelda*minish*.gba"
+      ],
       "sha1": [
         "b4bd50e4131b027c334547b4524e2dbbd4227130",
         "cff199b36ff173fb6faf152653d1bccf87c26fb7",

@@ -1,11 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { loadConfig, ensureDirs, type AppConfig } from "./config";
-import { isInstalled, installPort, launchExecutable, uninstallPort, resolveAssetForPlatform, portDir } from "./installer";
-import { listManifests, loadManifest, type Manifest } from "./manifest";
+import { installPort, launchExecutable, uninstallPort, portDir } from "./installer";
+import { listManifests, loadManifest, importManifests, type Manifest } from "./manifest";
 import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unlinkAllMods, isModLinked, syncModsFolders } from "./mods";
-import { scanRoms, type RomMatch, type ScanResult, type RomFile } from "./scanner";
-import { readState, listStates } from "./state";
+import { scanRoms, type ScanResult, type RomFile } from "./scanner";
+import { listStates } from "./state";
 import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
 import { TaskManager, throwIfAborted } from "./tasks";
 import { checkSelfUpdate, applySelfUpdate, type SelfUpdateInfo } from "./selfupdate";
@@ -13,40 +13,22 @@ import { detectPlatform } from "./platform";
 import { ensureSelfImageCopy, syncLaunchers, writeImagenHelper } from "./launchers";
 import { deleteRom, saveRomFile } from "./roms";
 import { openPathInFileManager } from "./folders";
-import { normalizeVersion } from "./version";
+import {
+  buildPortStatuses,
+  normalizeSelfUpdateInfo,
+  type PortStatus,
+  type RomSlotStatus,
+  type StatusResult,
+} from "./status";
 
-export interface RomSlotStatus {
-  /** Requirement id (e.g. "oot", "oot-mq"). */
-  id: string;
-  /** Human readable requirement name. */
-  name: string;
-  required: boolean;
-  matched: boolean;
-  romName: string | null;
-  matchedBy: "hash" | "gameid" | "name" | null;
-}
-
-export interface PortStatus {
-  manifest: Manifest;
-  installed: boolean;
-  version: string | null;
-  /** Per-ROM-requirement status (multirom manifests show one slot each). */
-  roms: RomSlotStatus[];
-  /** True when every *required* ROM requirement is matched (installable). */
-  hasRom: boolean;
-  updateAvailable: boolean;
-  updateInfo: UpdateInfo | null;
-  mods: string[];
-  linkedMods: string[];
-  modsRoot: string;
-  platformSupported: boolean;
-}
+// Re-export para compatibilidad con consumidores que importan los tipos desde app.
+export type { PortStatus, RomSlotStatus, StatusResult };
 
 /**
  * Fachada de la aplicación: expone una única API de alto nivel a la CLI, al
  * servidor web y a la app de escritorio. La lógica de bajo nivel vive en los
  * módulos de core (installer, launchers, mods, scanner, roms, …); aquí solo
- * se orquesta.
+ * se orquesta (patrón Facade sobre una arquitectura por capas).
  */
 export class App {
   readonly cfg: AppConfig;
@@ -88,72 +70,16 @@ export class App {
     return scanRoms(this.cfg);
   }
 
-  async status(): Promise<{ scan: ScanResult; ports: PortStatus[]; self: SelfUpdateInfo | null }> {
+  async status(): Promise<StatusResult> {
     const manifests = this.manifests();
     syncModsFolders(this.cfg, manifests);
     const scan = await this.scan();
-    const requirementMatches = new Map<string, Map<string, RomMatch>>();
-    for (const match of scan.matches) {
-      let matchesByRequirement = requirementMatches.get(match.manifest.id);
-      if (!matchesByRequirement) {
-        matchesByRequirement = new Map();
-        requirementMatches.set(match.manifest.id, matchesByRequirement);
-      }
-      matchesByRequirement.set(match.requirement.id, match);
-    }
-    const ports: PortStatus[] = [];
-    for (const manifest of manifests) {
-      const state = readState(this.cfg, manifest.id);
-      const matchesByRequirement = requirementMatches.get(manifest.id) ?? new Map<string, RomMatch>();
-      const roms: RomSlotStatus[] = manifest.roms.map((requirement) => {
-        const match = matchesByRequirement.get(requirement.id);
-        return {
-          id: requirement.id,
-          name: requirement.name,
-          required: requirement.required !== false,
-          matched: !!match,
-          romName: match?.rom.name ?? null,
-          matchedBy: match?.matchedBy ?? null,
-        };
-      });
-      const mods = listCentralMods(this.cfg, manifest);
-      const updateInfo = state ? await checkUpdate(this.cfg, manifest) : null;
-      ports.push({
-        manifest,
-        installed: isInstalled(this.cfg, manifest.id),
-        version: state?.version ?? null,
-        roms,
-        hasRom: roms.filter((slot) => slot.required).every((slot) => slot.matched),
-        updateAvailable: !!updateInfo?.available,
-        // Normaliza también lo cacheados (escritos por versiones anteriores),
-        // para que el frontend siempre reciba versiones "x.x.x" y notas
-        // (caches viejos sin el campo).
-        updateInfo: updateInfo
-          ? {
-              ...updateInfo,
-              installed: normalizeVersion(updateInfo.installed) ?? updateInfo.installed,
-              latest: normalizeVersion(updateInfo.latest) ?? updateInfo.latest,
-              notes: updateInfo.notes ?? "",
-            }
-          : null,
-        mods,
-        linkedMods: mods.filter((mod) => isModLinked(this.cfg, manifest, mod)),
-        modsRoot: centralModsRoot(this.cfg, manifest),
-        platformSupported: !!resolveAssetForPlatform(manifest),
-      });
-    }
+    const ports = await buildPortStatuses(this.cfg, manifests, scan);
     const self = await checkSelfUpdate(this.cfg);
     return {
       scan,
       ports,
-      self: self
-        ? {
-            ...self,
-            current: normalizeVersion(self.current) ?? self.current,
-            latest: normalizeVersion(self.latest) ?? self.latest,
-            notes: self.notes ?? "",
-          }
-        : null,
+      self: self ? normalizeSelfUpdateInfo(self) : null,
     };
   }
 
@@ -303,31 +229,7 @@ export class App {
    * Entries with a missing/invalid id are skipped and reported.
    */
   importManifests(items: unknown[]): { imported: number; errors: string[]; warnings: string[] } {
-    const ID_RE = /^[A-Za-z0-9._-]+$/;
-    const errors: string[] = [];
-    const warnings: string[] = [];
-    let imported = 0;
-    fs.mkdirSync(this.cfg.manifestsDir, { recursive: true });
-    for (const item of items) {
-      const raw = item as Record<string, unknown> | null;
-      if (!raw || typeof raw !== "object" || typeof raw.id !== "string" || !ID_RE.test(raw.id)) {
-        errors.push("manifiesto con id inválido (omitido)");
-        continue;
-      }
-      try {
-        fs.writeFileSync(
-          path.join(this.cfg.manifestsDir, `${raw.id}.json`),
-          JSON.stringify(raw, null, 2) + "\n",
-        );
-        imported++;
-        if (fs.existsSync(path.join(this.cfg.manifestsDir, "remote", `${raw.id}.json`))) {
-          warnings.push(`${raw.id}: existe una versión remota que tiene prioridad`);
-        }
-      } catch (e) {
-        errors.push(`${raw.id}: ${(e as Error).message}`);
-      }
-    }
-    return { imported, errors, warnings };
+    return importManifests(this.cfg, items);
   }
 
   /** All manifests as plain data (for export). */
@@ -346,7 +248,7 @@ export class App {
     else if (dir === "mods") target = this.cfg.modsDir;
     else if (dir === "manifests") target = this.cfg.manifestsDir;
     else if (dir === "ports") target = this.cfg.portsDir;
-    return this.openPath(target);
+    return openPathInFileManager(target);
   }
 
   /**
@@ -356,7 +258,7 @@ export class App {
   async openPortModsFolder(id: string): Promise<boolean> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
-    return this.openPath(centralModsRoot(this.cfg, manifest));
+    return openPathInFileManager(centralModsRoot(this.cfg, manifest));
   }
 
   /**
@@ -370,11 +272,6 @@ export class App {
     if (!fs.existsSync(dir)) {
       throw new Error(`El port ${manifest.name} no está instalado.`);
     }
-    return this.openPath(dir);
-  }
-
-  /** Opens an arbitrary path in the OS file manager (Electron or platform opener). */
-  private async openPath(target: string): Promise<boolean> {
-    return openPathInFileManager(target);
+    return openPathInFileManager(dir);
   }
 }

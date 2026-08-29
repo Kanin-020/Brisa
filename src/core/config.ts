@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { DEFAULT_SERVER_PORT } from "./constants";
 
 export interface AppConfig {
   /** Root of the tool (contains package.json, manifests/, roms/, mods/). */
@@ -30,6 +31,24 @@ export interface AppConfig {
 
 const CONFIG_FILE = "config.json";
 
+/**
+ * Carpetas configuradas por rutas relativas a la raíz (se resuelven contra
+ * `root` al cargar y se guardan relativas).
+ */
+const DIR_FIELDS = ["modsDir", "portsDir", "cacheDir", "manifestsDir"] as const;
+
+/** Campos escalares con coerción por tipo. */
+const SCALAR_FIELDS = {
+  registryUrl: String,
+  githubToken: String,
+  serverPort: Number,
+  autoCheckUpdates: Boolean,
+  selfRepo: String,
+  selfAssetPattern: String,
+} as const;
+
+type ScalarKey = keyof typeof SCALAR_FIELDS;
+
 export function projectRoot(): string {
   // Las builds empaquetadas (AppImage/.exe) redirigen la raíz de datos de
   // usuario con BRISA_ROOT (src/desktop/main.ts la establece en $HOME/Brisa).
@@ -53,40 +72,52 @@ export function defaultConfig(): AppConfig {
     stateDir: path.join(root, "cache", "state"),
     registryUrl: "",
     githubToken: process.env.GITHUB_TOKEN ?? "",
-    serverPort: 7380,
+    serverPort: DEFAULT_SERVER_PORT,
     autoCheckUpdates: true,
     selfRepo: "Kanin-020/Brisa",
     selfAssetPattern: "",
   };
 }
 
+/** Resuelve el valor crudo de un campo de carpeta contra la raíz. */
+function resolveDirField(raw: Partial<AppConfig>, key: string, root: string): string | null {
+  const value = (raw as Record<string, unknown>)[key];
+  return typeof value === "string" ? path.resolve(root, value) : null;
+}
+
+/** Coerce un campo escalar al tipo esperado, o null si no viene en el archivo. */
+function coerceScalar(raw: Partial<AppConfig>, key: ScalarKey): unknown {
+  const value = (raw as Record<string, unknown>)[key];
+  if (value === undefined) return null;
+  if (key === "serverPort") return Number(value) || DEFAULT_SERVER_PORT;
+  if (key === "autoCheckUpdates") return value === true || value === "true";
+  return String(value);
+}
+
 export function loadConfig(): AppConfig {
   const cfg = defaultConfig();
   const file = path.join(cfg.root, CONFIG_FILE);
   try {
-    if (fs.existsSync(file)) {
-      const raw = JSON.parse(fs.readFileSync(file, "utf8")) as Partial<AppConfig>;
-      // `romsDirs` gana; si no existe, se migra el antiguo `romsDir` único.
-      if (Array.isArray(raw.romsDirs) && raw.romsDirs.length > 0) {
-        cfg.romsDirs = raw.romsDirs.map((d) => path.resolve(cfg.root, String(d)));
-      } else if (raw.romsDir) {
-        cfg.romsDirs = [path.resolve(cfg.root, raw.romsDir)];
-      }
-      cfg.romsDir = cfg.romsDirs[0];
-      if (raw.modsDir) cfg.modsDir = path.resolve(cfg.root, raw.modsDir);
-      if (raw.portsDir) cfg.portsDir = path.resolve(cfg.root, raw.portsDir);
-      if (raw.cacheDir) cfg.cacheDir = path.resolve(cfg.root, raw.cacheDir);
-      if (raw.manifestsDir) cfg.manifestsDir = path.resolve(cfg.root, raw.manifestsDir);
-      if (raw.registryUrl !== undefined) cfg.registryUrl = raw.registryUrl;
-      if (raw.githubToken !== undefined) cfg.githubToken = raw.githubToken;
-      if (raw.serverPort !== undefined) cfg.serverPort = raw.serverPort;
-      if (raw.autoCheckUpdates !== undefined) cfg.autoCheckUpdates = raw.autoCheckUpdates;
-      if (raw.selfRepo !== undefined) cfg.selfRepo = raw.selfRepo;
-      if (raw.selfAssetPattern !== undefined) cfg.selfAssetPattern = raw.selfAssetPattern;
-      cfg.stateDir = path.join(cfg.cacheDir, "state");
+    if (!fs.existsSync(file)) return cfg;
+    const raw = JSON.parse(fs.readFileSync(file, "utf8")) as Partial<AppConfig>;
+    // `romsDirs` gana; si no existe, se migra el antiguo `romsDir` único.
+    if (Array.isArray(raw.romsDirs) && raw.romsDirs.length > 0) {
+      cfg.romsDirs = raw.romsDirs.map((d) => path.resolve(cfg.root, String(d)));
+    } else if (raw.romsDir) {
+      cfg.romsDirs = [path.resolve(cfg.root, raw.romsDir)];
     }
+    cfg.romsDir = cfg.romsDirs[0];
+    for (const key of DIR_FIELDS) {
+      const resolved = resolveDirField(raw, key, cfg.root);
+      if (resolved) cfg[key] = resolved;
+    }
+    for (const key of Object.keys(SCALAR_FIELDS) as ScalarKey[]) {
+      const value = coerceScalar(raw, key);
+      if (value !== null) (cfg as unknown as Record<string, unknown>)[key] = value;
+    }
+    cfg.stateDir = path.join(cfg.cacheDir, "state");
   } catch {
-    // Fall back to defaults.
+    // Archivo corrupto o ilegible: se cae a los valores por defecto.
   }
   return cfg;
 }
@@ -104,15 +135,8 @@ export function saveConfig(cfg: AppConfig): void {
     // versiones anteriores que solo leen el campo antiguo).
     romsDir: path.relative(cfg.root, cfg.romsDirs[0]),
     romsDirs: cfg.romsDirs.map((d) => path.relative(cfg.root, d)),
-    modsDir: path.relative(cfg.root, cfg.modsDir),
-    portsDir: path.relative(cfg.root, cfg.portsDir),
-    cacheDir: path.relative(cfg.root, cfg.cacheDir),
-    manifestsDir: path.relative(cfg.root, cfg.manifestsDir),
-    registryUrl: cfg.registryUrl,
-    serverPort: cfg.serverPort,
-    autoCheckUpdates: cfg.autoCheckUpdates,
-    selfRepo: cfg.selfRepo,
-    selfAssetPattern: cfg.selfAssetPattern,
+    ...Object.fromEntries(DIR_FIELDS.map((key) => [key, path.relative(cfg.root, cfg[key])])),
+    ...Object.fromEntries((Object.keys(SCALAR_FIELDS) as ScalarKey[]).map((key) => [key, cfg[key]])),
   };
   fs.writeFileSync(file, JSON.stringify(out, null, 2) + "\n");
 }

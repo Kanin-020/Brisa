@@ -8,7 +8,7 @@
     {
       "id": "tp",
       "name": "Twilight Princess (GameCube)",
-      "patterns": ["tp.iso", "tp.gcz", "*.iso", "*.gcm", "*.rvz", "*.wia", "*.gcz", "*.wbfs", "*.ciso", "*.nkit.iso"],
+      "patterns": ["tp.iso", "tp.gcz", "tp.rvz", "twilight princess*.iso", "twilight princess*.gcz", "twilight princess*.rvz"],
       "sha1": [],
       "gameIds": ["GZ2E01", "GZ2P01"],
       "dest": "tp.iso"

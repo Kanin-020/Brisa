@@ -1,6 +1,7 @@
 import { BrowserWindow, shell } from "electron";
 import { config } from "./config";
 
+/** Crea y configura la ventana principal (sin barra de menú, maximizada, enlaces externos seguros). */
 export function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow(config);
 

@@ -8,7 +8,7 @@
     {
       "id": "bk64",
       "name": "Banjo Kazooie",
-      "patterns": ["*.z64", "*.n64", "*.v64", "bk.z64", "bk.n64", "bk.v64"],
+      "patterns": ["bk.z64", "bk.n64", "bk.v64", "banjo*.z64", "banjo*.n64", "banjo*.v64"],
       "sha1": [
         "1fe1632098865f639e22c11b9a81ee8f29c75d7a",
         "ded6ee166e740ad1bc810fd678a84b48e245ab80",
@@ -35,5 +35,12 @@
     "dir": "mods",
     "gameDir": "lighthouse"
   },
-  "preserve": ["saves/**", "Save/**", "Saves/**", "lighthouse.cfg.json", "bk.o2r"]
+  "preserve": [
+    "save/**",
+    "saves/**",
+    "Save/**",
+    "Saves/**",
+    "lighthouse.cfg.json",
+    "bk.o2r"
+  ]
 }

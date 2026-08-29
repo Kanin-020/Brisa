@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { EXECUTABLE_MODE } from "../constants";
 import type { AppConfig } from "../config";
 import { loadManifest } from "../manifest";
 import { detectPlatform } from "../platform";
@@ -91,7 +92,7 @@ export function writeLauncher(cfg: AppConfig, state: PortState): string | null {
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${title}${launcherExtension()}`);
     fs.writeFileSync(file, launcherScriptForPlatform(cfg, state.id, state.version));
-    if (launcherExtension() !== ".cmd") fs.chmodSync(file, 0o755);
+    if (launcherExtension() !== ".cmd") fs.chmodSync(file, EXECUTABLE_MODE);
     // Asegurar que el ayudante image/imagen exista para que el launcher funcione.
     writeImagenHelper(cfg);
     return file;

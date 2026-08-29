@@ -251,6 +251,9 @@ npm link                # opcional: expone el comando `brisa` globalmente
 4. **Actualizaciones**: compara el tag de la release instalada con el último de GitHub. En `update` se descarga la nueva versión, se hace backup atómico y se re-enlaza ROM y mods. **Los saves y configuraciones dentro del port se conservan**: se restauran todos los archivos que la nueva versión no trae, y los marcados con `preserve` en el manifiesto ganan sobre el default de la release.
 5. **Auto-update del registro**: `registryUrl` permite añadir ports nuevos sin tocar el código, solo con JSON.
 
+Para más detalle sobre la estructura del código y las convenciones, ver
+[Arquitectura de Brisa](ARCHITECTURE.md).
+
 ## Crear un manifiesto
 
 ### JSON

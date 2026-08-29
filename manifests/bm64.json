@@ -1,0 +1,49 @@
+{
+  "id": "bm64",
+  "name": "Bomberman 64: Recompiled",
+  "game": "Bomberman 64",
+  "description": "Static recompilation of Bomberman 64 for native PC. Features upscaled graphics and widescreen support.",
+  "repo": "RevoSucks/BM64Recomp",
+  "roms": [
+    {
+      "id": "bm64",
+      "name": "Bomberman 64",
+      "patterns": [
+        "bomberman 64.z64",
+        "bomberman 64.n64",
+        "bomberman 64.v64",
+        "bm64.z64",
+        "bm64.n64",
+        "bm64.v64"
+      ],
+      "sha1": ["df52caea78cc786f896cb14e532088ec9ca6bea6"],
+      "dest": "bm64.z64"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "BM64Recompiled-Linux-X64-Release.zip",
+      "type": "zip",
+      "executable": "BM64Recompiled",
+      "nested": true
+    },
+    "linux-arm64": {
+      "pattern": "BM64Recompiled-Linux-ARM64-Release.zip",
+      "type": "zip",
+      "executable": "BM64Recompiled",
+      "nested": true
+    },
+    "windows-x64": {
+      "pattern": "BM64Recompiled-Windows-RelWithDebInfo.zip",
+      "type": "zip",
+      "executable": "BM64Recompiled.exe"
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "bm64",
+    "linkRoot": {
+      "linux": "~/.config/BM64Recompiled/mods/"
+    }
+  }
+}

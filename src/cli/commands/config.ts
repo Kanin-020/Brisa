@@ -2,6 +2,7 @@ import * as path from "node:path";
 import type { Command } from "commander";
 import type { App } from "../../core/app";
 import { projectRoot, saveConfig } from "../../core/config";
+import { DEFAULT_SERVER_PORT } from "../../core/constants";
 
 export function registerConfigCommands(program: Command, app: App): void {
   program
@@ -35,7 +36,7 @@ export function registerConfigCommands(program: Command, app: App): void {
     .action((key: string, value: string) => {
       const cfg = app.cfg;
       if (key === "registryUrl") cfg.registryUrl = value;
-      else if (key === "serverPort") cfg.serverPort = parseInt(value, 10) || 7380;
+      else if (key === "serverPort") cfg.serverPort = parseInt(value, 10) || DEFAULT_SERVER_PORT;
       else if (key === "autoCheckUpdates") cfg.autoCheckUpdates = value === "true";
       else if (key === "selfRepo") cfg.selfRepo = value;
       else if (key === "selfAssetPattern") cfg.selfAssetPattern = value;

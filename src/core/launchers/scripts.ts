@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { EXECUTABLE_MODE } from "../constants";
 import type { AppConfig } from "../config";
 import { detectPlatform } from "../platform";
 import { imagesDir, selfImagePath } from "./images";
@@ -35,6 +36,9 @@ export function helperPath(cfg: AppConfig): string {
   );
 }
 
+/** Ids de port seguros para incrustar sin comillas en los scripts de los launchers. */
+const SAFE_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+
 /** Encierra una ruta en comillas simples de shell (escapa ' como '\'' para que nada se expanda). */
 export function shQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
@@ -61,9 +65,9 @@ function launchTarget(cfg: AppConfig): string {
  */
 export function launcherScript(cfg: AppConfig, portId: string, portVersion: string): string {
   const executable = launchTarget(cfg);
-  // El id del port va sin comillas (ids normales: [A-Za-z0-9._-]+); solo se
-  // protege con comillas un id inusual que rompería la sintaxis del script.
-  const safeId = /^[A-Za-z0-9._-]+$/.test(portId) ? portId : shQuote(portId);
+  // El id del port va sin comillas (ids normales); solo se protege con comillas
+  // un id inusual que rompería la sintaxis del script.
+  const safeId = SAFE_ID_PATTERN.test(portId) ? portId : shQuote(portId);
   return `#!/bin/sh
 # Launcher generado por Brisa (port: ${portId}) — no editar a mano.
 # ${LAUNCHER_FORMAT_MARKER}: ${LAUNCHER_FORMAT_VERSION}
@@ -87,7 +91,7 @@ ${shQuote(executable)} launch ${safeId} --wait || exit 1
  */
 export function launcherScriptWin(cfg: AppConfig, portId: string, portVersion: string): string {
   const helper = batQuote(helperPath(cfg));
-  const safeId = /^[A-Za-z0-9._-]+$/.test(portId) ? portId : portId.replace(/[^\w.-]/g, "_");
+  const safeId = SAFE_ID_PATTERN.test(portId) ? portId : portId.replace(/[^\w.-]/g, "_");
   return [
     "@echo off",
     `rem Launcher generado por Brisa (port: ${portId}) - no editar a mano.`,
@@ -187,7 +191,7 @@ export function writeImagenHelper(cfg: AppConfig): string | null {
       }
     }
     fs.writeFileSync(file, win ? imagenHelperScriptWin(cfg) : imagenHelperScript(cfg));
-    if (!win) fs.chmodSync(file, 0o755);
+    if (!win) fs.chmodSync(file, EXECUTABLE_MODE);
     return file;
   } catch {
     return null;

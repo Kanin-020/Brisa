@@ -8,10 +8,15 @@
     {
       "id": "mk64",
       "name": "Mario Kart 64",
-      "patterns": ["*.z64", "*.n64", "*.v64", "mk64.z64", "mk.n64", "mk.v64"],
-      "sha1": [
-        "579c48e211ae952530ffc8738709f078d5dd215e"
+      "patterns": [
+        "mk64.z64",
+        "mk64.n64",
+        "mk64.v64",
+        "mario kart*.z64",
+        "mario kart*.n64",
+        "mario kart*.v64"
       ],
+      "sha1": ["579c48e211ae952530ffc8738709f078d5dd215e"],
       "gameIds": [],
       "dest": "mk64.z64"
     }
@@ -32,5 +37,12 @@
     "dir": "mods",
     "gameDir": "spaghettikart"
   },
-  "preserve": ["saves/**", "Save/**", "Saves/**", "spaghettify.cfg.json", "mk64.o2r"]
+  "preserve": [
+    "save/**",
+    "saves/**",
+    "Save/**",
+    "Saves/**",
+    "spaghettify.cfg.json",
+    "mk64.o2r"
+  ]
 }

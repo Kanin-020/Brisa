@@ -8,7 +8,14 @@
     {
       "id": "mm",
       "name": "Majora's Mask (NTSC-U)",
-      "patterns": ["mm.z64", "mm.n64", "*.z64", "*.n64", "*.v64", "*.zip", "*.7z"],
+      "patterns": [
+        "mm.z64",
+        "mm.n64",
+        "mm.v64",
+        "majora*.z64",
+        "majora*.n64",
+        "majora*.v64"
+      ],
       "sha1": [
         "d6133ace5afaa0882cf214cf88daba39e266c078",
         "9743aa026e9269b339eb0e3044cd5830a440c1fd"
@@ -47,5 +54,12 @@
     "dir": "mods",
     "gameDir": "2ship2harkinian"
   },
-  "preserve": ["saves/**", "Save/**", "Saves/**", "2ship2harkinian.json", "mm.o2r"]
+  "preserve": [
+    "save/**",
+    "saves/**",
+    "Save/**",
+    "Saves/**",
+    "2ship2harkinian.json",
+    "mm.o2r"
+  ]
 }

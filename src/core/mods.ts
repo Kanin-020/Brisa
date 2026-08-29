@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { AppConfig } from "./config";
+import { isInstalled } from "./installer";
 import type { Manifest } from "./manifest";
 import { detectPlatform } from "./platform";
 
@@ -115,7 +116,7 @@ export function unlinkMod(cfg: AppConfig, manifest: Manifest, modName: string): 
 
 /** Link all centralized mods for a port (called after install/update/scan). */
 export function linkAllMods(cfg: AppConfig, manifest: Manifest): string[] {
-  if (!isPortInstalled(cfg, manifest)) return [];
+  if (!isInstalled(cfg, manifest.id)) return [];
   const linked: string[] = [];
   for (const mod of listCentralMods(cfg, manifest)) {
     if (!isModLinked(cfg, manifest, mod)) {
@@ -143,13 +144,6 @@ export function unlinkAllMods(cfg: AppConfig, manifest: Manifest): void {
   }
 }
 
-function isPortInstalled(cfg: AppConfig, manifest: Manifest): boolean {
-  return (
-    fs.existsSync(path.join(cfg.portsDir, manifest.id)) &&
-    fs.existsSync(path.join(cfg.stateDir, `${manifest.id}.json`))
-  );
-}
-
 /**
  * Keeps MODS/<gameDir> folders in sync with the installed ports:
  * creates the folder for installed ports and removes the empty
@@ -159,7 +153,7 @@ function isPortInstalled(cfg: AppConfig, manifest: Manifest): boolean {
 export function syncModsFolders(cfg: AppConfig, manifests: Manifest[]): void {
   for (const manifest of manifests) {
     const root = centralModsRoot(cfg, manifest);
-    if (isPortInstalled(cfg, manifest)) {
+    if (isInstalled(cfg, manifest.id)) {
       fs.mkdirSync(root, { recursive: true });
       // Also ensure the link destination exists (e.g. the game's OS data dir).
       fs.mkdirSync(modsLinkRoot(cfg, manifest), { recursive: true });

@@ -1,3 +1,4 @@
+import { GITHUB_API_BASE, USER_AGENT } from "./constants";
 import type { AppConfig } from "./config";
 import { matchGlob } from "./glob";
 import { normalizeVersion } from "./version";
@@ -29,7 +30,7 @@ interface RawRelease {
 
 function githubHeaders(cfg: AppConfig): Record<string, string> {
   return {
-    "User-Agent": "brisa",
+    "User-Agent": USER_AGENT,
     ...(cfg.githubToken ? { Authorization: `Bearer ${cfg.githubToken}` } : {}),
   };
 }
@@ -58,7 +59,7 @@ export async function getLatestRelease(
   repo: string,
   opts: { allowPrerelease?: boolean } = {},
 ): Promise<ReleaseInfo> {
-  const url = `https://api.github.com/repos/${repo}/releases/latest`;
+  const url = `${GITHUB_API_BASE}/repos/${repo}/releases/latest`;
   const res = await fetch(url, { headers: githubHeaders(cfg) });
   if (res.status === 404 && opts.allowPrerelease) {
     return getLatestReleaseFallback(cfg, repo);
@@ -71,7 +72,7 @@ export async function getLatestRelease(
 
 /** Última release publicada (la API las ordena de más reciente a más antigua), saltando drafts. */
 async function getLatestReleaseFallback(cfg: AppConfig, repo: string): Promise<ReleaseInfo> {
-  const url = `https://api.github.com/repos/${repo}/releases?per_page=5`;
+  const url = `${GITHUB_API_BASE}/repos/${repo}/releases?per_page=5`;
   const res = await fetch(url, { headers: githubHeaders(cfg) });
   if (!res.ok) {
     throw new Error(`GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`);

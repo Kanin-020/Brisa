@@ -1,5 +1,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { JsonCache } from "./cache";
+import { USER_AGENT } from "./constants";
 import type { AppConfig } from "./config";
 import { getLatestRelease } from "./github";
 import { installPort } from "./installer";
@@ -17,26 +19,11 @@ export interface UpdateInfo {
   checkedAt: number;
 }
 
-/** How often we hit the GitHub API per port. 60 req/hr unauthenticated. */
-const CHECK_INTERVAL_MS = 30 * 60 * 1000; // 30 min
-
-const cacheDir = (cfg: AppConfig) => path.join(cfg.cacheDir, "update-check");
-
-function readCache(cfg: AppConfig, id: string): UpdateInfo | null {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(cacheDir(cfg), `${id}.json`), "utf8")) as UpdateInfo;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(cfg: AppConfig, info: UpdateInfo): void {
-  fs.mkdirSync(cacheDir(cfg), { recursive: true });
-  fs.writeFileSync(path.join(cacheDir(cfg), `${info.id}.json`), JSON.stringify(info));
-}
+/** Caché de comprobaciones por port (JsonCache con el intervalo global de 30 min). */
+const updateCache = (cfg: AppConfig) => new JsonCache<UpdateInfo>(path.join(cfg.cacheDir, "update-check"));
 
 /**
- * Cached update check: only hits the GitHub API at most once per CHECK_INTERVAL_MS.
+ * Cached update check: only hits the GitHub API at most once per 30 min.
  * `force` bypasses the cache (used by the explicit `update` command).
  */
 export async function checkUpdate(
@@ -46,8 +33,9 @@ export async function checkUpdate(
 ): Promise<UpdateInfo | null> {
   const state = readState(cfg, manifest.id);
   if (!state) return null;
-  const cached = readCache(cfg, manifest.id);
-  if (!force && cached && Date.now() - cached.checkedAt < CHECK_INTERVAL_MS) {
+  const cache = updateCache(cfg);
+  const cached = cache.read(manifest.id);
+  if (!force && cached) {
     // Caches escritos por versiones anteriores no tienen `notes`.
     return { ...cached, notes: cached.notes ?? "" };
   }
@@ -62,12 +50,13 @@ export async function checkUpdate(
       notes: release.body,
       checkedAt: Date.now(),
     };
-    writeCache(cfg, info);
+    cache.write(manifest.id, info);
     return info;
   } catch {
     // Network failure: fall back to cache or report unavailable.
-    return cached
-      ? { ...cached, notes: cached.notes ?? "" }
+    const stale = cache.readStale(manifest.id);
+    return stale
+      ? { ...stale, notes: stale.notes ?? "" }
       : {
           id: manifest.id,
           name: manifest.name,
@@ -119,7 +108,7 @@ export async function applyUpdate(
     notes: "",
     checkedAt: Date.now(),
   };
-  writeCache(cfg, info);
+  updateCache(cfg).write(manifest.id, info);
   return info;
 }
 
@@ -129,14 +118,14 @@ export async function applyUpdate(
  */
 export async function refreshRemoteManifests(cfg: AppConfig): Promise<number> {
   if (!cfg.registryUrl) return 0;
-  const res = await fetch(cfg.registryUrl, { headers: { "User-Agent": "brisa" } });
+  const res = await fetch(cfg.registryUrl, { headers: { "User-Agent": USER_AGENT } });
   if (!res.ok) throw new Error(`Registry fetch failed: HTTP ${res.status}`);
   const data = (await res.json()) as Array<{ id: string; url: string }>;
   const dir = path.join(cfg.manifestsDir, "remote");
   fs.mkdirSync(dir, { recursive: true });
   let count = 0;
   for (const entry of data) {
-    const r = await fetch(entry.url, { headers: { "User-Agent": "brisa" } });
+    const r = await fetch(entry.url, { headers: { "User-Agent": USER_AGENT } });
     if (!r.ok) continue;
     const text = await r.text();
     fs.writeFileSync(path.join(dir, `${entry.id}.json`), text);

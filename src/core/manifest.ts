@@ -2,6 +2,54 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import type { AppConfig } from "./config";
 
+/** Ids de manifiesto válidos (se usan como nombre de archivo, así que se restringen). */
+export const MANIFEST_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
+
+/** True cuando `id` es un id de manifiesto válido (seguro como nombre de archivo). */
+export function isValidManifestId(id: unknown): id is string {
+  return typeof id === "string" && MANIFEST_ID_PATTERN.test(id);
+}
+
+/** Ruta del manifiesto remoto (tiene prioridad sobre el local). */
+function remoteManifestPath(cfg: AppConfig, id: string): string {
+  return path.join(cfg.manifestsDir, "remote", `${id}.json`);
+}
+
+/**
+ * Importa manifiestos (array o un solo objeto) al dir de manifiestos.
+ * Las entradas con id inválido o faltante se omiten y se reportan.
+ */
+export function importManifests(
+  cfg: AppConfig,
+  items: unknown[],
+): { imported: number; errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  let imported = 0;
+  fs.mkdirSync(cfg.manifestsDir, { recursive: true });
+  for (const item of items) {
+    const raw = item as Record<string, unknown> | null;
+    if (!raw || typeof raw !== "object" || !isValidManifestId(raw.id)) {
+      errors.push("manifiesto con id inválido (omitido)");
+      continue;
+    }
+    try {
+      fs.writeFileSync(
+        path.join(cfg.manifestsDir, `${raw.id}.json`),
+        JSON.stringify(raw, null, 2) + "\n",
+      );
+      imported++;
+      if (fs.existsSync(remoteManifestPath(cfg, raw.id))) {
+        warnings.push(`${raw.id}: existe una versión remota que tiene prioridad`);
+      }
+    } catch (e) {
+      errors.push(`${raw.id}: ${(e as Error).message}`);
+    }
+  }
+  return { imported, errors, warnings };
+}
+
+
 export interface RomRequirement {
   /** Unique id for this ROM variant (e.g. "oot"). */
   id: string;
@@ -34,6 +82,12 @@ export interface AssetDef {
   type: "zip" | "tar.gz" | "appimage" | "apk";
   /** Relative path of the executable inside the extracted archive (null = the asset file itself, e.g. AppImage/APK). */
   executable: string | null;
+  /**
+   * When true, the archive contains another archive that must be extracted
+   * in a second pass. E.g. a .zip containing a .tar.gz (common in recomp
+   * projects like BM64). The inner archive is detected by extension.
+   */
+  nested?: boolean;
 }
 
 export interface ModsConfig {

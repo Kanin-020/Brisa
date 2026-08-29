@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { EXECUTABLE_MODE } from "../constants";
 import type { AppConfig } from "../config";
 import { download, downloadPath } from "../download";
 import { getLatestRelease, pickAsset, type ReleaseInfo } from "../github";
@@ -122,7 +123,10 @@ export async function installPort(
   if (!executable && (asset.type === "appimage" || asset.type === "apk")) {
     executable = path.join(portRoot, assetName.name);
   }
+  // On Linux/macOS, apply chmod +x to the main executable AND all other
+  // ELF binaries in the port dir (shared libs, helpers, etc.).
   ensureExecutable(executable);
+  ensureAllBinariesExecutable(portRoot);
 
   throwIfAborted(opts.signal);
 
@@ -189,8 +193,51 @@ export function launchExecutable(cfg: AppConfig, id: string): string | null {
 export function ensureExecutable(file: string | null): void {
   if (!file || process.platform === "win32") return;
   try {
-    fs.chmodSync(file, 0o755);
+    fs.chmodSync(file, EXECUTABLE_MODE);
   } catch {
     // ok
   }
+}
+
+/**
+ * Walk the port dir and apply chmod +x to every ELF binary (no extension or
+ * known executable extension). This ensures that helpers, shared libraries
+ * and side binaries bundled by the port also get execute permission.
+ * Only runs on Unix; no-op on Windows.
+ */
+function ensureAllBinariesExecutable(dir: string): void {
+  if (process.platform === "win32") return;
+  const ELF_MAGIC = Buffer.from([0x7f, 0x45, 0x4c, 0x46]); // \x7fELF
+  const walk = (d: string) => {
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = path.join(d, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      // Skip files that already have +x or are clearly not binaries.
+      try {
+        const stat = fs.statSync(full);
+        if (stat.mode & 0o111) continue; // already executable
+        // Check ELF magic (first 4 bytes).
+        const fd = fs.openSync(full, "r");
+        const buf = Buffer.alloc(4);
+        fs.readSync(fd, buf, 0, 4, 0);
+        fs.closeSync(fd);
+        if (buf.equals(ELF_MAGIC)) {
+          fs.chmodSync(full, EXECUTABLE_MODE);
+        }
+      } catch {
+        // skip unreadable files
+      }
+    }
+  };
+  walk(dir);
 }

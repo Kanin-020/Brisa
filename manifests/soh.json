@@ -8,7 +8,7 @@
     {
       "id": "oot",
       "name": "Ocarina of Time (base)",
-      "patterns": ["*.z64", "*.n64", "*.v64", "oot.z64", "oot.n64", "oot.v64"],
+      "patterns": ["oot.z64", "oot.n64", "oot.v64", "zelda*.z64", "zelda*.n64", "zelda*.v64"],
       "sha1": [
         "328a1f1beba30ce5e178f031662019eb32c5f3b5",
         "cfbb98d392e4a9d39da8285d10cbef3974c2f012",
@@ -30,7 +30,7 @@
       "id": "oot-mq",
       "name": "Ocarina of Time: Master Quest",
       "required": false,
-      "patterns": ["oot-mq.z64", "oot-mq.n64", "oot-mq.v64", "*mq.z64", "*mq.n64", "*mq.v64", "*.z64", "*.n64", "*.v64"],
+      "patterns": ["oot-mq.z64", "oot-mq.n64", "oot-mq.v64", "zelda*mq*.z64", "zelda*mq*.n64", "zelda*mq*.v64"],
       "sha1": [
         "f46239439f59a2a594ef83cf68ef65043b1bffe2",
         "079b855b943d6ad8bd1eb026c0ed169ecbdac7da",
@@ -75,6 +75,7 @@
     "gameDir": "soh"
   },
   "preserve": [
+    "save/**",
     "saves/**",
     "Save/**",
     "Saves/**",

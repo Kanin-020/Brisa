@@ -1,6 +1,7 @@
 import { app, BrowserWindowConstructorOptions } from "electron";
 import path from "node:path";
 
+/** Opciones de la ventana principal de Electron (tamaño, icono, webPreferences seguras). */
 export const config: Readonly<BrowserWindowConstructorOptions> = {
   title: "Brisa",
   width: 1240,

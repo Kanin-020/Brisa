@@ -251,6 +251,8 @@ npm link                # optional: exposes the `brisa` command globally
 4. **Updates**: compares the installed release tag with the latest on GitHub. On `update` it downloads the new version, makes an atomic backup and re-links ROM and mods. **Saves and configs inside the port are kept**: every file the new release does not ship is restored, and files matched by the manifest `preserve` patterns win over the release defaults.
 5. **Registry auto-update**: `registryUrl` allows adding new ports without touching code, JSON only.
 
+For more detail on the code structure and conventions, see [Brisa Architecture](ARCHITECTURE.md).
+
 ## Creating a manifest
 
 ### JSON

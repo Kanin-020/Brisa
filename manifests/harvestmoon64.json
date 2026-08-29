@@ -1,0 +1,42 @@
+{
+  "id": "harvestmoon64",
+  "name": "Harvest Moon 64: Recompiled",
+  "game": "Harvest Moon 64",
+  "description": "Static recompilation of Harvest Moon 64 for native PC. Build your farm, meet villagers, and find love in this beloved N64 classic.",
+  "repo": "HarvestMoon64Recomp/HarvestMoon64Recomp",
+  "roms": [
+    {
+      "id": "hm64",
+      "name": "Harvest Moon 64",
+      "patterns": ["harvest moon 64.z64", "harvest moon 64.n64", "harvest moon 64.v64", "hm64.z64", "hm64.n64", "hm64.v64"],
+      "sha1": ["7fcab48a10a9b3b7ba5834347ff180c74d7b932c"],
+      "dest": "hm64.z64"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "HarvestMoon64Recompiled-*-Linux-X64.zip",
+      "type": "zip",
+      "executable": "HarvestMoon64Recompiled",
+      "nested": true
+    },
+    "linux-arm64": {
+      "pattern": "HarvestMoon64Recompiled-*-Linux-ARM64.zip",
+      "type": "zip",
+      "executable": "HarvestMoon64Recompiled",
+      "nested": true
+    },
+    "windows-x64": {
+      "pattern": "HarvestMoon64Recompiled-*-Windows.zip",
+      "type": "zip",
+      "executable": "HarvestMoon64Recompiled.exe"
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "harvestmoon64",
+    "linkRoot": {
+      "linux": "~/.config/HarvestMoon64Recompiled/mods/"
+    }
+  }
+}

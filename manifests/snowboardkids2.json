@@ -1,0 +1,47 @@
+{
+  "id": "snowboardkids2",
+  "name": "Snowboard Kids 2: Recompiled",
+  "game": "Snowboard Kids 2",
+  "description": "Static recompilation of Snowboard Kids 2 for native PC. Play the classic N64 snowboarding party game with improved visuals.",
+  "repo": "cdlewis/snowboardkids2-recomp",
+  "roms": [
+    {
+      "id": "sbk2",
+      "name": "Snowboard Kids 2",
+      "patterns": [
+        "snowboard kids 2.z64",
+        "snowboard kids 2.n64",
+        "snowboard kids 2.v64",
+        "sbk2.z64",
+        "sbk2.n64",
+        "sbk2.v64"
+      ],
+      "sha1": ["7a195b4d0d03ce1c7c4fd0d13b1be2e97d20000c"],
+      "dest": "sbk2.z64"
+    }
+  ],
+  "assets": {
+    "linux-x64": {
+      "pattern": "SnowboardKids2Recompiled-Linux-X64-Release.tar.gz",
+      "type": "tar.gz",
+      "executable": "SnowboardKids2Recompiled"
+    },
+    "linux-arm64": {
+      "pattern": "SnowboardKids2Recompiled-Linux-ARM64-Release.tar.gz",
+      "type": "tar.gz",
+      "executable": "SnowboardKids2Recompiled"
+    },
+    "windows-x64": {
+      "pattern": "SnowboardKids2Recompiled-Windows-RelWithDebInfo.zip",
+      "type": "zip",
+      "executable": "SnowboardKids2Recompiled.exe"
+    }
+  },
+  "mods": {
+    "dir": "mods",
+    "gameDir": "snowboardkids2",
+    "linkRoot": {
+      "linux": "~/.config/SnowboardKids2Recompiled/mods/"
+    }
+  }
+}
