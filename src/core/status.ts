@@ -1,12 +1,12 @@
-import type { AppConfig } from "./config";
-import { isInstalled, resolveAssetForPlatform } from "./installer";
-import type { Manifest } from "./manifest";
-import { centralModsRoot, isModLinked, listCentralMods } from "./mods";
-import type { RomMatch, ScanResult } from "./scanner";
-import type { SelfUpdateInfo } from "./selfupdate";
-import { readState } from "./state";
-import { checkUpdate, type UpdateInfo } from "./updater";
-import { normalizeVersion } from "./version";
+import type { AppConfig } from './config';
+import { isInstalled, resolveAssetForPlatform } from './installer';
+import type { Manifest } from './manifest';
+import { centralModsRoot, isModLinked, listCentralMods } from './mods';
+import type { RomMatch, ScanResult } from './scanner';
+import type { SelfUpdateInfo } from './selfupdate';
+import { readState } from './state';
+import { checkUpdate, type UpdateInfo } from './updater';
+import { normalizeVersion } from './version';
 
 export interface RomSlotStatus {
   /** Requirement id (e.g. "oot", "oot-mq"). */
@@ -16,7 +16,7 @@ export interface RomSlotStatus {
   required: boolean;
   matched: boolean;
   romName: string | null;
-  matchedBy: "hash" | "gameid" | "name" | null;
+  matchedBy: 'hash' | 'gameid' | 'name' | null;
 }
 
 export interface PortStatus {
@@ -50,7 +50,7 @@ export function normalizeUpdateInfo(info: UpdateInfo): UpdateInfo {
     ...info,
     installed: normalizeVersion(info.installed) ?? info.installed,
     latest: normalizeVersion(info.latest) ?? info.latest,
-    notes: info.notes ?? "",
+    notes: info.notes ?? '',
   };
 }
 
@@ -60,14 +60,12 @@ export function normalizeSelfUpdateInfo(info: SelfUpdateInfo): SelfUpdateInfo {
     ...info,
     current: normalizeVersion(info.current) ?? info.current,
     latest: normalizeVersion(info.latest) ?? info.latest,
-    notes: info.notes ?? "",
+    notes: info.notes ?? '',
   };
 }
 
 /** Agrupa los matches del scan por id de manifiesto y de requisito. */
-function matchesByRequirement(
-  scan: ScanResult,
-): Map<string, Map<string, RomMatch>> {
+function matchesByRequirement(scan: ScanResult): Map<string, Map<string, RomMatch>> {
   const grouped = new Map<string, Map<string, RomMatch>>();
   for (const match of scan.matches) {
     let byRequirement = grouped.get(match.manifest.id);
@@ -99,7 +97,11 @@ function romSlots(
 }
 
 /** Compone el estado completo de un port (instalado, ROMs, mods, update). */
-async function buildPortStatus(cfg: AppConfig, manifest: Manifest, matches: Map<string, RomMatch>): Promise<PortStatus> {
+async function buildPortStatus(
+  cfg: AppConfig,
+  manifest: Manifest,
+  matches: Map<string, RomMatch>,
+): Promise<PortStatus> {
   const state = readState(cfg, manifest.id);
   const roms = romSlots(manifest, matches);
   const mods = listCentralMods(cfg, manifest);
@@ -126,5 +128,9 @@ export async function buildPortStatuses(
   scan: ScanResult,
 ): Promise<PortStatus[]> {
   const matches = matchesByRequirement(scan);
-  return Promise.all(manifests.map((manifest) => buildPortStatus(cfg, manifest, matches.get(manifest.id) ?? new Map())));
+  return Promise.all(
+    manifests.map((manifest) =>
+      buildPortStatus(cfg, manifest, matches.get(manifest.id) ?? new Map()),
+    ),
+  );
 }

@@ -1,6 +1,6 @@
-import { app } from "electron";
-import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { app } from 'electron';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 
 /**
  * Si la app se ejecuta con argumentos (AppImage desde terminal), despacha al
@@ -12,14 +12,14 @@ export function runCliIfNeeded(): void {
   if (args.length === 0) return;
 
   const cliEntry = app.isPackaged
-    ? path.join(process.resourcesPath, "cli-entry.cjs")
-    : path.join(app.getAppPath(), "dist", "cli.js");
+    ? path.join(process.resourcesPath, 'cli-entry.cjs')
+    : path.join(app.getAppPath(), 'dist', 'cli.js');
 
   const res = spawnSync(process.execPath, [cliEntry, ...args], {
-    stdio: "inherit",
+    stdio: 'inherit',
     env: {
       ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
+      ELECTRON_RUN_AS_NODE: '1',
     },
   });
 

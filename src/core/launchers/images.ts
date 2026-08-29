@@ -1,11 +1,11 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import type { AppConfig } from "../config";
-import { appImagePath } from "../version";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { AppConfig } from '../config';
+import { appImagePath } from '../version';
 
 /** Carpeta image/: copia de la propia Brisa + ayudante `imagen`/`imagen.cmd`. */
 export function imagesDir(cfg: AppConfig): string {
-  return path.join(cfg.root, "image");
+  return path.join(cfg.root, 'image');
 }
 
 /**

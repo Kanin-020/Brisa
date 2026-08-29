@@ -20,7 +20,7 @@ export function BrisaPortCard({
 }: PortCardProps) {
   const manifest = port.manifest;
   const isInstalled = port.installed;
-  const isBusy = busy || (task?.status === 'running');
+  const isBusy = busy || task?.status === 'running';
 
   const repoUrl =
     manifest.repo && /^[A-Za-z0-9._/-]+$/.test(manifest.repo)
@@ -113,18 +113,10 @@ export function BrisaPortCard({
         </button>
         {isInstalled && (
           <Fragment>
-            <button
-              class="btn ghost sm"
-              disabled={isBusy}
-              onClick={() => onOpenFolder?.(port)}
-            >
+            <button class="btn ghost sm" disabled={isBusy} onClick={() => onOpenFolder?.(port)}>
               {t('port.openFolder')}
             </button>
-            <button
-              class="btn red sm"
-              disabled={isBusy}
-              onClick={() => onUninstall?.(port)}
-            >
+            <button class="btn red sm" disabled={isBusy} onClick={() => onUninstall?.(port)}>
               {t('port.uninstall')}
             </button>
           </Fragment>
@@ -143,11 +135,7 @@ export function BrisaPortCard({
               {t('port.update')}
             </button>
             {port.updateAvailable && (
-              <button
-                class="btn warn sm"
-                disabled={isBusy}
-                onClick={() => onUpdateAndPlay?.(port)}
-              >
+              <button class="btn warn sm" disabled={isBusy} onClick={() => onUpdateAndPlay?.(port)}>
                 {t('port.updateAndPlay')}
               </button>
             )}

@@ -1,11 +1,11 @@
-import { app } from "electron";
-import { Server } from "http";
-import { App } from "../core/app";
-import { startServer } from "../server/server";
-import { runCliIfNeeded } from "./cli";
-import { initializeEnvironment } from "./environment";
-import { registerLifecycleEvents } from "./lifecycle";
-import { createMainWindow } from "./window";
+import { app } from 'electron';
+import { Server } from 'http';
+import { App } from '../core/app';
+import { startServer } from '../server/server';
+import { runCliIfNeeded } from './cli';
+import { initializeEnvironment } from './environment';
+import { registerLifecycleEvents } from './lifecycle';
+import { createMainWindow } from './window';
 
 initializeEnvironment();
 
@@ -32,5 +32,5 @@ app.whenReady().then(() => {
     onSelfUpdate: () => setTimeout(() => app.quit(), 800),
   });
 
-  win.once("ready-to-show", () => win.show());
+  win.once('ready-to-show', () => win.show());
 });

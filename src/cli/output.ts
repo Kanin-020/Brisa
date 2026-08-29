@@ -21,7 +21,7 @@ export class ProgressReporter {
   private lastDrawAt = 0;
 
   report(stage: string, done: number, total: number): void {
-    if (stage !== "download" || total <= 0) return;
+    if (stage !== 'download' || total <= 0) return;
     const now = Date.now();
     if (now - this.lastDrawAt < PROGRESS_REPORT_INTERVAL_MS && done < total) return;
     this.lastDrawAt = now;
@@ -29,6 +29,6 @@ export class ProgressReporter {
     process.stderr.write(
       `\r  descargando... ${pct}% (${(done / MIB).toFixed(1)}/${(total / MIB).toFixed(1)} MB)`,
     );
-    if (done >= total) process.stderr.write("\n");
+    if (done >= total) process.stderr.write('\n');
   }
 }

@@ -1,10 +1,10 @@
-import * as fs from "node:fs";
-import * as os from "node:os";
-import * as path from "node:path";
-import type { AppConfig } from "./config";
-import { isInstalled } from "./installer";
-import type { Manifest } from "./manifest";
-import { detectPlatform } from "./platform";
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import type { AppConfig } from './config';
+import { isInstalled } from './installer';
+import type { Manifest } from './manifest';
+import { detectPlatform } from './platform';
 
 /**
  * Centralized mods live in MODS/<gameDir>/<modName>.
@@ -24,15 +24,17 @@ export function centralModsRoot(cfg: AppConfig, manifest: Manifest): string {
 export function modsLinkRoot(cfg: AppConfig, manifest: Manifest): string {
   const config = manifest.mods.linkRoot;
   const platformOs = detectPlatform().os;
-  const raw = typeof config === "string" ? config : config?.[platformOs];
+  const raw = typeof config === 'string' ? config : config?.[platformOs];
   if (!raw) {
     if (config) {
-      console.warn(`[mods] ${manifest.id}: linkRoot has no entry for OS "${platformOs}" — using <portDir>/<dir>`);
+      console.warn(
+        `[mods] ${manifest.id}: linkRoot has no entry for OS "${platformOs}" — using <portDir>/<dir>`,
+      );
     }
     return path.join(cfg.portsDir, manifest.id, manifest.mods.dir);
   }
-  if (raw === "~") return os.homedir();
-  if (raw.startsWith("~/")) return path.join(os.homedir(), raw.slice(2));
+  if (raw === '~') return os.homedir();
+  if (raw.startsWith('~/')) return path.join(os.homedir(), raw.slice(2));
   const envMatch = raw.match(/^%([^%]+)%\/?/);
   if (envMatch) {
     const env = process.env[envMatch[1]];
@@ -44,7 +46,10 @@ export function modsLinkRoot(cfg: AppConfig, manifest: Manifest): string {
 export function listCentralMods(cfg: AppConfig, manifest: Manifest): string[] {
   const root = centralModsRoot(cfg, manifest);
   if (!fs.existsSync(root)) return [];
-  return fs.readdirSync(root, { withFileTypes: true }).map((entry) => entry.name).sort();
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .map((entry) => entry.name)
+    .sort();
 }
 
 export function isModLinked(cfg: AppConfig, manifest: Manifest, modName: string): boolean {
@@ -62,7 +67,8 @@ export function isModLinked(cfg: AppConfig, manifest: Manifest, modName: string)
  */
 export function linkMod(cfg: AppConfig, manifest: Manifest, modName: string): void {
   const source = path.join(centralModsRoot(cfg, manifest), modName);
-  if (!fs.existsSync(source)) throw new Error(`Mod not found in MODS/${manifest.mods.gameDir}: ${modName}`);
+  if (!fs.existsSync(source))
+    throw new Error(`Mod not found in MODS/${manifest.mods.gameDir}: ${modName}`);
   const dest = path.join(modsLinkRoot(cfg, manifest), modName);
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   removeLinkedEntry(dest);
@@ -71,10 +77,10 @@ export function linkMod(cfg: AppConfig, manifest: Manifest, modName: string): vo
     // de SO se crea un symlink normal). Si falla, symlink de directorio y,
     // como último recurso, copia.
     try {
-      fs.symlinkSync(source, dest, "junction");
+      fs.symlinkSync(source, dest, 'junction');
     } catch {
       try {
-        fs.symlinkSync(source, dest, "dir");
+        fs.symlinkSync(source, dest, 'dir');
       } catch {
         fs.cpSync(source, dest, { recursive: true });
       }
@@ -84,7 +90,7 @@ export function linkMod(cfg: AppConfig, manifest: Manifest, modName: string): vo
     // junction roto en silencio). Symlink de archivo y, si el SO no lo
     // permite (sin modo desarrollador), copia para que el juego pueda leerlo.
     try {
-      fs.symlinkSync(source, dest, "file");
+      fs.symlinkSync(source, dest, 'file');
     } catch {
       fs.copyFileSync(source, dest);
     }

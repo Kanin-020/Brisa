@@ -1,6 +1,6 @@
-import { spawn } from "node:child_process";
-import * as path from "node:path";
-import { cleanLaunchEnv } from "../core/env";
+import { spawn } from 'node:child_process';
+import * as path from 'node:path';
+import { cleanLaunchEnv } from '../core/env';
 
 /**
  * Lanza el ejecutable del juego. Con `wait` el CLI permanece vivo hasta que el
@@ -12,14 +12,14 @@ export function launchPortProcess(executable: string, wait: boolean): Promise<vo
   const child = spawn(executable, [], {
     cwd: path.dirname(executable),
     detached: !wait,
-    stdio: wait ? "inherit" : "ignore",
+    stdio: wait ? 'inherit' : 'ignore',
     env: cleanLaunchEnv(),
   });
-  child.on("error", (err) => {
+  child.on('error', (err) => {
     console.error(`No se pudo lanzar ${executable}: ${err.message}`);
   });
   if (wait) {
-    return new Promise<void>((resolve) => child.on("exit", () => resolve()));
+    return new Promise<void>((resolve) => child.on('exit', () => resolve()));
   }
   child.unref();
   return Promise.resolve();

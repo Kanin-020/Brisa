@@ -1,5 +1,5 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
-import { sendJson } from "./http";
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import { sendJson } from './http';
 
 export type ApiHandler = (
   req: IncomingMessage,
@@ -19,11 +19,11 @@ export class ApiRouter {
   }
 
   get(pathname: string, handler: ApiHandler): void {
-    this.register("GET", pathname, handler);
+    this.register('GET', pathname, handler);
   }
 
   post(pathname: string, handler: ApiHandler): void {
-    this.register("POST", pathname, handler);
+    this.register('POST', pathname, handler);
   }
 
   /**

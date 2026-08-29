@@ -1,7 +1,7 @@
-import { GITHUB_API_BASE, USER_AGENT } from "./constants";
-import type { AppConfig } from "./config";
-import { matchGlob } from "./glob";
-import { normalizeVersion } from "./version";
+import { GITHUB_API_BASE, USER_AGENT } from './constants';
+import type { AppConfig } from './config';
+import { matchGlob } from './glob';
+import { normalizeVersion } from './version';
 
 export interface ReleaseAsset {
   name: string;
@@ -30,20 +30,24 @@ interface RawRelease {
 
 function githubHeaders(cfg: AppConfig): Record<string, string> {
   return {
-    "User-Agent": USER_AGENT,
+    'User-Agent': USER_AGENT,
     ...(cfg.githubToken ? { Authorization: `Bearer ${cfg.githubToken}` } : {}),
   };
 }
 
 function parseRelease(data: RawRelease): ReleaseInfo {
   return {
-    tag: normalizeVersion(data.tag_name) ?? "unknown",
-    name: data.name ?? data.tag_name ?? "unknown",
-    body: data.body ?? "",
-    publishedAt: data.published_at ?? "",
+    tag: normalizeVersion(data.tag_name) ?? 'unknown',
+    name: data.name ?? data.tag_name ?? 'unknown',
+    body: data.body ?? '',
+    publishedAt: data.published_at ?? '',
     assets: (data.assets ?? [])
       .filter((asset) => asset.name && asset.browser_download_url)
-      .map((asset) => ({ name: asset.name!, url: asset.browser_download_url!, size: asset.size ?? 0 })),
+      .map((asset) => ({
+        name: asset.name!,
+        url: asset.browser_download_url!,
+        size: asset.size ?? 0,
+      })),
   };
 }
 
@@ -65,7 +69,9 @@ export async function getLatestRelease(
     return getLatestReleaseFallback(cfg, repo);
   }
   if (!res.ok) {
-    throw new Error(`GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`);
+    throw new Error(
+      `GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`,
+    );
   }
   return parseRelease((await res.json()) as RawRelease);
 }
@@ -75,7 +81,9 @@ async function getLatestReleaseFallback(cfg: AppConfig, repo: string): Promise<R
   const url = `${GITHUB_API_BASE}/repos/${repo}/releases?per_page=5`;
   const res = await fetch(url, { headers: githubHeaders(cfg) });
   if (!res.ok) {
-    throw new Error(`GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`);
+    throw new Error(
+      `GitHub API error ${res.status} for ${repo} (${url}). Add GITHUB_TOKEN to config to raise the rate limit.`,
+    );
   }
   const data = (await res.json()) as RawRelease[];
   const release = data.find((item) => !item.draft);

@@ -1,10 +1,10 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { Readable } from "node:stream";
-import { pipeline } from "node:stream/promises";
-import { USER_AGENT } from "./constants";
-import type { AppConfig } from "./config";
-import { CancelledError, throwIfAborted } from "./tasks";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { USER_AGENT } from './constants';
+import type { AppConfig } from './config';
+import { CancelledError, throwIfAborted } from './tasks';
 
 /** Tipo de callback para reportar progreso de descarga. */
 export type ProgressFn = (bytesDownloaded: number, totalBytes: number) => void;
@@ -33,8 +33,8 @@ export async function download(
 
   // Realizar petición HTTP
   const response = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "application/octet-stream" },
-    redirect: "follow",
+    headers: { 'User-Agent': USER_AGENT, Accept: 'application/octet-stream' },
+    redirect: 'follow',
     signal,
   });
 
@@ -42,7 +42,7 @@ export async function download(
     throw new Error(`Download failed: HTTP ${response.status} for ${url}`);
   }
 
-  const totalBytes = Number(response.headers.get("content-length") ?? 0);
+  const totalBytes = Number(response.headers.get('content-length') ?? 0);
   let bytesDownloaded = 0;
 
   // Convertir el body a un stream legible
@@ -55,7 +55,7 @@ export async function download(
   const writeStream = fs.createWriteStream(destinationPath);
 
   // Reportar progreso en cada chunk recibido
-  readableStream.on("data", (chunk: Buffer) => {
+  readableStream.on('data', (chunk: Buffer) => {
     bytesDownloaded += chunk.length;
     onProgress?.(bytesDownloaded, totalBytes);
   });
@@ -68,7 +68,7 @@ export async function download(
     if (signal?.aborted) {
       // Limpiar archivo parcial en caso de cancelación
       fs.rmSync(destinationPath, { force: true });
-      throw new CancelledError("Descarga cancelada");
+      throw new CancelledError('Descarga cancelada');
     }
     throw error;
   }
@@ -78,10 +78,6 @@ export async function download(
  * Obtiene la ruta donde se guardará un asset descargado.
  * Estructura: cache/downloads/<portId>/<assetName>
  */
-export function downloadPath(
-  config: AppConfig,
-  portId: string,
-  assetName: string,
-): string {
-  return path.join(config.cacheDir, "downloads", portId, assetName);
+export function downloadPath(config: AppConfig, portId: string, assetName: string): string {
+  return path.join(config.cacheDir, 'downloads', portId, assetName);
 }

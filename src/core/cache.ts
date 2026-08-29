@@ -1,6 +1,6 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { UPDATE_CHECK_INTERVAL_MS } from "./constants";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { UPDATE_CHECK_INTERVAL_MS } from './constants';
 
 /**
  * Caché JSON en disco con caducidad por tiempo, compartida por la comprobación
@@ -37,7 +37,7 @@ export class JsonCache<T> {
   /** Lee la entrada tal cual está en disco (con savedAt), o null. */
   private readRaw(id: string): (T & { savedAt?: number }) | null {
     try {
-      return JSON.parse(fs.readFileSync(this.pathFor(id), "utf8")) as T & { savedAt?: number };
+      return JSON.parse(fs.readFileSync(this.pathFor(id), 'utf8')) as T & { savedAt?: number };
     } catch {
       return null;
     }
@@ -52,7 +52,7 @@ export class JsonCache<T> {
 
   /** True cuando la entrada se guardó hace menos de `ttlMs`. */
   isFresh(entry: { savedAt?: number }): boolean {
-    return typeof entry.savedAt === "number" && Date.now() - entry.savedAt < this.ttlMs;
+    return typeof entry.savedAt === 'number' && Date.now() - entry.savedAt < this.ttlMs;
   }
 }
 

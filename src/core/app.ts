@@ -1,25 +1,34 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { loadConfig, ensureDirs, type AppConfig } from "./config";
-import { installPort, launchExecutable, uninstallPort, portDir } from "./installer";
-import { listManifests, loadManifest, importManifests, type Manifest } from "./manifest";
-import { linkAllMods, listCentralMods, centralModsRoot, linkMod, unlinkMod, unlinkAllMods, isModLinked, syncModsFolders } from "./mods";
-import { scanRoms, type ScanResult, type RomFile } from "./scanner";
-import { listStates } from "./state";
-import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from "./updater";
-import { TaskManager, throwIfAborted } from "./tasks";
-import { checkSelfUpdate, applySelfUpdate, type SelfUpdateInfo } from "./selfupdate";
-import { detectPlatform } from "./platform";
-import { ensureSelfImageCopy, syncLaunchers, writeImagenHelper } from "./launchers";
-import { deleteRom, saveRomFile } from "./roms";
-import { openPathInFileManager } from "./folders";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { loadConfig, ensureDirs, type AppConfig } from './config';
+import { installPort, launchExecutable, uninstallPort, portDir } from './installer';
+import { listManifests, loadManifest, importManifests, type Manifest } from './manifest';
+import {
+  linkAllMods,
+  listCentralMods,
+  centralModsRoot,
+  linkMod,
+  unlinkMod,
+  unlinkAllMods,
+  isModLinked,
+  syncModsFolders,
+} from './mods';
+import { scanRoms, type ScanResult, type RomFile } from './scanner';
+import { listStates } from './state';
+import { checkUpdate, applyUpdate, refreshRemoteManifests, type UpdateInfo } from './updater';
+import { TaskManager, throwIfAborted } from './tasks';
+import { checkSelfUpdate, applySelfUpdate, type SelfUpdateInfo } from './selfupdate';
+import { detectPlatform } from './platform';
+import { ensureSelfImageCopy, syncLaunchers, writeImagenHelper } from './launchers';
+import { deleteRom, saveRomFile } from './roms';
+import { openPathInFileManager } from './folders';
 import {
   buildPortStatuses,
   normalizeSelfUpdateInfo,
   type PortStatus,
   type RomSlotStatus,
   type StatusResult,
-} from "./status";
+} from './status';
 
 // Re-export para compatibilidad con consumidores que importan los tipos desde app.
 export type { PortStatus, RomSlotStatus, StatusResult };
@@ -123,7 +132,10 @@ export class App {
 
   async update(
     id: string,
-    opts: { signal?: AbortSignal; onProgress?: (stage: string, done: number, total: number) => void } = {},
+    opts: {
+      signal?: AbortSignal;
+      onProgress?: (stage: string, done: number, total: number) => void;
+    } = {},
   ): Promise<UpdateInfo> {
     const manifest = this.manifest(id);
     if (!manifest) throw new Error(`Port not found: ${id}`);
@@ -134,11 +146,13 @@ export class App {
    * Actualiza todos los ports instalados que tengan una versión más reciente
    * (secuencialmente, respetando cancelación y reportando por port).
    */
-  async updateAll(opts: {
-    signal?: AbortSignal;
-    onPortStart?: (name: string) => void;
-    onProgress?: (stage: string, done: number, total: number) => void;
-  } = {}): Promise<{ updated: number; results: UpdateInfo[] }> {
+  async updateAll(
+    opts: {
+      signal?: AbortSignal;
+      onPortStart?: (name: string) => void;
+      onProgress?: (stage: string, done: number, total: number) => void;
+    } = {},
+  ): Promise<{ updated: number; results: UpdateInfo[] }> {
     const { signal, onPortStart, onProgress } = opts;
     const results: UpdateInfo[] = [];
     let updated = 0;
@@ -165,7 +179,7 @@ export class App {
   async selfUpdate(
     onProgress?: (stage: string, done: number, total: number) => void,
   ): Promise<SelfUpdateInfo> {
-    return applySelfUpdate(this.cfg, (done, total) => onProgress?.("download", done, total));
+    return applySelfUpdate(this.cfg, (done, total) => onProgress?.('download', done, total));
   }
 
   async checkUpdate(id: string, force = false): Promise<UpdateInfo | null> {
@@ -257,12 +271,12 @@ export class App {
    * running inside the desktop app, and falls back to the platform opener
    * (xdg-open / open / explorer) otherwise.
    */
-  async openFolder(dir?: "root" | "roms" | "mods" | "manifests" | "ports"): Promise<boolean> {
+  async openFolder(dir?: 'root' | 'roms' | 'mods' | 'manifests' | 'ports'): Promise<boolean> {
     let target = this.cfg.root;
-    if (dir === "roms") target = this.cfg.romsDir;
-    else if (dir === "mods") target = this.cfg.modsDir;
-    else if (dir === "manifests") target = this.cfg.manifestsDir;
-    else if (dir === "ports") target = this.cfg.portsDir;
+    if (dir === 'roms') target = this.cfg.romsDir;
+    else if (dir === 'mods') target = this.cfg.modsDir;
+    else if (dir === 'manifests') target = this.cfg.manifestsDir;
+    else if (dir === 'ports') target = this.cfg.portsDir;
     return openPathInFileManager(target);
   }
 

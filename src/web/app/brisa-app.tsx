@@ -39,10 +39,18 @@ export function BrisaApp() {
   });
   const [queryInstalled, setQueryInstalled] = useState('');
   const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
-    try { return (localStorage.getItem('brisa-ports-view') as 'cards' | 'list') || 'cards'; } catch { return 'cards'; }
+    try {
+      return (localStorage.getItem('brisa-ports-view') as 'cards' | 'list') || 'cards';
+    } catch {
+      return 'cards';
+    }
   });
   const [romsViewMode, setRomsViewMode] = useState<'cards' | 'list'>(() => {
-    try { return (localStorage.getItem('brisa-roms-view') as 'cards' | 'list') || 'cards'; } catch { return 'cards'; }
+    try {
+      return (localStorage.getItem('brisa-roms-view') as 'cards' | 'list') || 'cards';
+    } catch {
+      return 'cards';
+    }
   });
   const romFileInputRef = useRef<HTMLInputElement>(null);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -145,13 +153,16 @@ export function BrisaApp() {
   }, []);
 
   // ── Toast ──
-  const showToast = useCallback((msg: string, kind: 'ok' | 'warn' | 'error' = 'ok', _duration = 3200) => {
-    setToastMsg('');
-    requestAnimationFrame(() => {
-      setToastMsg(msg);
-      setToastKind(kind);
-    });
-  }, []);
+  const showToast = useCallback(
+    (msg: string, kind: 'ok' | 'warn' | 'error' = 'ok', _duration = 3200) => {
+      setToastMsg('');
+      requestAnimationFrame(() => {
+        setToastMsg(msg);
+        setToastKind(kind);
+      });
+    },
+    [],
+  );
 
   // ── Polling for tasks ──
   const startPolling = useCallback(() => {
@@ -248,12 +259,7 @@ export function BrisaApp() {
           body: JSON.stringify({ id: portId }),
         });
         const data = await res.json();
-        if (data.task)
-          trackTask(
-            data.task,
-            portId,
-            launchAfter ? () => doLaunchPort(port) : null,
-          );
+        if (data.task) trackTask(data.task, portId, launchAfter ? () => doLaunchPort(port) : null);
       } catch (err) {
         showToast(err instanceof Error ? err.message : String(err), 'error');
         setBusyPorts((prev) => {
@@ -311,10 +317,7 @@ export function BrisaApp() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: portId, mod }),
         });
-        showToast(
-          isLinked ? ti('toast.modUnlinked', mod) : ti('toast.modLinked', mod),
-          'ok',
-        );
+        showToast(isLinked ? ti('toast.modUnlinked', mod) : ti('toast.modLinked', mod), 'ok');
         await loadState();
       } catch (err) {
         showToast(err instanceof Error ? err.message : String(err), 'error');
@@ -325,18 +328,14 @@ export function BrisaApp() {
 
   // ── ROM upload ──
   const uploadRom = useCallback(
-    (
-      file: File,
-      onProgress?: (pct: number) => void,
-    ): Promise<{ skipped?: boolean }> => {
+    (file: File, onProgress?: (pct: number) => void): Promise<{ skipped?: boolean }> => {
       return new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('POST', '/api/roms/upload');
         xhr.setRequestHeader('Content-Type', 'application/octet-stream');
         xhr.setRequestHeader('X-Filename', encodeURIComponent(file.name));
         xhr.upload.onprogress = (e) => {
-          if (e.lengthComputable && onProgress)
-            onProgress(Math.round((e.loaded / e.total) * 100));
+          if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
         };
         xhr.onload = () => {
           let data: Record<string, unknown> = {};
@@ -345,8 +344,7 @@ export function BrisaApp() {
           } catch {
             /* ignore */
           }
-          if (xhr.status >= 200 && xhr.status < 300)
-            resolve(data as { skipped?: boolean });
+          if (xhr.status >= 200 && xhr.status < 300) resolve(data as { skipped?: boolean });
           else reject(new Error((data.error as string) || `HTTP ${xhr.status}`));
         };
         xhr.onerror = () => reject(new Error('network error'));
@@ -506,8 +504,9 @@ export function BrisaApp() {
   const filteredAvailable = filterPorts(available, queryAvailable);
 
   // ── Help steps ──
-  const helpSteps: I18nHelpStep[] =
-    window.__i18n?.tRaw ? ((window.__i18n!.tRaw('help.steps') as I18nHelpStep[]) ?? []) : [];
+  const helpSteps: I18nHelpStep[] = window.__i18n?.tRaw
+    ? ((window.__i18n!.tRaw('help.steps') as I18nHelpStep[]) ?? [])
+    : [];
 
   return (
     <div class="app">
@@ -660,13 +659,31 @@ export function BrisaApp() {
                     <button
                       class={`view-btn ${viewMode === 'cards' ? 'active' : ''}`}
                       title={ti('ports.viewCards')}
-                      onClick={() => { setViewMode('cards'); try { localStorage.setItem('brisa-ports-view', 'cards'); } catch { /* ignore */ } }}
-                    >▦</button>
+                      onClick={() => {
+                        setViewMode('cards');
+                        try {
+                          localStorage.setItem('brisa-ports-view', 'cards');
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
+                      ▦
+                    </button>
                     <button
                       class={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
                       title={ti('ports.viewList')}
-                      onClick={() => { setViewMode('list'); try { localStorage.setItem('brisa-ports-view', 'list'); } catch { /* ignore */ } }}
-                    >☰</button>
+                      onClick={() => {
+                        setViewMode('list');
+                        try {
+                          localStorage.setItem('brisa-ports-view', 'list');
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
+                      ☰
+                    </button>
                   </div>
                 </div>
               </div>
@@ -728,13 +745,31 @@ export function BrisaApp() {
                 <button
                   class={`view-btn ${romsViewMode === 'cards' ? 'active' : ''}`}
                   title={ti('roms.viewCards')}
-                  onClick={() => { setRomsViewMode('cards'); try { localStorage.setItem('brisa-roms-view', 'cards'); } catch { /* ignore */ } }}
-                >▦</button>
+                  onClick={() => {
+                    setRomsViewMode('cards');
+                    try {
+                      localStorage.setItem('brisa-roms-view', 'cards');
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                >
+                  ▦
+                </button>
                 <button
                   class={`view-btn ${romsViewMode === 'list' ? 'active' : ''}`}
                   title={ti('roms.viewList')}
-                  onClick={() => { setRomsViewMode('list'); try { localStorage.setItem('brisa-roms-view', 'list'); } catch { /* ignore */ } }}
-                >☰</button>
+                  onClick={() => {
+                    setRomsViewMode('list');
+                    try {
+                      localStorage.setItem('brisa-roms-view', 'list');
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                >
+                  ☰
+                </button>
               </div>
             </div>
           </div>
@@ -868,12 +903,16 @@ export function BrisaApp() {
         class={`modal-overlay ${changelogOpen ? 'show' : ''}`}
         role="dialog"
         aria-modal="true"
-        onClick={(e) => { if (e.target === e.currentTarget) setChangelogOpen(false); }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setChangelogOpen(false);
+        }}
       >
         <div class="modal modal-changelog">
           <div class="modal-head">
             <h3>{ti('changelog.title')}</h3>
-            <button class="modal-close" onClick={() => setChangelogOpen(false)}>✕</button>
+            <button class="modal-close" onClick={() => setChangelogOpen(false)}>
+              ✕
+            </button>
           </div>
           <div class="modal-body changelog-body">
             <div class="changelog-head">
@@ -882,9 +921,14 @@ export function BrisaApp() {
             </div>
             {changelogNotes ? (
               <div class="changelog-notes">
-                {changelogNotes.split(/\r?\n/).filter(Boolean).map((line, i) => (
-                  <p key={i} class="changelog-line">{line}</p>
-                ))}
+                {changelogNotes
+                  .split(/\r?\n/)
+                  .filter(Boolean)
+                  .map((line, i) => (
+                    <p key={i} class="changelog-line">
+                      {line}
+                    </p>
+                  ))}
               </div>
             ) : (
               <p class="changelog-empty">{ti('changelog.empty')}</p>

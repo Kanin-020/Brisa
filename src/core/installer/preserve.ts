@@ -1,7 +1,7 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { matchGlob } from "../glob";
-import type { Manifest } from "../manifest";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { matchGlob } from '../glob';
+import type { Manifest } from '../manifest';
 
 /**
  * Después de extraer la nueva versión, restaura desde el backup los datos de
@@ -20,8 +20,7 @@ export function preserveUserData(backup: string, dir: string, manifest: Manifest
   const destExists = (rel: string) => fs.existsSync(path.join(dir, rel));
   // Un archivo se restaura si la nueva release no lo trae, o si el manifiesto
   // lo marca en `preserve` (entonces el del usuario pisa el default).
-  const keep = (rel: string) =>
-    destExists(rel) ? patterns.some((p) => matchGlob(p, rel)) : true;
+  const keep = (rel: string) => (destExists(rel) ? patterns.some((p) => matchGlob(p, rel)) : true);
 
   const walk = (src: string, rel: string) => {
     for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
@@ -45,11 +44,11 @@ export function preserveUserData(backup: string, dir: string, manifest: Manifest
             // junction (destino absoluto, sin permisos de admin); el resto
             // como symlink normal.
             const targetIsDir =
-              process.platform === "win32" &&
+              process.platform === 'win32' &&
               fs.existsSync(target) &&
               fs.statSync(target).isDirectory();
             if (targetIsDir) {
-              fs.symlinkSync(target, destFull, "junction");
+              fs.symlinkSync(target, destFull, 'junction');
             } else {
               fs.symlinkSync(target, destFull);
             }
@@ -63,7 +62,7 @@ export function preserveUserData(backup: string, dir: string, manifest: Manifest
       }
     }
   };
-  walk(backup, "");
+  walk(backup, '');
 }
 
 /**

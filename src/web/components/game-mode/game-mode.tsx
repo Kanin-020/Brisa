@@ -20,7 +20,17 @@ interface GameCardProps {
   mainLabel: string;
 }
 
-function GameCard({ port, isSelected, busy, task, running, onClick, onDblClick, onAction, mainLabel }: GameCardProps) {
+function GameCard({
+  port,
+  isSelected,
+  busy,
+  task,
+  running,
+  onClick,
+  onDblClick,
+  onAction,
+  mainLabel,
+}: GameCardProps) {
   return (
     <div
       class={`gm-card ${isSelected ? 'selected' : ''} ${port.installed ? 'installed' : ''} ${running ? 'running' : ''}`}
@@ -61,7 +71,10 @@ function GameCard({ port, isSelected, busy, task, running, onClick, onDblClick, 
       <button
         class={`gm-action-btn ${port.installed ? (port.updateAvailable ? 'warn' : 'green') : ''} ${running ? 'stop' : ''}`}
         disabled={busy}
-        onClick={(e) => { e.stopPropagation(); onAction(); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onAction();
+        }}
       >
         {mainLabel}
       </button>
@@ -73,7 +86,9 @@ function GameCard({ port, isSelected, busy, task, running, onClick, onDblClick, 
               style={task.pct > 0 ? `width: ${task.pct}%` : ''}
             />
           </div>
-          <span class="gm-progress-label">{task.label}: {task.stage}</span>
+          <span class="gm-progress-label">
+            {task.label}: {task.stage}
+          </span>
         </div>
       )}
     </div>
@@ -90,7 +105,11 @@ export function GameMode({ onExit }: GameModeProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [focusZone, setFocusZone] = useState<FocusZone>('grid');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'carousel'>(() => {
-    try { return (localStorage.getItem('gm-layout') as 'grid' | 'carousel') || 'grid'; } catch { return 'grid'; }
+    try {
+      return (localStorage.getItem('gm-layout') as 'grid' | 'carousel') || 'grid';
+    } catch {
+      return 'grid';
+    }
   });
   const [toastMsg, setToastMsg] = useState('');
   const [toastKind, setToastKind] = useState<'ok' | 'warn' | 'error'>('ok');
@@ -99,7 +118,11 @@ export function GameMode({ onExit }: GameModeProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsFocus, setSettingsFocus] = useState(0);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() => {
-    try { return (document.documentElement.dataset.theme as 'light' | 'dark') || 'dark'; } catch { return 'dark'; }
+    try {
+      return (document.documentElement.dataset.theme as 'light' | 'dark') || 'dark';
+    } catch {
+      return 'dark';
+    }
   });
   const activeTasks = useRef<Map<string, ActiveTask>>(new Map());
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -108,7 +131,10 @@ export function GameMode({ onExit }: GameModeProps) {
 
   const showToast = useCallback((msg: string, kind: 'ok' | 'warn' | 'error' = 'ok') => {
     setToastMsg('');
-    requestAnimationFrame(() => { setToastMsg(msg); setToastKind(kind); });
+    requestAnimationFrame(() => {
+      setToastMsg(msg);
+      setToastKind(kind);
+    });
   }, []);
 
   // ── State loading ──
@@ -122,12 +148,16 @@ export function GameMode({ onExit }: GameModeProps) {
     }
   }, []);
 
-  useEffect(() => { loadState(); }, [loadState]);
+  useEffect(() => {
+    loadState();
+  }, [loadState]);
 
   // ── Settings: Escape key closes modal ──
   useEffect(() => {
     if (!settingsOpen) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSettingsOpen(false); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSettingsOpen(false);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [settingsOpen]);
@@ -144,12 +174,20 @@ export function GameMode({ onExit }: GameModeProps) {
           const info = byId.get(taskId);
           if (!info) {
             activeTasks.current.delete(taskId);
-            setBusyPorts((prev) => { const n = new Set(prev); if (entry.portId) n.delete(entry.portId); return n; });
+            setBusyPorts((prev) => {
+              const n = new Set(prev);
+              if (entry.portId) n.delete(entry.portId);
+              return n;
+            });
             continue;
           }
           if (info.status !== 'running') {
             activeTasks.current.delete(taskId);
-            setBusyPorts((prev) => { const n = new Set(prev); if (entry.portId) n.delete(entry.portId); return n; });
+            setBusyPorts((prev) => {
+              const n = new Set(prev);
+              if (entry.portId) n.delete(entry.portId);
+              return n;
+            });
             if (info.status === 'done' && entry.onDone) entry.onDone();
             await loadState();
           }
@@ -158,11 +196,18 @@ export function GameMode({ onExit }: GameModeProps) {
           clearInterval(pollTimer.current);
           pollTimer.current = null;
         }
-      } catch { /* retry */ }
+      } catch {
+        /* retry */
+      }
     }, 700);
   }, [loadState]);
 
-  useEffect(() => () => { if (pollTimer.current) clearInterval(pollTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (pollTimer.current) clearInterval(pollTimer.current);
+    },
+    [],
+  );
 
   // ── Derived data ──
   const ports = state?.ports ?? [];
@@ -183,11 +228,15 @@ export function GameMode({ onExit }: GameModeProps) {
     const updateColumns = () => {
       if (layoutMode !== 'grid' || !gridRef.current) return;
       const children = gridRef.current.children;
-      if (children.length < 2) { columnsRef.current = Math.max(1, children.length); return; }
+      if (children.length < 2) {
+        columnsRef.current = Math.max(1, children.length);
+        return;
+      }
       const firstTop = (children[0] as HTMLElement).getBoundingClientRect().top;
       let cols = 1;
       for (let i = 1; i < children.length; i++) {
-        if (Math.abs((children[i] as HTMLElement).getBoundingClientRect().top - firstTop) > 5) break;
+        if (Math.abs((children[i] as HTMLElement).getBoundingClientRect().top - firstTop) > 5)
+          break;
         cols++;
       }
       columnsRef.current = cols;
@@ -196,14 +245,21 @@ export function GameMode({ onExit }: GameModeProps) {
     window.addEventListener('resize', updateColumns);
     // Also re-measure after layout settles
     const raf = requestAnimationFrame(updateColumns);
-    return () => { window.removeEventListener('resize', updateColumns); cancelAnimationFrame(raf); };
+    return () => {
+      window.removeEventListener('resize', updateColumns);
+      cancelAnimationFrame(raf);
+    };
   }, [layoutMode, currentList.length]);
 
   // ── Toggle layout helper ──
   const toggleLayout = useCallback(() => {
     setLayoutMode((prev) => {
       const next = prev === 'grid' ? 'carousel' : 'grid';
-      try { localStorage.setItem('gm-layout', next); } catch { /* ignore */ }
+      try {
+        localStorage.setItem('gm-layout', next);
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   }, []);
@@ -213,7 +269,11 @@ export function GameMode({ onExit }: GameModeProps) {
     setCurrentTheme((prev) => {
       const next = prev === 'dark' ? 'light' : 'dark';
       document.documentElement.dataset.theme = next;
-      try { localStorage.setItem('brisa-theme', next); } catch { /* ignore */ }
+      try {
+        localStorage.setItem('brisa-theme', next);
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   }, []);
@@ -221,53 +281,75 @@ export function GameMode({ onExit }: GameModeProps) {
   // ── Settings helpers (named to avoid JSX parser issues with complex inline handlers) ──
   const applyLayout = (mode: 'grid' | 'carousel') => {
     setLayoutMode(mode);
-    try { localStorage.setItem('gm-layout', mode); } catch { /* ignore */ }
+    try {
+      localStorage.setItem('gm-layout', mode);
+    } catch {
+      /* ignore */
+    }
   };
   const applyTheme = (theme: 'light' | 'dark') => {
     setCurrentTheme(theme);
     document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem('brisa-theme', theme); } catch { /* ignore */ }
+    try {
+      localStorage.setItem('brisa-theme', theme);
+    } catch {
+      /* ignore */
+    }
   };
 
   // ── Actions ──
-  const doAction = useCallback(async (port: Port, action: 'install' | 'launch' | 'update' | 'stop') => {
-    const portId = port.manifest.id;
-    if (action === 'stop') {
+  const doAction = useCallback(
+    async (port: Port, action: 'install' | 'launch' | 'update' | 'stop') => {
+      const portId = port.manifest.id;
+      if (action === 'stop') {
+        try {
+          await fetch('/api/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: portId }),
+          });
+          setRunningPorts((prev) => {
+            const n = new Set(prev);
+            n.delete(portId);
+            return n;
+          });
+          showToast(`⏹ Stopped ${port.manifest.name}`, 'ok');
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : String(err), 'error');
+        }
+        return;
+      }
+      setBusyPorts((prev) => new Set([...prev, portId]));
       try {
-        await fetch('/api/stop', {
+        const endpoint = action === 'launch' ? '/api/launch' : `/api/${action}`;
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: portId }),
         });
-        setRunningPorts((prev) => { const n = new Set(prev); n.delete(portId); return n; });
-        showToast(`⏹ Stopped ${port.manifest.name}`, 'ok');
+        const data = await res.json();
+        if (data.task) {
+          activeTasks.current.set(data.task.id, { task: data.task, portId });
+          startPolling();
+        }
+        if (action === 'launch' && data.pid) {
+          setRunningPorts((prev) => new Set([...prev, portId]));
+        }
+        showToast(
+          `${action === 'launch' ? '▶ Launching' : action === 'install' ? '⬇ Installing' : '⬆ Updating'} ${port.manifest.name}...`,
+          'ok',
+        );
       } catch (err) {
         showToast(err instanceof Error ? err.message : String(err), 'error');
+        setBusyPorts((prev) => {
+          const n = new Set(prev);
+          n.delete(portId);
+          return n;
+        });
       }
-      return;
-    }
-    setBusyPorts((prev) => new Set([...prev, portId]));
-    try {
-      const endpoint = action === 'launch' ? '/api/launch' : `/api/${action}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: portId }),
-      });
-      const data = await res.json();
-      if (data.task) {
-        activeTasks.current.set(data.task.id, { task: data.task, portId });
-        startPolling();
-      }
-      if (action === 'launch' && data.pid) {
-        setRunningPorts((prev) => new Set([...prev, portId]));
-      }
-      showToast(`${action === 'launch' ? '▶ Launching' : action === 'install' ? '⬇ Installing' : '⬆ Updating'} ${port.manifest.name}...`, 'ok');
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : String(err), 'error');
-      setBusyPorts((prev) => { const n = new Set(prev); n.delete(portId); return n; });
-    }
-  }, [startPolling]);
+    },
+    [startPolling],
+  );
 
   // ── Tab switching helper ──
   const switchTab = useCallback((tab: GameTab) => {
@@ -311,16 +393,17 @@ export function GameMode({ onExit }: GameModeProps) {
   // ── Settings navigation helpers ──
   // Groups: [Layout(2), Theme(2), Langs(N), Exit(1)]
   const settingsGroups = [
-    { start: 0, count: 2 },                                     // Layout
-    { start: 2, count: 2 },                                     // Theme
-    { start: 4, count: availableLocales.length },                // Languages
-    { start: 4 + availableLocales.length, count: 1 },            // Exit
+    { start: 0, count: 2 }, // Layout
+    { start: 2, count: 2 }, // Theme
+    { start: 4, count: availableLocales.length }, // Languages
+    { start: 4 + availableLocales.length, count: 1 }, // Exit
   ];
   const settingsOptionCount = settingsGroups.reduce((s, g) => s + g.count, 0);
 
   const settingsGroupOf = (idx: number): number => {
     for (let g = 0; g < settingsGroups.length; g++) {
-      if (idx >= settingsGroups[g].start && idx < settingsGroups[g].start + settingsGroups[g].count) return g;
+      if (idx >= settingsGroups[g].start && idx < settingsGroups[g].start + settingsGroups[g].count)
+        return g;
     }
     return settingsGroups.length - 1;
   };
@@ -344,19 +427,22 @@ export function GameMode({ onExit }: GameModeProps) {
     return gi < settingsGroups.length - 1 ? settingsGroups[gi + 1].start : settingsGroups[0].start;
   };
 
-  const applySettingsOption = useCallback((idx: number) => {
-    if (idx === 0) applyLayout('grid');
-    else if (idx === 1) applyLayout('carousel');
-    else if (idx === 2) applyTheme('light');
-    else if (idx === 3) applyTheme('dark');
-    else if (idx >= 4 && idx < 4 + availableLocales.length) {
-      const loc = availableLocales[idx - 4];
-      if (loc) window.__i18n?.setLocale(loc);
-    } else if (idx === 4 + availableLocales.length) {
-      setSettingsOpen(false);
-      onExit();
-    }
-  }, [availableLocales, onExit]);
+  const applySettingsOption = useCallback(
+    (idx: number) => {
+      if (idx === 0) applyLayout('grid');
+      else if (idx === 1) applyLayout('carousel');
+      else if (idx === 2) applyTheme('light');
+      else if (idx === 3) applyTheme('dark');
+      else if (idx >= 4 && idx < 4 + availableLocales.length) {
+        const loc = availableLocales[idx - 4];
+        if (loc) window.__i18n?.setLocale(loc);
+      } else if (idx === 4 + availableLocales.length) {
+        setSettingsOpen(false);
+        onExit();
+      }
+    },
+    [availableLocales, onExit],
+  );
 
   // ── Gamepad navigation ──
   const gamepad = useGamepad({
@@ -464,11 +550,17 @@ export function GameMode({ onExit }: GameModeProps) {
       }
     },
     onCancel: () => {
-      if (settingsOpen) { setSettingsOpen(false); return; }
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
       // B button in grid: no-op
     },
     onMenu: () => {
-      if (settingsOpen) { setSettingsOpen(false); return; }
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
       switchTab(activeTab === 'installed' ? 'available' : 'installed');
     },
     onTabNext: () => {
@@ -480,7 +572,10 @@ export function GameMode({ onExit }: GameModeProps) {
       switchTab('installed');
     },
     onExit: () => {
-      if (settingsOpen) { setSettingsOpen(false); return; }
+      if (settingsOpen) {
+        setSettingsOpen(false);
+        return;
+      }
       onExit();
     },
     onToggleLayout: () => {
@@ -504,37 +599,84 @@ export function GameMode({ onExit }: GameModeProps) {
       }
       switch (e.key) {
         case 'ArrowLeft':
-          if (focusZone === 'tabs') { switchTab('installed'); break; }
-          if (layoutMode === 'carousel') { setSelectedIndex((i) => Math.max(0, i - 1)); break; }
-          setSelectedIndex((i) => { const cols = columnsRef.current; const col = i % cols; if (col > 0) return i - 1; const prev = i - cols - (col - 1) - 1; return prev >= 0 ? prev : i; });
+          if (focusZone === 'tabs') {
+            switchTab('installed');
+            break;
+          }
+          if (layoutMode === 'carousel') {
+            setSelectedIndex((i) => Math.max(0, i - 1));
+            break;
+          }
+          setSelectedIndex((i) => {
+            const cols = columnsRef.current;
+            const col = i % cols;
+            if (col > 0) return i - 1;
+            const prev = i - cols - (col - 1) - 1;
+            return prev >= 0 ? prev : i;
+          });
           break;
         case 'ArrowRight':
-          if (focusZone === 'tabs') { switchTab('available'); break; }
-          if (layoutMode === 'carousel') { setSelectedIndex((i) => Math.min(currentList.length - 1, i + 1)); break; }
-          setSelectedIndex((i) => { const cols = columnsRef.current; const col = i % cols; if (col < cols - 1 && i + 1 < currentList.length) return i + 1; const next = i + (cols - col); return next < currentList.length ? next : i; });
+          if (focusZone === 'tabs') {
+            switchTab('available');
+            break;
+          }
+          if (layoutMode === 'carousel') {
+            setSelectedIndex((i) => Math.min(currentList.length - 1, i + 1));
+            break;
+          }
+          setSelectedIndex((i) => {
+            const cols = columnsRef.current;
+            const col = i % cols;
+            if (col < cols - 1 && i + 1 < currentList.length) return i + 1;
+            const next = i + (cols - col);
+            return next < currentList.length ? next : i;
+          });
           break;
         case 'ArrowUp':
           if (focusZone === 'tabs') break;
           if (layoutMode === 'carousel') {
-            setSelectedIndex((i) => { if (i > 0) return i - 1; setFocusZone('tabs'); return 0; });
+            setSelectedIndex((i) => {
+              if (i > 0) return i - 1;
+              setFocusZone('tabs');
+              return 0;
+            });
           } else {
-            setSelectedIndex((i) => { const target = i - columnsRef.current; if (target >= 0) return target; setFocusZone('tabs'); return 0; });
+            setSelectedIndex((i) => {
+              const target = i - columnsRef.current;
+              if (target >= 0) return target;
+              setFocusZone('tabs');
+              return 0;
+            });
           }
           break;
         case 'ArrowDown':
-          if (focusZone === 'tabs') { setFocusZone('grid'); setSelectedIndex(0); break; }
-          if (layoutMode === 'carousel') { setSelectedIndex((i) => Math.min(currentList.length - 1, i + 1)); break; }
+          if (focusZone === 'tabs') {
+            setFocusZone('grid');
+            setSelectedIndex(0);
+            break;
+          }
+          if (layoutMode === 'carousel') {
+            setSelectedIndex((i) => Math.min(currentList.length - 1, i + 1));
+            break;
+          }
           setSelectedIndex((i) => Math.min(currentList.length - 1, i + columnsRef.current));
           break;
         case 'Enter':
-          if (focusZone === 'tabs') { setFocusZone('grid'); setSelectedIndex(0); break; }
+          if (focusZone === 'tabs') {
+            setFocusZone('grid');
+            setSelectedIndex(0);
+            break;
+          }
           if (selected) {
             if (runningPorts.has(selected.manifest.id)) doAction(selected, 'stop');
-            else if (selected.installed) doAction(selected, selected.updateAvailable ? 'update' : 'launch');
+            else if (selected.installed)
+              doAction(selected, selected.updateAvailable ? 'update' : 'launch');
             else doAction(selected, 'install');
           }
           break;
-        case 'Escape': onExit(); break;
+        case 'Escape':
+          onExit();
+          break;
         case 'Tab':
           e.preventDefault();
           switchTab(activeTab === 'installed' ? 'available' : 'installed');
@@ -543,14 +685,26 @@ export function GameMode({ onExit }: GameModeProps) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [currentList.length, selected, doAction, onExit, focusZone, activeTab, layoutMode, switchTab, runningPorts, settingsOpen]);
+  }, [
+    currentList.length,
+    selected,
+    doAction,
+    onExit,
+    focusZone,
+    activeTab,
+    layoutMode,
+    switchTab,
+    runningPorts,
+    settingsOpen,
+  ]);
 
   const isBusy = (portId: string) => busyPorts.has(portId);
   const isRunning = (portId: string) => runningPorts.has(portId);
   const getMainLabel = (port: Port) => {
     if (isBusy(port.manifest.id)) return '⏳ ...';
     if (isRunning(port.manifest.id)) return `⏹ ${t('port.stop') ?? 'Stop'}`;
-    if (port.installed) return port.updateAvailable ? `⬆ ${t('port.update')}` : `▶ ${t('port.launch')}`;
+    if (port.installed)
+      return port.updateAvailable ? `⬆ ${t('port.update')}` : `▶ ${t('port.launch')}`;
     return port.hasRom ? `⬇ ${t('port.install')}` : `⬇ ${t('port.installNoRom')}`;
   };
 
@@ -565,13 +719,19 @@ export function GameMode({ onExit }: GameModeProps) {
         <div class={`gm-tabs ${focusZone === 'tabs' ? 'gm-tabs-focused' : ''}`}>
           <button
             class={`gm-tab ${activeTab === 'installed' ? 'active' : ''}`}
-            onClick={() => { switchTab('installed'); setFocusZone('grid'); }}
+            onClick={() => {
+              switchTab('installed');
+              setFocusZone('grid');
+            }}
           >
             {t('tabs.installed')} <span class="gm-count">{installed.length}</span>
           </button>
           <button
             class={`gm-tab ${activeTab === 'available' ? 'active' : ''}`}
-            onClick={() => { switchTab('available'); setFocusZone('grid'); }}
+            onClick={() => {
+              switchTab('available');
+              setFocusZone('grid');
+            }}
           >
             {t('tabs.available')} <span class="gm-count">{available.length}</span>
           </button>
@@ -583,8 +743,12 @@ export function GameMode({ onExit }: GameModeProps) {
         >
           {layoutMode === 'grid' ? '☰' : '▦'}
         </button>
-        <button class="gm-settings-btn" onClick={() => setSettingsOpen(true)}>⚙️</button>
-        <button class="gm-exit-btn" onClick={onExit}>✕ {t('settings.close')}</button>
+        <button class="gm-settings-btn" onClick={() => setSettingsOpen(true)}>
+          ⚙️
+        </button>
+        <button class="gm-exit-btn" onClick={onExit}>
+          ✕ {t('settings.close')}
+        </button>
       </header>
 
       {/* Gamepad hint */}
@@ -615,15 +779,20 @@ export function GameMode({ onExit }: GameModeProps) {
                   busy={isBusy(port.manifest.id)}
                   running={isRunning(port.manifest.id)}
                   task={getTask(port.manifest.id)}
-                  onClick={() => { setSelectedIndex(i); setFocusZone('grid'); }}
+                  onClick={() => {
+                    setSelectedIndex(i);
+                    setFocusZone('grid');
+                  }}
                   onDblClick={() => {
                     if (isRunning(port.manifest.id)) doAction(port, 'stop');
-                    else if (port.installed) doAction(port, port.updateAvailable ? 'update' : 'launch');
+                    else if (port.installed)
+                      doAction(port, port.updateAvailable ? 'update' : 'launch');
                     else doAction(port, 'install');
                   }}
                   onAction={() => {
                     if (isRunning(port.manifest.id)) doAction(port, 'stop');
-                    else if (port.installed) doAction(port, port.updateAvailable ? 'update' : 'launch');
+                    else if (port.installed)
+                      doAction(port, port.updateAvailable ? 'update' : 'launch');
                     else doAction(port, 'install');
                   }}
                   mainLabel={getMainLabel(port)}
@@ -647,15 +816,20 @@ export function GameMode({ onExit }: GameModeProps) {
                 busy={isBusy(port.manifest.id)}
                 running={isRunning(port.manifest.id)}
                 task={getTask(port.manifest.id)}
-                onClick={() => { setSelectedIndex(i); setFocusZone('grid'); }}
+                onClick={() => {
+                  setSelectedIndex(i);
+                  setFocusZone('grid');
+                }}
                 onDblClick={() => {
                   if (isRunning(port.manifest.id)) doAction(port, 'stop');
-                  else if (port.installed) doAction(port, port.updateAvailable ? 'update' : 'launch');
+                  else if (port.installed)
+                    doAction(port, port.updateAvailable ? 'update' : 'launch');
                   else doAction(port, 'install');
                 }}
                 onAction={() => {
                   if (isRunning(port.manifest.id)) doAction(port, 'stop');
-                  else if (port.installed) doAction(port, port.updateAvailable ? 'update' : 'launch');
+                  else if (port.installed)
+                    doAction(port, port.updateAvailable ? 'update' : 'launch');
                   else doAction(port, 'install');
                 }}
                 mainLabel={getMainLabel(port)}
@@ -676,23 +850,45 @@ export function GameMode({ onExit }: GameModeProps) {
           <div class="gm-settings-modal" onClick={(e) => e.stopPropagation()}>
             <div class="gm-settings-head">
               <h3>⚙️ {t('settings.title')}</h3>
-              <button class="gm-settings-close" onClick={() => setSettingsOpen(false)}>✕</button>
+              <button class="gm-settings-close" onClick={() => setSettingsOpen(false)}>
+                ✕
+              </button>
             </div>
             <div class="gm-settings-body">
               {/* Layout */}
               <div class="gm-settings-group">
                 <div class="gm-settings-label">Layout</div>
                 <div class="gm-settings-row">
-                  <button class={`gm-settings-btn-opt ${layoutMode === 'grid' ? 'active' : ''} ${settingsFocus === 0 ? 'gm-focused' : ''}`} onClick={() => applyLayout('grid')}>{'▦'} Grid</button>
-                  <button class={`gm-settings-btn-opt ${layoutMode === 'carousel' ? 'active' : ''} ${settingsFocus === 1 ? 'gm-focused' : ''}`} onClick={() => applyLayout('carousel')}>{'☰'} Carousel</button>
+                  <button
+                    class={`gm-settings-btn-opt ${layoutMode === 'grid' ? 'active' : ''} ${settingsFocus === 0 ? 'gm-focused' : ''}`}
+                    onClick={() => applyLayout('grid')}
+                  >
+                    {'▦'} Grid
+                  </button>
+                  <button
+                    class={`gm-settings-btn-opt ${layoutMode === 'carousel' ? 'active' : ''} ${settingsFocus === 1 ? 'gm-focused' : ''}`}
+                    onClick={() => applyLayout('carousel')}
+                  >
+                    {'☰'} Carousel
+                  </button>
                 </div>
               </div>
               {/* Theme */}
               <div class="gm-settings-group">
                 <div class="gm-settings-label">{t('settings.theme')}</div>
                 <div class="gm-settings-row">
-                  <button class={`gm-settings-btn-opt ${currentTheme === 'light' ? 'active' : ''} ${settingsFocus === 2 ? 'gm-focused' : ''}`} onClick={() => applyTheme('light')}>{'☀️'} {t('settings.themeLight')}</button>
-                  <button class={`gm-settings-btn-opt ${currentTheme === 'dark' ? 'active' : ''} ${settingsFocus === 3 ? 'gm-focused' : ''}`} onClick={() => applyTheme('dark')}>{'🌙'} {t('settings.themeDark')}</button>
+                  <button
+                    class={`gm-settings-btn-opt ${currentTheme === 'light' ? 'active' : ''} ${settingsFocus === 2 ? 'gm-focused' : ''}`}
+                    onClick={() => applyTheme('light')}
+                  >
+                    {'☀️'} {t('settings.themeLight')}
+                  </button>
+                  <button
+                    class={`gm-settings-btn-opt ${currentTheme === 'dark' ? 'active' : ''} ${settingsFocus === 3 ? 'gm-focused' : ''}`}
+                    onClick={() => applyTheme('dark')}
+                  >
+                    {'🌙'} {t('settings.themeDark')}
+                  </button>
                 </div>
               </div>
               {/* Language */}
@@ -717,14 +913,15 @@ export function GameMode({ onExit }: GameModeProps) {
               )}
               {/* Exit */}
               <div class="gm-settings-group">
-                <button class={`gm-settings-exit-btn ${settingsFocus === settingsOptionCount - 1 ? 'gm-focused' : ''}`} onClick={onExit}>
+                <button
+                  class={`gm-settings-exit-btn ${settingsFocus === settingsOptionCount - 1 ? 'gm-focused' : ''}`}
+                  onClick={onExit}
+                >
                   ✕ {t('settings.close')} Game Mode
                 </button>
               </div>
             </div>
-            <div class="gm-settings-foot">
-              Select o Esc para cerrar
-            </div>
+            <div class="gm-settings-foot">Select o Esc para cerrar</div>
           </div>
         </div>
       )}

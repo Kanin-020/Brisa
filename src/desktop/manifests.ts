@@ -1,5 +1,5 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 /**
  * Seeds/copies the bundled manifests (from the AppImage resources) into the
@@ -9,14 +9,11 @@ import * as path from "node:path";
  */
 export function seedManifests(src: string, root: string): void {
   try {
-    const dest = path.join(root, "manifests");
+    const dest = path.join(root, 'manifests');
     if (!fs.existsSync(src)) return;
     fs.mkdirSync(dest, { recursive: true });
     fs.cpSync(src, dest, { recursive: true });
   } catch (err) {
-    console.error(
-      "[desktop] no se pudieron sembrar los manifiestos:",
-      (err as Error).message,
-    );
+    console.error('[desktop] no se pudieron sembrar los manifiestos:', (err as Error).message);
   }
 }

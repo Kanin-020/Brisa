@@ -1,5 +1,5 @@
-import { BrowserWindow, shell } from "electron";
-import { config } from "./config";
+import { BrowserWindow, shell } from 'electron';
+import { config } from './config';
 
 /** Crea y configura la ventana principal (sin barra de menú, maximizada, enlaces externos seguros). */
 export function createMainWindow(): BrowserWindow {
@@ -13,13 +13,13 @@ export function createMainWindow(): BrowserWindow {
       void shell.openExternal(url);
     }
 
-    return { action: "deny" };
+    return { action: 'deny' };
   });
 
-  win.webContents.on("will-navigate", (event, url) => {
+  win.webContents.on('will-navigate', (event, url) => {
     const host = new URL(url).hostname;
 
-    if (!["localhost", "127.0.0.1"].includes(host)) {
+    if (!['localhost', '127.0.0.1'].includes(host)) {
       event.preventDefault();
     }
   });

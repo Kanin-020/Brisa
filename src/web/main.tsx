@@ -81,7 +81,15 @@ function Root() {
   }, [mode]);
 
   if (mode === 'game') {
-    return <GameMode onExit={() => { lastExitTime.current = Date.now(); window.history.replaceState({}, '', window.location.pathname); setMode('normal'); }} />;
+    return (
+      <GameMode
+        onExit={() => {
+          lastExitTime.current = Date.now();
+          window.history.replaceState({}, '', window.location.pathname);
+          setMode('normal');
+        }}
+      />
+    );
   }
   return <BrisaApp />;
 }

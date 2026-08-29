@@ -1,18 +1,18 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import type { AppConfig } from "./config";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { AppConfig } from './config';
 
 /** Ids de manifiesto válidos (se usan como nombre de archivo, así que se restringen). */
 export const MANIFEST_ID_PATTERN = /^[A-Za-z0-9._-]+$/;
 
 /** True cuando `id` es un id de manifiesto válido (seguro como nombre de archivo). */
 export function isValidManifestId(id: unknown): id is string {
-  return typeof id === "string" && MANIFEST_ID_PATTERN.test(id);
+  return typeof id === 'string' && MANIFEST_ID_PATTERN.test(id);
 }
 
 /** Ruta del manifiesto remoto (tiene prioridad sobre el local). */
 function remoteManifestPath(cfg: AppConfig, id: string): string {
-  return path.join(cfg.manifestsDir, "remote", `${id}.json`);
+  return path.join(cfg.manifestsDir, 'remote', `${id}.json`);
 }
 
 /**
@@ -29,14 +29,14 @@ export function importManifests(
   fs.mkdirSync(cfg.manifestsDir, { recursive: true });
   for (const item of items) {
     const raw = item as Record<string, unknown> | null;
-    if (!raw || typeof raw !== "object" || !isValidManifestId(raw.id)) {
-      errors.push("manifiesto con id inválido (omitido)");
+    if (!raw || typeof raw !== 'object' || !isValidManifestId(raw.id)) {
+      errors.push('manifiesto con id inválido (omitido)');
       continue;
     }
     try {
       fs.writeFileSync(
         path.join(cfg.manifestsDir, `${raw.id}.json`),
-        JSON.stringify(raw, null, 2) + "\n",
+        JSON.stringify(raw, null, 2) + '\n',
       );
       imported++;
       if (fs.existsSync(remoteManifestPath(cfg, raw.id))) {
@@ -48,7 +48,6 @@ export function importManifests(
   }
   return { imported, errors, warnings };
 }
-
 
 export interface RomRequirement {
   /** Unique id for this ROM variant (e.g. "oot"). */
@@ -79,7 +78,7 @@ export interface AssetDef {
   /** Glob pattern to pick the release asset for this platform. */
   pattern: string;
   /** Archive/file kind. */
-  type: "zip" | "tar.gz" | "appimage" | "apk";
+  type: 'zip' | 'tar.gz' | 'appimage' | 'apk';
   /** Relative path of the executable inside the extracted archive (null = the asset file itself, e.g. AppImage/APK). */
   executable: string | null;
   /**
@@ -139,16 +138,16 @@ export interface Manifest {
 export function loadManifest(cfg: AppConfig, id: string): Manifest | null {
   // Remote manifests override local ones (fresh registry wins).
   const dirs = [
-    path.join(cfg.manifestsDir, "remote", `${id}.json`),
+    path.join(cfg.manifestsDir, 'remote', `${id}.json`),
     path.join(cfg.manifestsDir, `${id}.json`),
   ];
   for (const file of dirs) {
     if (!fs.existsSync(file)) continue;
     try {
-      const m = JSON.parse(fs.readFileSync(file, "utf8")) as Manifest;
+      const m = JSON.parse(fs.readFileSync(file, 'utf8')) as Manifest;
       return normalize(m);
     } catch (e) {
-      console.error("[manifest] error loading " + file + ": " + e);
+      console.error('[manifest] error loading ' + file + ': ' + e);
     }
   }
   return null;
@@ -161,9 +160,9 @@ export function listManifests(cfg: AppConfig): Manifest[] {
   const scan = (dir: string) => {
     if (!fs.existsSync(dir)) return;
     for (const f of fs.readdirSync(dir)) {
-      if (!f.endsWith(".json")) continue;
+      if (!f.endsWith('.json')) continue;
       try {
-        const m = JSON.parse(fs.readFileSync(path.join(dir, f), "utf8")) as Manifest;
+        const m = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')) as Manifest;
         if (seen.has(m.id)) continue;
         seen.add(m.id);
         out.push(normalize(m));
@@ -172,7 +171,7 @@ export function listManifests(cfg: AppConfig): Manifest[] {
       }
     }
   };
-  if (cfg.registryUrl) scan(path.join(cfg.manifestsDir, "remote"));
+  if (cfg.registryUrl) scan(path.join(cfg.manifestsDir, 'remote'));
   scan(cfg.manifestsDir);
   return out.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -180,7 +179,7 @@ export function listManifests(cfg: AppConfig): Manifest[] {
 function normalize(m: Manifest): Manifest {
   m.roms = m.roms ?? [];
   m.assets = m.assets ?? {};
-  m.mods = m.mods ?? { dir: "mods", gameDir: m.id };
+  m.mods = m.mods ?? { dir: 'mods', gameDir: m.id };
   m.mods.gameDir = m.mods.gameDir || m.id;
   m.preserve = m.preserve ?? [];
   return m;

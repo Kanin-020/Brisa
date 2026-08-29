@@ -1,9 +1,9 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import type { AppConfig } from "./config";
-import { hashCacheFile } from "./hash";
-import { portDir } from "./installer";
-import { listStates, readState, writeState } from "./state";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { AppConfig } from './config';
+import { hashCacheFile } from './hash';
+import { portDir } from './installer';
+import { listStates, readState, writeState } from './state';
 
 /** True when `target` is `dir` itself or lives inside it. */
 function isPathWithin(dir: string, target: string): boolean {
@@ -49,13 +49,13 @@ export function saveRomFile(
       cleanup();
       reject(err);
     };
-    out.on("error", fail);
-    source.on("error", fail);
-    out.on("finish", () => {
+    out.on('error', fail);
+    source.on('error', fail);
+    out.on('finish', () => {
       try {
         if (out.bytesWritten === 0) {
           cleanup();
-          reject(new Error("Archivo vacío"));
+          reject(new Error('Archivo vacío'));
           return;
         }
         fs.renameSync(part, dest);

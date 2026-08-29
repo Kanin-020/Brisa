@@ -1,5 +1,5 @@
-import * as fs from "node:fs";
-import * as zlib from "node:zlib";
+import * as fs from 'node:fs';
+import * as zlib from 'node:zlib';
 
 /**
  * Reads the 6-character game ID from a GameCube/Wii disc image.
@@ -27,8 +27,8 @@ const WII_DISC_HEADER_OFFSET = 0x40000;
 const WIA_HEADER1_SIZE = 0x48; // 72 bytes: magic, version, ver_compat, header_2_size, hashes, sizes
 const WIA_HEADER2_MIN_SIZE = 0xd4; // 212 bytes (WIAHeader2 without compressor_data)
 const WIA_DISC_HEADER_OFFSET = 0x10; // WIAHeader2.disc_header (0x80 bytes) starts at +16
-const RVZ_MAGIC = "RVZ\x01";
-const WIA_MAGIC = "WIA\x01";
+const RVZ_MAGIC = 'RVZ\x01';
+const WIA_MAGIC = 'WIA\x01';
 
 // GCZ container layout (Dolphin CompressedBlob.h, little-endian).
 const GCZ_HEADER_SIZE = 32;
@@ -48,7 +48,7 @@ function readBytes(fd: number, offset: number, size: number): Buffer | null {
 
 function gameIdAt(buf: Buffer, offset: number): string | null {
   if (offset + 6 > buf.length) return null;
-  const id = buf.toString("latin1", offset, offset + 6);
+  const id = buf.toString('latin1', offset, offset + 6);
   return GAME_ID_RE.test(id) ? id : null;
 }
 
@@ -118,13 +118,13 @@ function gameIdFromGcz(fd: number): string | null {
 export function readDiscGameId(file: string): string | null {
   let fd: number | null = null;
   try {
-    fd = fs.openSync(file, "r");
+    fd = fs.openSync(file, 'r');
     const size = fs.fstatSync(fd).size;
 
     const magic = readBytes(fd, 0, 4);
     if (!magic) return null;
 
-    if (magic.toString("latin1") === RVZ_MAGIC || magic.toString("latin1") === WIA_MAGIC) {
+    if (magic.toString('latin1') === RVZ_MAGIC || magic.toString('latin1') === WIA_MAGIC) {
       return gameIdFromWiaRvz(fd);
     }
     if (magic.readUInt32LE(0) === GCZ_MAGIC) {

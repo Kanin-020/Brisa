@@ -1,20 +1,20 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { EXECUTABLE_MODE } from "../constants";
-import type { AppConfig } from "../config";
-import { download, downloadPath } from "../download";
-import { getLatestRelease, pickAsset, type ReleaseInfo } from "../github";
-import { loadManifest, type AssetDef, type Manifest } from "../manifest";
-import { detectPlatform } from "../platform";
-import type { RomFile } from "../scanner";
-import { readState, writeState, type PortState } from "../state";
-import { writeLauncher, removeLauncher } from "../launchers";
-import { throwIfAborted } from "../tasks";
-import { extractArchive } from "./archive";
-import { createSymlink, findFileByName } from "./links";
-import { preserveUserData, removeExceptPreserved } from "./preserve";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { EXECUTABLE_MODE } from '../constants';
+import type { AppConfig } from '../config';
+import { download, downloadPath } from '../download';
+import { getLatestRelease, pickAsset, type ReleaseInfo } from '../github';
+import { loadManifest, type AssetDef, type Manifest } from '../manifest';
+import { detectPlatform } from '../platform';
+import type { RomFile } from '../scanner';
+import { readState, writeState, type PortState } from '../state';
+import { writeLauncher, removeLauncher } from '../launchers';
+import { throwIfAborted } from '../tasks';
+import { extractArchive } from './archive';
+import { createSymlink, findFileByName } from './links';
+import { preserveUserData, removeExceptPreserved } from './preserve';
 
-export { preserveUserData } from "./preserve";
+export { preserveUserData } from './preserve';
 
 export interface InstallOptions {
   /** Requirement id -> ROM file to symlink at that requirement's dest. */
@@ -37,9 +37,7 @@ export function resolveAssetForPlatform(manifest: Manifest): AssetDef | null {
 
   // Fallback: buscar cualquier asset de la misma familia de OS
   const osFamily = platform.os;
-  const familyEntry = Object.entries(manifest.assets).find(([key]) =>
-    key.startsWith(osFamily),
-  );
+  const familyEntry = Object.entries(manifest.assets).find(([key]) => key.startsWith(osFamily));
   return familyEntry ? familyEntry[1] : null;
 }
 
@@ -64,9 +62,7 @@ export async function getLatestInfo(
   try {
     return await getLatestRelease(cfg, manifest.repo);
   } catch (error) {
-    console.warn(
-      `[${manifest.id}] could not check releases: ${(error as Error).message}`,
-    );
+    console.warn(`[${manifest.id}] could not check releases: ${(error as Error).message}`);
     return null;
   }
 }
@@ -109,13 +105,11 @@ export async function installPort(
 ): Promise<PortState> {
   const asset = resolveAssetForPlatform(manifest);
   if (!asset) {
-    throw new Error(
-      `[${manifest.id}] no asset definition for platform ${detectPlatform().key}`,
-    );
+    throw new Error(`[${manifest.id}] no asset definition for platform ${detectPlatform().key}`);
   }
 
   // Paso 1: Obtener release
-  opts.onProgress?.("release", 0, 1);
+  opts.onProgress?.('release', 0, 1);
   const release = await getLatestInfo(cfg, manifest);
   throwIfAborted(opts.signal);
 
@@ -161,16 +155,22 @@ async function downloadAsset(
   asset: { name: string; url: string; size: number },
   opts: InstallOptions,
 ): Promise<string> {
-  opts.onProgress?.("download", 0, 1);
+  opts.onProgress?.('download', 0, 1);
   const destination = downloadPath(cfg, portId, asset.name);
 
   if (fs.existsSync(destination) && fs.statSync(destination).size === asset.size) {
     return destination;
   }
 
-  await download(cfg, asset.url, destination, (done, total) => {
-    opts.onProgress?.("download", done, total);
-  }, { signal: opts.signal });
+  await download(
+    cfg,
+    asset.url,
+    destination,
+    (done, total) => {
+      opts.onProgress?.('download', done, total);
+    },
+    { signal: opts.signal },
+  );
 
   throwIfAborted(opts.signal);
   return destination;
@@ -188,9 +188,9 @@ async function extractToPort(
   downloadedFile: string,
   opts: InstallOptions,
 ): Promise<void> {
-  opts.onProgress?.("extract", 0, 1);
+  opts.onProgress?.('extract', 0, 1);
   const portRoot = portDir(cfg, manifest.id);
-  const backupPath = path.join(cfg.cacheDir, "old", manifest.id);
+  const backupPath = path.join(cfg.cacheDir, 'old', manifest.id);
 
   // Crear backup del port anterior si existe
   if (fs.existsSync(portRoot)) {
@@ -199,7 +199,7 @@ async function extractToPort(
 
   try {
     // Extraer el asset según su tipo
-    if (asset.type === "apk" || asset.type === "appimage") {
+    if (asset.type === 'apk' || asset.type === 'appimage') {
       extractSingleFile(downloadedFile, portRoot, assetName.name);
     } else {
       await extractArchive(asset, downloadedFile, portRoot);
@@ -263,7 +263,7 @@ function resolveAndSetExecutable(
   let executablePath = resolveExecutable(portRoot, asset);
 
   // Para AppImage/APK, el asset file es el ejecutable
-  if (!executablePath && (asset.type === "appimage" || asset.type === "apk")) {
+  if (!executablePath && (asset.type === 'appimage' || asset.type === 'apk')) {
     executablePath = path.join(portRoot, assetName.name);
   }
 
@@ -309,9 +309,7 @@ function createPortState(
   linkedRoms: Record<string, string>,
 ): PortState {
   const platform = detectPlatform();
-  const relativeExecutable = executable
-    ? path.relative(portRoot, executable)
-    : assetName.name;
+  const relativeExecutable = executable ? path.relative(portRoot, executable) : assetName.name;
 
   return {
     id: manifest.id,
@@ -322,7 +320,7 @@ function createPortState(
     installedAt: new Date().toISOString(),
     platform: platform.key,
     executable: relativeExecutable,
-    romLinked: linkedRoms[manifest.roms[0]?.id ?? ""] ?? null,
+    romLinked: linkedRoms[manifest.roms[0]?.id ?? ''] ?? null,
     romsLinked: linkedRoms,
   };
 }
@@ -352,7 +350,7 @@ export function uninstallPort(cfg: AppConfig, id: string): void {
   }
 
   // Eliminar archivo de estado
-  const stateFile = path.join(cfg.cacheDir, "state", `${id}.json`);
+  const stateFile = path.join(cfg.cacheDir, 'state', `${id}.json`);
   if (fs.existsSync(stateFile)) {
     fs.rmSync(stateFile, { force: true });
   }
@@ -378,7 +376,7 @@ export function launchExecutable(cfg: AppConfig, id: string): string | null {
  * En Windows no tiene efecto (los permisos no aplican).
  */
 export function ensureExecutable(file: string | null): void {
-  if (!file || process.platform === "win32") return;
+  if (!file || process.platform === 'win32') return;
 
   try {
     fs.chmodSync(file, EXECUTABLE_MODE);
@@ -393,7 +391,7 @@ export function ensureExecutable(file: string | null): void {
  * permisos de ejecución. Solo aplica en Unix.
  */
 function ensureAllBinariesExecutable(directory: string): void {
-  if (process.platform === "win32") return;
+  if (process.platform === 'win32') return;
 
   const ELF_MAGIC = Buffer.from([0x7f, 0x45, 0x4c, 0x46]); // \x7fELF
 
@@ -420,7 +418,7 @@ function ensureAllBinariesExecutable(directory: string): void {
         if (stat.mode & 0o111) continue; // Ya tiene permisos de ejecución
 
         // Verificar magic bytes de ELF (primeros 4 bytes)
-        const fileDescriptor = fs.openSync(fullPath, "r");
+        const fileDescriptor = fs.openSync(fullPath, 'r');
         const magicBuffer = Buffer.alloc(4);
         fs.readSync(fileDescriptor, magicBuffer, 0, 4, 0);
         fs.closeSync(fileDescriptor);

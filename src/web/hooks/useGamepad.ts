@@ -22,20 +22,20 @@ export interface GamepadActions {
 
 /** Maps standard gamepad buttons to actions. */
 const BUTTON_MAP: Record<number, keyof GamepadActions> = {
-  0: 'onConfirm',      // A / Cross
-  1: 'onCancel',       // B / Circle
+  0: 'onConfirm', // A / Cross
+  1: 'onCancel', // B / Circle
   2: 'onToggleLayout', // X / Square → toggle grid/carousel
-  3: 'onMenu',         // Y / Triangle → tab switch
-  4: 'onTabPrev',      // LB / L1
-  5: 'onTabNext',      // RB / R1
-  6: 'onTabPrev',      // LT / L2 (alt)
-  7: 'onTabNext',      // RT / R2 (alt)
-  8: 'onExit',         // Select / Back → exit game mode
+  3: 'onMenu', // Y / Triangle → tab switch
+  4: 'onTabPrev', // LB / L1
+  5: 'onTabNext', // RB / R1
+  6: 'onTabPrev', // LT / L2 (alt)
+  7: 'onTabNext', // RT / R2 (alt)
+  8: 'onExit', // Select / Back → exit game mode
   9: 'onOpenSettings', // Start → open settings
-  12: 'onUp',          // D-pad Up
-  13: 'onDown',        // D-pad Down
-  14: 'onLeft',        // D-pad Left
-  15: 'onRight',       // D-pad Right
+  12: 'onUp', // D-pad Up
+  13: 'onDown', // D-pad Down
+  14: 'onLeft', // D-pad Left
+  15: 'onRight', // D-pad Right
 };
 
 /** Axis threshold for D-pad emulation via analog sticks. */

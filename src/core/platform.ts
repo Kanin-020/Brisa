@@ -1,5 +1,5 @@
-export type Os = "linux" | "windows" | "macos" | "android" | "other";
-export type Arch = "x64" | "arm64" | "x86" | "other";
+export type Os = 'linux' | 'windows' | 'macos' | 'android' | 'other';
+export type Arch = 'x64' | 'arm64' | 'x86' | 'other';
 
 export interface Platform {
   os: Os;
@@ -10,27 +10,27 @@ export interface Platform {
 }
 
 export function detectPlatform(): Platform {
-  let os: Os = "other";
+  let os: Os = 'other';
   const p = process.platform;
-  if (p === "linux") {
+  if (p === 'linux') {
     // Android via Termux exposes TERMUX_VERSION / PREFIX.
     const isAndroid =
       !!process.env.TERMUX_VERSION ||
       !!process.env.TERMUX_APP__DEX_PATH ||
-      /android/i.test(process.env.ANDROID_ROOT ?? "");
-    os = isAndroid ? "android" : "linux";
-  } else if (p === "win32") {
-    os = "windows";
-  } else if (p === "darwin") {
-    os = "macos";
+      /android/i.test(process.env.ANDROID_ROOT ?? '');
+    os = isAndroid ? 'android' : 'linux';
+  } else if (p === 'win32') {
+    os = 'windows';
+  } else if (p === 'darwin') {
+    os = 'macos';
   }
 
-  let arch: Arch = "other";
+  let arch: Arch = 'other';
   const a: string = process.arch;
-  if (a === "x64") arch = "x64";
-  else if (a === "arm64" || a === "aarch64") arch = "arm64";
-  else if (a === "ia32" || a === "x32") arch = "x86";
+  if (a === 'x64') arch = 'x64';
+  else if (a === 'arm64' || a === 'aarch64') arch = 'arm64';
+  else if (a === 'ia32' || a === 'x32') arch = 'x86';
 
-  const key = os === "android" ? "android" : `${os}-${arch}`;
-  return { os, arch, key, isAndroid: os === "android" };
+  const key = os === 'android' ? 'android' : `${os}-${arch}`;
+  return { os, arch, key, isAndroid: os === 'android' };
 }

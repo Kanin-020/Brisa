@@ -1,9 +1,9 @@
-import { app, BrowserWindowConstructorOptions } from "electron";
-import path from "node:path";
+import { app, BrowserWindowConstructorOptions } from 'electron';
+import path from 'node:path';
 
 /** Opciones de la ventana principal de Electron (tamaño, icono, webPreferences seguras). */
 export const config: Readonly<BrowserWindowConstructorOptions> = {
-  title: "Brisa",
+  title: 'Brisa',
   width: 1240,
   height: 820,
   minWidth: 940,
@@ -11,8 +11,8 @@ export const config: Readonly<BrowserWindowConstructorOptions> = {
   show: false,
   autoHideMenuBar: true,
   icon: app.isPackaged
-    ? path.join(process.resourcesPath, "icon.png")
-    : path.join(app.getAppPath(), "src", "web", "icon.png"),
+    ? path.join(process.resourcesPath, 'icon.png')
+    : path.join(app.getAppPath(), 'src', 'web', 'icon.png'),
   webPreferences: {
     contextIsolation: true,
     nodeIntegration: false,

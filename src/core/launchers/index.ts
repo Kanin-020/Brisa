@@ -1,13 +1,20 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { EXECUTABLE_MODE } from "../constants";
-import type { AppConfig } from "../config";
-import { loadManifest } from "../manifest";
-import { detectPlatform } from "../platform";
-import { listStates, type PortState } from "../state";
-import { LAUNCHER_FORMAT_MARKER, LAUNCHER_FORMAT_VERSION, PORT_VERSION_MARKER, launcherScriptForPlatform, shQuote, writeImagenHelper } from "./scripts";
-import { selfImagePath } from "./images";
-import { normalizeVersion } from "../version";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { EXECUTABLE_MODE } from '../constants';
+import type { AppConfig } from '../config';
+import { loadManifest } from '../manifest';
+import { detectPlatform } from '../platform';
+import { listStates, type PortState } from '../state';
+import {
+  LAUNCHER_FORMAT_MARKER,
+  LAUNCHER_FORMAT_VERSION,
+  PORT_VERSION_MARKER,
+  launcherScriptForPlatform,
+  shQuote,
+  writeImagenHelper,
+} from './scripts';
+import { selfImagePath } from './images';
+import { normalizeVersion } from '../version';
 
 /**
  * Launchers para añadir los ports instalados a Steam como juegos no-Steam.
@@ -24,23 +31,26 @@ import { normalizeVersion } from "../version";
  * `launch <port> --wait`.
  */
 
-export { ensureSelfImageCopy, selfImagePath, imagesDir } from "./images";
-export { launcherScriptForPlatform, writeImagenHelper, helperPath, shQuote } from "./scripts";
+export { ensureSelfImageCopy, selfImagePath, imagesDir } from './images';
+export { launcherScriptForPlatform, writeImagenHelper, helperPath, shQuote } from './scripts';
 
 /** Carpeta de launchers, junto al resto de datos de Brisa (roms/, mods/, …). */
 export function launchersDir(cfg: AppConfig): string {
-  return path.join(cfg.root, "launchers");
+  return path.join(cfg.root, 'launchers');
 }
 
 /** Extensión del launcher según el SO (Windows: .cmd; resto: .sh). */
 export function launcherExtension(): string {
-  return detectPlatform().os === "windows" ? ".cmd" : ".sh";
+  return detectPlatform().os === 'windows' ? '.cmd' : '.sh';
 }
 
 /** Nombre de archivo seguro a partir del título del juego (quita ':' y otros caracteres inválidos). */
 export function launcherTitle(game: string): string {
-  const safe = game.replace(/[\\/:*?"<>|]/g, " ").replace(/\s+/g, " ").trim();
-  return safe || "Port";
+  const safe = game
+    .replace(/[\\/:*?"<>|]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return safe || 'Port';
 }
 
 /**
@@ -92,7 +102,7 @@ export function writeLauncher(cfg: AppConfig, state: PortState): string | null {
     fs.mkdirSync(dir, { recursive: true });
     const file = path.join(dir, `${title}${launcherExtension()}`);
     fs.writeFileSync(file, launcherScriptForPlatform(cfg, state.id, state.version));
-    if (launcherExtension() !== ".cmd") fs.chmodSync(file, EXECUTABLE_MODE);
+    if (launcherExtension() !== '.cmd') fs.chmodSync(file, EXECUTABLE_MODE);
     // Asegurar que el ayudante image/imagen exista para que el launcher funcione.
     writeImagenHelper(cfg);
     return file;
@@ -143,7 +153,7 @@ function launcherNeedsRefresh(
   if (!fs.existsSync(file)) return true;
   let content: string;
   try {
-    content = fs.readFileSync(file, "utf8");
+    content = fs.readFileSync(file, 'utf8');
   } catch {
     return true;
   }
@@ -160,7 +170,10 @@ const FORMAT_MARKER_RE = new RegExp(`${LAUNCHER_FORMAT_MARKER}:\\s*([0-9]+)`);
 const PORT_VERSION_MARKER_RE = new RegExp(`${PORT_VERSION_MARKER}:\\s*(\\S+)`);
 
 /** Extrae las etiquetas de versión embebidas en un launcher generado por Brisa. */
-function parseLauncherMarkers(content: string): { format: number | null; portVersion: string | null } {
+function parseLauncherMarkers(content: string): {
+  format: number | null;
+  portVersion: string | null;
+} {
   const format = Number(FORMAT_MARKER_RE.exec(content)?.[1]);
   return {
     format: Number.isFinite(format) ? format : null,
@@ -180,7 +193,7 @@ export function removeLauncher(cfg: AppConfig, portId: string): void {
     for (const file of fs.readdirSync(dir)) {
       if (!/\.(sh|cmd|bat)$/i.test(file)) continue;
       try {
-        if (fs.readFileSync(path.join(dir, file), "utf8").includes(marker)) {
+        if (fs.readFileSync(path.join(dir, file), 'utf8').includes(marker)) {
           fs.rmSync(path.join(dir, file), { force: true });
         }
       } catch {

@@ -13,10 +13,10 @@ export const EXECUTABLE_MODE = 0o755;
 export const DEFAULT_SERVER_PORT = 7380;
 
 /** User-Agent usado en todas las peticiones HTTP salientes. */
-export const USER_AGENT = "brisa";
+export const USER_AGENT = 'brisa';
 
 /** Base URL de la API de GitHub. */
-export const GITHUB_API_BASE = "https://api.github.com";
+export const GITHUB_API_BASE = 'https://api.github.com';
 
 /**
  * Intervalo mínimo entre comprobaciones de actualización (30 min). La API de

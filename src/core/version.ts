@@ -1,6 +1,6 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { projectRoot } from "./config";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { projectRoot } from './config';
 
 /**
  * Versión de la propia app Brisa.
@@ -13,14 +13,16 @@ import { projectRoot } from "./config";
  */
 export function appVersion(): string {
   const injected = (globalThis as Record<string, unknown>).__BRISA_VERSION__;
-  if (typeof injected === "string" && injected) return injected;
+  if (typeof injected === 'string' && injected) return injected;
   try {
     // En modo CLI (ELECTRON_RUN_AS_NODE) require("electron") devuelve un string
     // (la ruta del binario), no el API, así que esto solo acierta en Electron.
-    const electron = require("electron") as
-      | { app?: { getVersion?(): string } }
-      | undefined;
-    if (electron && typeof electron === "object" && typeof electron.app?.getVersion === "function") {
+    const electron = require('electron') as { app?: { getVersion?(): string } } | undefined;
+    if (
+      electron &&
+      typeof electron === 'object' &&
+      typeof electron.app?.getVersion === 'function'
+    ) {
       const v = electron.app.getVersion();
       if (v) return v;
     }
@@ -28,14 +30,14 @@ export function appVersion(): string {
     // fuera de Electron
   }
   try {
-    const pkg = JSON.parse(
-      fs.readFileSync(path.join(projectRoot(), "package.json"), "utf8"),
-    ) as { version?: string };
+    const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot(), 'package.json'), 'utf8')) as {
+      version?: string;
+    };
     if (pkg.version) return pkg.version;
   } catch {
     // sin package.json accesible
   }
-  return "0.0.0";
+  return '0.0.0';
 }
 
 /**
@@ -45,7 +47,7 @@ export function appVersion(): string {
  */
 export function normalizeVersion(version: string | null | undefined): string | null {
   if (!version) return null;
-  const cleaned = version.trim().replace(/^v/i, "");
+  const cleaned = version.trim().replace(/^v/i, '');
   return cleaned || null;
 }
 
@@ -60,7 +62,7 @@ export function normalizeVersion(version: string | null | undefined): string | n
  * esa es la que hay que reemplazar y relanzar en un self-update.
  */
 export function appImagePath(): string | null {
-  if (process.platform !== "linux") return null;
+  if (process.platform !== 'linux') return null;
   const fromEnv = process.env.APPIMAGE;
   if (fromEnv) return path.resolve(fromEnv);
   // Fallback para entornos sin variable (p. ej. ejecutando el binario
@@ -81,6 +83,6 @@ export function isAppImage(): boolean {
  * dev/CLI plano no hay auto-update.
  */
 export function isSelfUpdateSupported(): boolean {
-  if (process.platform === "win32") return !!process.env.BRISA_ROOT;
+  if (process.platform === 'win32') return !!process.env.BRISA_ROOT;
   return isAppImage();
 }

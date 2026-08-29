@@ -1,11 +1,11 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import type { AppConfig } from "./config";
-import { anyMatch, matchGlob } from "./glob";
-import { sha1File, fileFingerprint, hashCacheFile } from "./hash";
-import type { Manifest, RomRequirement } from "./manifest";
-import { listManifests } from "./manifest";
-import { readDiscGameId } from "./discid";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { AppConfig } from './config';
+import { anyMatch, matchGlob } from './glob';
+import { sha1File, fileFingerprint, hashCacheFile } from './hash';
+import type { Manifest, RomRequirement } from './manifest';
+import { listManifests } from './manifest';
+import { readDiscGameId } from './discid';
 
 export interface RomFile {
   /** Absolute path of the ROM file in the roms dir. */
@@ -22,7 +22,7 @@ export interface RomMatch {
   manifest: Manifest;
   requirement: RomRequirement;
   rom: RomFile;
-  matchedBy: "hash" | "gameid" | "name";
+  matchedBy: 'hash' | 'gameid' | 'name';
 }
 
 export interface ScanResult {
@@ -68,7 +68,7 @@ async function sha1WithCache(config: AppConfig, filePath: string): Promise<strin
 
   // Intentar leer del caché
   try {
-    const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8")) as {
+    const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, 'utf8')) as {
       size: number;
       mtimeMs: number;
       sha1: string;
@@ -76,8 +76,7 @@ async function sha1WithCache(config: AppConfig, filePath: string): Promise<strin
 
     // Verificar si el caché es válido (mismo tamaño y mtime cercano)
     const isCacheValid =
-      cachedData.size === fileStats.size &&
-      Math.abs(cachedData.mtimeMs - fileStats.mtimeMs) < 1000;
+      cachedData.size === fileStats.size && Math.abs(cachedData.mtimeMs - fileStats.mtimeMs) < 1000;
 
     if (isCacheValid) {
       return cachedData.sha1;
@@ -162,14 +161,14 @@ function findMatchingRom(
   availableRoms: RomFile[],
   requirement: RomRequirement,
   usedRoms: Set<string>,
-): { rom: RomFile; matchMethod: "hash" | "gameid" | "name" } | null {
+): { rom: RomFile; matchMethod: 'hash' | 'gameid' | 'name' } | null {
   // 1) Matching por SHA1: autoritativo cuando el manifiesto proporciona hashes
   if (requirement.sha1.length > 0) {
     const matchedByHash = availableRoms.find(
       (rom) => !usedRoms.has(rom.path) && requirement.sha1.includes(rom.sha1),
     );
     if (matchedByHash) {
-      return { rom: matchedByHash, matchMethod: "hash" };
+      return { rom: matchedByHash, matchMethod: 'hash' };
     }
   }
 
@@ -178,12 +177,10 @@ function findMatchingRom(
   if ((requirement.gameIds?.length ?? 0) > 0) {
     const matchedByGameId = availableRoms.find(
       (rom) =>
-        !usedRoms.has(rom.path) &&
-        rom.gameId !== null &&
-        requirement.gameIds!.includes(rom.gameId),
+        !usedRoms.has(rom.path) && rom.gameId !== null && requirement.gameIds!.includes(rom.gameId),
     );
     if (matchedByGameId) {
-      return { rom: matchedByGameId, matchMethod: "gameid" };
+      return { rom: matchedByGameId, matchMethod: 'gameid' };
     }
   }
 
@@ -202,7 +199,7 @@ function findMatchingRom(
 
     if (candidates.length > 0) {
       const bestMatch = pickBestNameMatch(candidates, requirement.patterns);
-      return { rom: bestMatch, matchMethod: "name" };
+      return { rom: bestMatch, matchMethod: 'name' };
     }
   }
 

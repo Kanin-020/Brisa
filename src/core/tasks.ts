@@ -1,11 +1,11 @@
-import { randomUUID } from "node:crypto";
-import { MAX_FINISHED_TASKS } from "./constants";
+import { randomUUID } from 'node:crypto';
+import { MAX_FINISHED_TASKS } from './constants';
 
 /** Error lanzado cuando una operación se cancela vía AbortController. */
 export class CancelledError extends Error {
-  constructor(message = "Operación cancelada") {
+  constructor(message = 'Operación cancelada') {
     super(message);
-    this.name = "CancelledError";
+    this.name = 'CancelledError';
   }
 }
 
@@ -14,7 +14,7 @@ export function throwIfAborted(signal?: AbortSignal): void {
   if (signal?.aborted) throw new CancelledError();
 }
 
-export type TaskStatus = "running" | "done" | "error" | "cancelled";
+export type TaskStatus = 'running' | 'done' | 'error' | 'cancelled';
 
 export interface TaskInfo {
   id: string;
@@ -74,11 +74,11 @@ export class TaskManager {
       type: opts.type,
       portId: opts.portId ?? null,
       label: opts.label,
-      stage: "start",
+      stage: 'start',
       done: 0,
       total: 0,
       pct: 0,
-      status: "running",
+      status: 'running',
       error: null,
       result: null,
       startedAt: Date.now(),
@@ -94,7 +94,8 @@ export class TaskManager {
         if (stage) entry.stage = stage;
         if (done !== undefined) entry.done = done;
         if (total !== undefined) entry.total = total;
-        entry.pct = entry.total > 0 ? Math.min(100, Math.round((entry.done / entry.total) * 100)) : 0;
+        entry.pct =
+          entry.total > 0 ? Math.min(100, Math.round((entry.done / entry.total) * 100)) : 0;
       },
       setLabel: (label) => {
         entry.label = label;
@@ -105,15 +106,15 @@ export class TaskManager {
       .then(() => run(ctx))
       .then(
         (result) => {
-          entry.status = "done";
+          entry.status = 'done';
           entry.result = result;
           entry.pct = 100;
           entry.finishedAt = Date.now();
         },
         (err: unknown) => {
           const cancelled =
-            err instanceof CancelledError || (err as { name?: string })?.name === "AbortError";
-          entry.status = cancelled ? "cancelled" : "error";
+            err instanceof CancelledError || (err as { name?: string })?.name === 'AbortError';
+          entry.status = cancelled ? 'cancelled' : 'error';
           entry.error = cancelled ? null : (err as Error).message;
           entry.finishedAt = Date.now();
         },
@@ -130,7 +131,7 @@ export class TaskManager {
    */
   hasRunning(portId?: string): boolean {
     for (const task of this.tasks.values()) {
-      if (task.status !== "running") continue;
+      if (task.status !== 'running') continue;
       if (portId === undefined || task.portId === portId) return true;
     }
     return false;
@@ -139,7 +140,7 @@ export class TaskManager {
   /** Cancela una tarea en marcha. Devuelve false si no existe o ya terminó. */
   cancel(id: string): boolean {
     const task = this.tasks.get(id);
-    if (!task || task.status !== "running") return false;
+    if (!task || task.status !== 'running') return false;
     task.controller.abort();
     return true;
   }
@@ -162,7 +163,7 @@ export class TaskManager {
   }
 
   private prune(): void {
-    const finished = [...this.tasks.values()].filter((t) => t.status !== "running");
+    const finished = [...this.tasks.values()].filter((t) => t.status !== 'running');
     if (finished.length <= MAX_FINISHED_TASKS) return;
     const oldest = finished.slice(0, finished.length - MAX_FINISHED_TASKS);
     for (const task of oldest) this.tasks.delete(task.id);

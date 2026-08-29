@@ -1,13 +1,13 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { spawn } from "node:child_process";
-import { JsonCache } from "./cache";
-import { EXECUTABLE_MODE } from "./constants";
-import type { AppConfig } from "./config";
-import { download, type ProgressFn } from "./download";
-import { getLatestRelease, pickAsset } from "./github";
-import { detectPlatform } from "./platform";
-import { appVersion, appImagePath, isSelfUpdateSupported } from "./version";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { spawn } from 'node:child_process';
+import { JsonCache } from './cache';
+import { EXECUTABLE_MODE } from './constants';
+import type { AppConfig } from './config';
+import { download, type ProgressFn } from './download';
+import { getLatestRelease, pickAsset } from './github';
+import { detectPlatform } from './platform';
+import { appVersion, appImagePath, isSelfUpdateSupported } from './version';
 
 export interface SelfUpdateInfo {
   /** Versión instalada actualmente. */
@@ -27,9 +27,10 @@ export interface SelfUpdateInfo {
 }
 
 /** Cache idéntica a la de los ports: como mucho 1 llamada a GitHub cada 30 min. */
-const selfCache = (cfg: AppConfig) => new JsonCache<SelfUpdateInfo>(path.join(cfg.cacheDir, "update-check"));
+const selfCache = (cfg: AppConfig) =>
+  new JsonCache<SelfUpdateInfo>(path.join(cfg.cacheDir, 'update-check'));
 
-const SELF_CACHE_ID = "self";
+const SELF_CACHE_ID = 'self';
 
 /**
  * Nombre del asset de Brisa según la plataforma (electron-builder artifactName
@@ -40,10 +41,9 @@ const SELF_CACHE_ID = "self";
 export function selfAssetPattern(cfg: AppConfig): string {
   if (cfg.selfAssetPattern) return cfg.selfAssetPattern;
   const p = detectPlatform();
-  const os = p.os === "windows" ? "win" : p.os;
-  const arch =
-    p.arch === "x64" ? "{x64,x86_64}" : p.arch === "arm64" ? "{arm64,aarch64}" : p.arch;
-  const ext = p.os === "windows" ? "exe" : "AppImage";
+  const os = p.os === 'windows' ? 'win' : p.os;
+  const arch = p.arch === 'x64' ? '{x64,x86_64}' : p.arch === 'arm64' ? '{arm64,aarch64}' : p.arch;
+  const ext = p.os === 'windows' ? 'exe' : 'AppImage';
   return `Brisa-${os}-${arch}.${ext}`;
 }
 
@@ -62,7 +62,7 @@ export function compareVersions(a: string, b: string): number {
 function parseParts(v: string): number[] {
   const m = v
     .trim()
-    .replace(/^v/i, "")
+    .replace(/^v/i, '')
     .match(/^(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
   if (!m) return [];
   return [Number(m[1] ?? 0), Number(m[2] ?? 0), Number(m[3] ?? 0)];
@@ -88,21 +88,25 @@ function refreshCached(cached: SelfUpdateInfo): SelfUpdateInfo {
     current: appVersion(),
     supported: isSelfUpdateSupported(),
     available: cached.available && !!cached.downloadUrl,
-    notes: cached.notes ?? "",
+    notes: cached.notes ?? '',
   };
 }
 
 /** Sin repo configurado o fallo de red: info con available=false. */
-function unavailable(cfg: AppConfig, latest: string, cached?: SelfUpdateInfo | null): SelfUpdateInfo {
+function unavailable(
+  cfg: AppConfig,
+  latest: string,
+  cached?: SelfUpdateInfo | null,
+): SelfUpdateInfo {
   return {
     current: appVersion(),
     latest: cached?.latest ?? latest,
     available: false,
     supported: isSelfUpdateSupported(),
-    notes: cached?.notes ?? "",
-    assetName: cached?.assetName ?? "",
+    notes: cached?.notes ?? '',
+    assetName: cached?.assetName ?? '',
     size: cached?.size ?? 0,
-    downloadUrl: cached?.downloadUrl ?? "",
+    downloadUrl: cached?.downloadUrl ?? '',
     checkedAt: Date.now(),
   };
 }
@@ -111,7 +115,10 @@ function unavailable(cfg: AppConfig, latest: string, cached?: SelfUpdateInfo | n
  * Comprueba si hay una release más reciente de Brisa en GitHub.
  * `force` salta la caché (usado por el comando explícito y antes de actualizar).
  */
-export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<SelfUpdateInfo | null> {
+export async function checkSelfUpdate(
+  cfg: AppConfig,
+  force = false,
+): Promise<SelfUpdateInfo | null> {
   if (!cfg.selfRepo) return null;
   // read() solo devuelve entradas frescas (guardadas hace < 30 min); readStale
   // se usa como último recurso si la red falla.
@@ -137,9 +144,9 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
       available: !!asset && compareVersions(rel.tag, appVersion()) > 0,
       supported: isSelfUpdateSupported(),
       notes: rel.body,
-      assetName: asset?.name ?? "",
+      assetName: asset?.name ?? '',
       size: asset?.size ?? 0,
-      downloadUrl: asset?.url ?? "",
+      downloadUrl: asset?.url ?? '',
       checkedAt: Date.now(),
     };
     writeCache(cfg, info);
@@ -149,7 +156,7 @@ export async function checkSelfUpdate(cfg: AppConfig, force = false): Promise<Se
     // `current` y `supported` actualizados, y refrescar la caché SIEMPRE para
     // que una copia obsoleta (p. ej. escrita por una versión antigua de la
     // app) no quede atascada mostrando una versión vieja indefinidamente.
-    const info = stale ? refreshCached(stale) : unavailable(cfg, "?");
+    const info = stale ? refreshCached(stale) : unavailable(cfg, '?');
     writeCache(cfg, info);
     return info;
   }
@@ -166,15 +173,15 @@ export async function applySelfUpdate(
 ): Promise<SelfUpdateInfo> {
   if (!isSelfUpdateSupported()) {
     throw new Error(
-      "El auto-update solo está disponible en las builds empaquetadas " +
-        "(AppImage de Linux o instalador de Windows). Descarga la última versión desde GitHub.",
+      'El auto-update solo está disponible en las builds empaquetadas ' +
+        '(AppImage de Linux o instalador de Windows). Descarga la última versión desde GitHub.',
     );
   }
   const info = await checkSelfUpdate(cfg, true);
-  if (!info) throw new Error("No hay selfRepo configurado (config-set selfRepo <owner/repo>).");
+  if (!info) throw new Error('No hay selfRepo configurado (config-set selfRepo <owner/repo>).');
   if (!info.available) return info;
 
-  const dest = path.join(cfg.cacheDir, "downloads", "self", info.assetName);
+  const dest = path.join(cfg.cacheDir, 'downloads', 'self', info.assetName);
   if (!fs.existsSync(dest) || fs.statSync(dest).size !== info.size) {
     await download(cfg, info.downloadUrl, dest, onProgress);
   }
@@ -182,7 +189,7 @@ export async function applySelfUpdate(
     throw new Error(`Descarga incompleta de ${info.assetName} (${info.size} bytes esperados).`);
   }
 
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     spawnWindowsUpdater(cfg, dest);
   } else {
     spawnLinuxUpdater(cfg, dest);
@@ -198,13 +205,13 @@ function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
   // Dentro de una AppImage process.execPath apunta al mount temporal (de solo
   // lectura); hay que reemplazar el archivo real, que expone $APPIMAGE.
   const oldPath = appImagePath() ?? path.resolve(process.execPath);
-  const updater = path.join(cfg.cacheDir, "downloads", "self", "brisa-updater.sh");
-  const log = path.join(cfg.cacheDir, "downloads", "self", "updater.log");
+  const updater = path.join(cfg.cacheDir, 'downloads', 'self', 'brisa-updater.sh');
+  const log = path.join(cfg.cacheDir, 'downloads', 'self', 'updater.log');
   fs.writeFileSync(updater, updaterScript(String(process.pid), dest, oldPath, log));
   fs.chmodSync(updater, EXECUTABLE_MODE);
   try {
-    const child = spawn("/bin/sh", [updater], { detached: true, stdio: "ignore" });
-    child.on("error", (err) => {
+    const child = spawn('/bin/sh', [updater], { detached: true, stdio: 'ignore' });
+    child.on('error', (err) => {
       console.error(`[self-update] no se pudo lanzar el updater: ${err.message}`);
     });
     child.unref();
@@ -219,18 +226,18 @@ function spawnLinuxUpdater(cfg: AppConfig, dest: string): void {
  * la app automáticamente (comportamiento por defecto de electron-builder).
  */
 function spawnWindowsUpdater(cfg: AppConfig, dest: string): void {
-  const updater = path.join(cfg.cacheDir, "downloads", "self", "brisa-updater.cmd");
-  const log = path.join(cfg.cacheDir, "downloads", "self", "updater.log");
+  const updater = path.join(cfg.cacheDir, 'downloads', 'self', 'brisa-updater.cmd');
+  const log = path.join(cfg.cacheDir, 'downloads', 'self', 'updater.log');
   fs.writeFileSync(updater, windowsUpdaterScript(String(process.pid), dest));
   try {
     // La salida del .cmd se redirige al log para poder depurar.
     const cmdLine = `"${updater}" >> "${log}" 2>&1`;
-    const child = spawn("cmd.exe", ["/c", cmdLine], {
+    const child = spawn('cmd.exe', ['/c', cmdLine], {
       detached: true,
-      stdio: "ignore",
+      stdio: 'ignore',
       windowsHide: true,
     });
-    child.on("error", (err) => {
+    child.on('error', (err) => {
       console.error(`[self-update] no se pudo lanzar el updater: ${err.message}`);
     });
     child.unref();
@@ -291,30 +298,30 @@ function windowsUpdaterScript(pid: string, installerPath: string): string {
   // al ejecutarse, así que %PID%/%NEW% funcionan y los caracteres raros de la
   // ruta (!, &, ^) se tratan como literales dentro de las comillas.
   return (
-    "@echo off\r\n" +
+    '@echo off\r\n' +
     `rem Generado por Brisa (self-update). Espera al proceso ${pid}, ejecuta el\r\n` +
-    "rem instalador NSIS en silencio (/S); al terminar relanza la app.\r\n" +
+    'rem instalador NSIS en silencio (/S); al terminar relanza la app.\r\n' +
     `set "PID=${pid}"\r\n` +
     `set "NEW=${installerPath}"\r\n` +
-    "set /a i=0\r\n" +
-    ":wait\r\n" +
+    'set /a i=0\r\n' +
+    ':wait\r\n' +
     'tasklist /FI "PID eq %PID%" 2>nul | findstr /C:"%PID%" >nul\r\n' +
-    "if errorlevel 1 goto relaunch\r\n" +
-    "set /a i+=1\r\n" +
-    "if %i% geq 60 goto kill\r\n" +
-    "ping -n 2 127.0.0.1 >nul\r\n" +
-    "goto wait\r\n" +
-    ":kill\r\n" +
-    "taskkill /PID %PID% /F >nul 2>nul\r\n" +
-    ":relaunch\r\n" +
-    "ping -n 2 127.0.0.1 >nul\r\n" +
+    'if errorlevel 1 goto relaunch\r\n' +
+    'set /a i+=1\r\n' +
+    'if %i% geq 60 goto kill\r\n' +
+    'ping -n 2 127.0.0.1 >nul\r\n' +
+    'goto wait\r\n' +
+    ':kill\r\n' +
+    'taskkill /PID %PID% /F >nul 2>nul\r\n' +
+    ':relaunch\r\n' +
+    'ping -n 2 127.0.0.1 >nul\r\n' +
     'if exist "%NEW%" (\r\n' +
-    "  echo [updater] lanzando instalador en silencio...\r\n" +
+    '  echo [updater] lanzando instalador en silencio...\r\n' +
     '  start "" /wait "%NEW%" /S\r\n' +
-    "  echo OK: %NEW%\r\n" +
-    ") else (\r\n" +
-    "  echo FAIL: %NEW%\r\n" +
-    ")\r\n" +
-    "endlocal\r\n"
+    '  echo OK: %NEW%\r\n' +
+    ') else (\r\n' +
+    '  echo FAIL: %NEW%\r\n' +
+    ')\r\n' +
+    'endlocal\r\n'
   );
 }

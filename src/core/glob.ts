@@ -4,10 +4,8 @@
 export function globToRegExp(pattern: string): RegExp {
   // Expand {a,b,c} into alternation groups first.
   const expanded = expandBraces(pattern);
-  const body = expanded
-    .map((p) => `(?:${compileOne(p)})`)
-    .join("|");
-  return new RegExp(`^(?:${body})$`, "i");
+  const body = expanded.map((p) => `(?:${compileOne(p)})`).join('|');
+  return new RegExp(`^(?:${body})$`, 'i');
 }
 
 /**
@@ -16,14 +14,14 @@ export function globToRegExp(pattern: string): RegExp {
  * the rest of the pattern (handles nested groups like {a,{b,c}}).
  */
 function expandBraces(pattern: string): string[] {
-  const i = pattern.indexOf("{");
+  const i = pattern.indexOf('{');
   if (i === -1) return [pattern];
   let depth = 0;
   let j = -1;
   for (let k = i; k < pattern.length; k++) {
     const ch = pattern[k];
-    if (ch === "{") depth++;
-    else if (ch === "}") {
+    if (ch === '{') depth++;
+    else if (ch === '}') {
       depth--;
       if (depth === 0) {
         j = k;
@@ -47,13 +45,13 @@ function expandBraces(pattern: string): string[] {
 function splitTopLevel(s: string): string[] {
   const parts: string[] = [];
   let depth = 0;
-  let cur = "";
+  let cur = '';
   for (const ch of s) {
-    if (ch === "{") depth++;
-    else if (ch === "}") depth--;
-    if (ch === "," && depth === 0) {
+    if (ch === '{') depth++;
+    else if (ch === '}') depth--;
+    if (ch === ',' && depth === 0) {
       parts.push(cur);
-      cur = "";
+      cur = '';
     } else {
       cur += ch;
     }
@@ -63,31 +61,31 @@ function splitTopLevel(s: string): string[] {
 }
 
 function compileOne(pattern: string): string {
-  let re = "";
+  let re = '';
   for (let i = 0; i < pattern.length; i++) {
     const ch = pattern[i];
-    if (ch === "*") {
-      if (pattern[i + 1] === "*") {
+    if (ch === '*') {
+      if (pattern[i + 1] === '*') {
         i++;
-        if (pattern[i + 1] === "/") i++;
-        re += ".*";
+        if (pattern[i + 1] === '/') i++;
+        re += '.*';
       } else {
-        re += "[^/]*";
+        re += '[^/]*';
       }
-    } else if (ch === "?") {
-      re += "[^/]";
-    } else if (ch === "[") {
-      const close = pattern.indexOf("]", i);
+    } else if (ch === '?') {
+      re += '[^/]';
+    } else if (ch === '[') {
+      const close = pattern.indexOf(']', i);
       if (close === -1) {
-        re += "\\[";
+        re += '\\[';
       } else {
         let cls = pattern.slice(i + 1, close);
-        if (cls.startsWith("!")) cls = "^" + cls.slice(1);
-        re += "[" + cls + "]";
+        if (cls.startsWith('!')) cls = '^' + cls.slice(1);
+        re += '[' + cls + ']';
         i = close;
       }
-    } else if ("\\^$.|?+()[]{}".includes(ch)) {
-      re += "\\" + ch;
+    } else if ('\\^$.|?+()[]{}'.includes(ch)) {
+      re += '\\' + ch;
     } else {
       re += ch;
     }

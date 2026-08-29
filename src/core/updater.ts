@@ -1,12 +1,12 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { JsonCache } from "./cache";
-import { USER_AGENT } from "./constants";
-import type { AppConfig } from "./config";
-import { getLatestRelease } from "./github";
-import { installPort } from "./installer";
-import type { Manifest } from "./manifest";
-import { readState, writeState } from "./state";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { JsonCache } from './cache';
+import { USER_AGENT } from './constants';
+import type { AppConfig } from './config';
+import { getLatestRelease } from './github';
+import { installPort } from './installer';
+import type { Manifest } from './manifest';
+import { readState, writeState } from './state';
 
 export interface UpdateInfo {
   id: string;
@@ -20,7 +20,8 @@ export interface UpdateInfo {
 }
 
 /** Caché de comprobaciones por port (JsonCache con el intervalo global de 30 min). */
-const updateCache = (cfg: AppConfig) => new JsonCache<UpdateInfo>(path.join(cfg.cacheDir, "update-check"));
+const updateCache = (cfg: AppConfig) =>
+  new JsonCache<UpdateInfo>(path.join(cfg.cacheDir, 'update-check'));
 
 /**
  * Cached update check: only hits the GitHub API at most once per 30 min.
@@ -37,7 +38,7 @@ export async function checkUpdate(
   const cached = cache.read(manifest.id);
   if (!force && cached) {
     // Caches escritos por versiones anteriores no tienen `notes`.
-    return { ...cached, notes: cached.notes ?? "" };
+    return { ...cached, notes: cached.notes ?? '' };
   }
   try {
     const release = await getLatestRelease(cfg, manifest.repo);
@@ -56,14 +57,14 @@ export async function checkUpdate(
     // Network failure: fall back to cache or report unavailable.
     const stale = cache.readStale(manifest.id);
     return stale
-      ? { ...stale, notes: stale.notes ?? "" }
+      ? { ...stale, notes: stale.notes ?? '' }
       : {
           id: manifest.id,
           name: manifest.name,
           installed: state.version,
-          latest: "?",
+          latest: '?',
           available: false,
-          notes: "",
+          notes: '',
           checkedAt: Date.now(),
         };
   }
@@ -88,10 +89,19 @@ export async function applyUpdate(
     const firstRequirementId = manifest.roms[0]?.id;
     if (firstRequirementId) linked[firstRequirementId] = state.romLinked;
   }
-  const roms: Record<string, { path: string; name: string; size: number; sha1: string; gameId: null }> = {};
+  const roms: Record<
+    string,
+    { path: string; name: string; size: number; sha1: string; gameId: null }
+  > = {};
   for (const [requirementId, romPath] of Object.entries(linked)) {
     if (fs.existsSync(romPath)) {
-      roms[requirementId] = { path: romPath, name: path.basename(romPath), size: 0, sha1: "", gameId: null };
+      roms[requirementId] = {
+        path: romPath,
+        name: path.basename(romPath),
+        size: 0,
+        sha1: '',
+        gameId: null,
+      };
     }
   }
   const newState = await installPort(cfg, manifest, {
@@ -105,7 +115,7 @@ export async function applyUpdate(
     installed: newState.version,
     latest: newState.version,
     available: false,
-    notes: "",
+    notes: '',
     checkedAt: Date.now(),
   };
   updateCache(cfg).write(manifest.id, info);
@@ -118,14 +128,14 @@ export async function applyUpdate(
  */
 export async function refreshRemoteManifests(cfg: AppConfig): Promise<number> {
   if (!cfg.registryUrl) return 0;
-  const res = await fetch(cfg.registryUrl, { headers: { "User-Agent": USER_AGENT } });
+  const res = await fetch(cfg.registryUrl, { headers: { 'User-Agent': USER_AGENT } });
   if (!res.ok) throw new Error(`Registry fetch failed: HTTP ${res.status}`);
   const data = (await res.json()) as Array<{ id: string; url: string }>;
-  const dir = path.join(cfg.manifestsDir, "remote");
+  const dir = path.join(cfg.manifestsDir, 'remote');
   fs.mkdirSync(dir, { recursive: true });
   let count = 0;
   for (const entry of data) {
-    const r = await fetch(entry.url, { headers: { "User-Agent": USER_AGENT } });
+    const r = await fetch(entry.url, { headers: { 'User-Agent': USER_AGENT } });
     if (!r.ok) continue;
     const text = await r.text();
     fs.writeFileSync(path.join(dir, `${entry.id}.json`), text);

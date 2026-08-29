@@ -1,5 +1,5 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 /** Create a symlink, falling back to a file copy on platforms without symlink privileges. */
 export function createSymlink(target: string, link: string): void {

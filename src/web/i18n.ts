@@ -109,8 +109,7 @@ const FALLBACK_EN: Record<string, string | I18nHelpStep[]> = {
   'toast.manifestsExported': '✓ {0} manifests exported (.zip)',
   'toast.manifestsImported': '✓ {0} manifests imported',
   'toast.importError': 'Import error',
-  'toast.updateAvailable':
-    '⚠ {0}: new version {2} available (installed: {1}). Click to update',
+  'toast.updateAvailable': '⚠ {0}: new version {2} available (installed: {1}). Click to update',
   'toast.cancelled': '✕ {0}: operation cancelled',
   'toast.updatedAll': '✓ {0} ports updated',
   'toast.updatingAll': 'Updating all ports…',
@@ -127,21 +126,48 @@ const FALLBACK_EN: Record<string, string | I18nHelpStep[]> = {
   'self.updateAvailable': 'New Brisa version available: v{0}',
   'toast.selfAvailable': '⬆ Brisa v{0} available. Click to update',
   'toast.selfUpdating': 'Downloading Brisa v{0}…',
-  'toast.selfUpdated':
-    '✓ Brisa v{0} ready. The app will close and reopen automatically.',
+  'toast.selfUpdated': '✓ Brisa v{0} ready. The app will close and reopen automatically.',
   loading: 'Loading…',
   'help.title': 'How to use Brisa',
   'help.intro':
     'Brisa installs and updates native PC ports directly from your ROMs, and adds them to Steam as non-Steam games.',
   'help.welcome': 'Welcome to Brisa!',
   'help.steps': [
-    { icon: '📥', title: 'Add your ROMs', text: 'Drop your files in the ROMs tab or click "＋ Add ROMs".' },
-    { icon: '🔍', title: 'Check the matches', text: 'Each ROM shows a green chip per compatible port; a red chip means no match.' },
-    { icon: '⬇', title: 'Install a port', text: 'Go to Available ports, check the ROM is green (✓) and click Install.' },
-    { icon: '▶', title: 'Play and update', text: 'Click Play to launch. An orange chip means an update is available.' },
-    { icon: '🎮', title: 'Manage mods', text: '＋ Add mods opens the mods folder; chips enable or disable each mod.' },
-    { icon: '🖥', title: 'Add ports to Steam', text: "Installed ports get a launcher in Brisa's launchers folder — add it to Steam as a non-Steam game." },
-    { icon: '🗀', title: 'Open files', text: 'Open files shows the port folder; the port icon opens its repository.' },
+    {
+      icon: '📥',
+      title: 'Add your ROMs',
+      text: 'Drop your files in the ROMs tab or click "＋ Add ROMs".',
+    },
+    {
+      icon: '🔍',
+      title: 'Check the matches',
+      text: 'Each ROM shows a green chip per compatible port; a red chip means no match.',
+    },
+    {
+      icon: '⬇',
+      title: 'Install a port',
+      text: 'Go to Available ports, check the ROM is green (✓) and click Install.',
+    },
+    {
+      icon: '▶',
+      title: 'Play and update',
+      text: 'Click Play to launch. An orange chip means an update is available.',
+    },
+    {
+      icon: '🎮',
+      title: 'Manage mods',
+      text: '＋ Add mods opens the mods folder; chips enable or disable each mod.',
+    },
+    {
+      icon: '🖥',
+      title: 'Add ports to Steam',
+      text: "Installed ports get a launcher in Brisa's launchers folder — add it to Steam as a non-Steam game.",
+    },
+    {
+      icon: '🗀',
+      title: 'Open files',
+      text: 'Open files shows the port folder; the port icon opens its repository.',
+    },
   ],
   'help.legal': '⚠ ROMs must be obtained legally: only use copies of games you own.',
   'help.finish': "Let's go!",

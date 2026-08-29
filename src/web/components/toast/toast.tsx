@@ -2,7 +2,13 @@ import { h } from 'preact';
 import { useState, useEffect, useRef } from 'preact/hooks';
 import type { ToastProps } from '../../types';
 
-export function BrisaToast({ message, kind = 'ok', duration = 3200, onClick, onClose }: ToastProps) {
+export function BrisaToast({
+  message,
+  kind = 'ok',
+  duration = 3200,
+  onClick,
+  onClose,
+}: ToastProps) {
   const [visible, setVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

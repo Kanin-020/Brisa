@@ -1,9 +1,9 @@
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { EXECUTABLE_MODE } from "../constants";
-import type { AppConfig } from "../config";
-import { detectPlatform } from "../platform";
-import { imagesDir, selfImagePath } from "./images";
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { EXECUTABLE_MODE } from '../constants';
+import type { AppConfig } from '../config';
+import { detectPlatform } from '../platform';
+import { imagesDir, selfImagePath } from './images';
 
 /**
  * Generación de los scripts de los launchers (`.sh` en Linux/macOS/Android y
@@ -20,20 +20,16 @@ import { imagesDir, selfImagePath } from "./images";
 export const LAUNCHER_FORMAT_VERSION = 2;
 
 /** Nombre de la etiqueta que marca la versión del formato del launcher. */
-export const LAUNCHER_FORMAT_MARKER = "brisa-launcher-format";
+export const LAUNCHER_FORMAT_MARKER = 'brisa-launcher-format';
 /** Nombre de la etiqueta que marca la versión instalada del port. */
-export const PORT_VERSION_MARKER = "brisa-port-version";
+export const PORT_VERSION_MARKER = 'brisa-port-version';
 
 /**
  * Ruta del ayudante `image/imagen` (POSIX) o `image/imagen.cmd` (Windows) que
  * los launchers usan para invocar el CLI de la propia Brisa.
  */
 export function helperPath(cfg: AppConfig): string {
-  return path.join(
-    cfg.root,
-    "image",
-    detectPlatform().os === "windows" ? "imagen.cmd" : "imagen",
-  );
+  return path.join(cfg.root, 'image', detectPlatform().os === 'windows' ? 'imagen.cmd' : 'imagen');
 }
 
 /** Ids de port seguros para incrustar sin comillas en los scripts de los launchers. */
@@ -46,7 +42,7 @@ export function shQuote(s: string): string {
 
 /** Escapa una ruta para usarla entre comillas dobles en un .cmd de Windows. */
 function batQuote(s: string): string {
-  return `"${s.replace(/%/g, "%%")}"`;
+  return `"${s.replace(/%/g, '%%')}"`;
 }
 
 /**
@@ -91,29 +87,33 @@ ${shQuote(executable)} launch ${safeId} --wait || exit 1
  */
 export function launcherScriptWin(cfg: AppConfig, portId: string, portVersion: string): string {
   const helper = batQuote(helperPath(cfg));
-  const safeId = SAFE_ID_PATTERN.test(portId) ? portId : portId.replace(/[^\w.-]/g, "_");
+  const safeId = SAFE_ID_PATTERN.test(portId) ? portId : portId.replace(/[^\w.-]/g, '_');
   return [
-    "@echo off",
+    '@echo off',
     `rem Launcher generado por Brisa (port: ${portId}) - no editar a mano.`,
     `rem ${LAUNCHER_FORMAT_MARKER}: ${LAUNCHER_FORMAT_VERSION}`,
     `rem ${PORT_VERSION_MARKER}: ${portVersion}`,
-    "rem Steam ejecuta los juegos sin pasar por una shell; este .cmd limpia las",
-    "rem variables de Steam que crashean los binarios nativos y delega en el CLI",
+    'rem Steam ejecuta los juegos sin pasar por una shell; este .cmd limpia las',
+    'rem variables de Steam que crashean los binarios nativos y delega en el CLI',
     "rem de Brisa (image\\imagen.cmd): 'update <port>' y 'launch <port> --wait'.",
     'set "LD_PRELOAD="',
     'set "STEAM_COMPAT_DATA_PATH="',
     'set "STEAM_COMPAT_CLIENT_INSTALL_PATH="',
     'set "STEAM_RUNTIME="',
     `call ${helper} update "${safeId}"`,
-    "if errorlevel 1 exit /b 1",
+    'if errorlevel 1 exit /b 1',
     `call ${helper} launch "${safeId}" --wait`,
-    "if errorlevel 1 exit /b 1",
-  ].join("\r\n");
+    'if errorlevel 1 exit /b 1',
+  ].join('\r\n');
 }
 
 /** Devuelve el contenido del launcher adecuado para el SO actual. */
-export function launcherScriptForPlatform(cfg: AppConfig, portId: string, portVersion: string): string {
-  return detectPlatform().os === "windows"
+export function launcherScriptForPlatform(
+  cfg: AppConfig,
+  portId: string,
+  portVersion: string,
+): string {
+  return detectPlatform().os === 'windows'
     ? launcherScriptWin(cfg, portId, portVersion)
     : launcherScript(cfg, portId, portVersion);
 }
@@ -160,14 +160,14 @@ exec "$APPIMAGE" "$@"
 export function imagenHelperScriptWin(_cfg: AppConfig): string {
   const exe = batQuote(process.execPath);
   return [
-    "@echo off",
-    "rem Ayudante de Brisa (generado por Brisa - no editar a mano).",
-    "rem Uso: imagen <subcomando> <port> [args...]",
-    "rem Ejecuta el CLI de la propia Brisa con los argumentos recibidos,",
-    "rem p. ej. imagen update <port> o imagen launch <port> --wait.",
+    '@echo off',
+    'rem Ayudante de Brisa (generado por Brisa - no editar a mano).',
+    'rem Uso: imagen <subcomando> <port> [args...]',
+    'rem Ejecuta el CLI de la propia Brisa con los argumentos recibidos,',
+    'rem p. ej. imagen update <port> o imagen launch <port> --wait.',
     `${exe} %*`,
-    "exit /b %errorlevel%",
-  ].join("\r\n");
+    'exit /b %errorlevel%',
+  ].join('\r\n');
 }
 
 /**
@@ -180,9 +180,9 @@ export function writeImagenHelper(cfg: AppConfig): string | null {
   try {
     const dir = imagesDir(cfg);
     fs.mkdirSync(dir, { recursive: true });
-    const win = detectPlatform().os === "windows";
-    const file = path.join(dir, win ? "imagen.cmd" : "imagen");
-    const stale = path.join(dir, win ? "imagen" : "imagen.cmd");
+    const win = detectPlatform().os === 'windows';
+    const file = path.join(dir, win ? 'imagen.cmd' : 'imagen');
+    const stale = path.join(dir, win ? 'imagen' : 'imagen.cmd');
     if (stale !== file && fs.existsSync(stale)) {
       try {
         fs.rmSync(stale, { force: true });

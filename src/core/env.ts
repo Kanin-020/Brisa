@@ -10,10 +10,10 @@
  * en el CLI (brisa launch) como en la GUI (POST /api/launch).
  */
 const STEAM_ENV_NOISE = new Set([
-  "LD_PRELOAD",
-  "STEAM_COMPAT_DATA_PATH",
-  "STEAM_COMPAT_CLIENT_INSTALL_PATH",
-  "STEAM_RUNTIME",
+  'LD_PRELOAD',
+  'STEAM_COMPAT_DATA_PATH',
+  'STEAM_COMPAT_CLIENT_INSTALL_PATH',
+  'STEAM_RUNTIME',
 ]);
 
 /** Copia del entorno base sin las variables de Steam que rompen los nativos. */

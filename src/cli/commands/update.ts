@@ -1,11 +1,13 @@
-import type { Command } from "commander";
-import type { App } from "../../core/app";
+import type { Command } from 'commander';
+import type { App } from '../../core/app';
 
 export function registerUpdateCommand(program: Command, app: App): void {
   program
-    .command("update [portId]")
-    .description("Comprueba actualizaciones de los ports instalados (o de uno en concreto) y las aplica.")
-    .option("--check", "solo comprobar, no actualizar")
+    .command('update [portId]')
+    .description(
+      'Comprueba actualizaciones de los ports instalados (o de uno en concreto) y las aplica.',
+    )
+    .option('--check', 'solo comprobar, no actualizar')
     .action(async (portId: string | undefined, opts: { check?: boolean }) => {
       const ids = portId ? [portId] : app.installed().map((state) => state.id);
       for (const id of ids) {
