@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import { spawn } from 'node:child_process';
+import { electron } from './electron-env';
 
 /**
  * Open an arbitrary path in the OS file manager. Uses Electron's shell when
@@ -10,14 +11,10 @@ export async function openPathInFileManager(target: string): Promise<boolean> {
   fs.mkdirSync(target, { recursive: true });
 
   // Desktop (proceso principal de Electron): usar shell.openPath.
-  try {
-    const electron = (await import('electron')) as { shell?: { openPath(p: string): Promise<string> } };
-    if (electron && typeof electron === 'object' && electron.shell) {
-      const err = await electron.shell.openPath(target);
-      return err === '' || err === undefined;
-    }
-  } catch {
-    // Fuera de Electron (modo CLI/navegador).
+  const shell = electron?.shell as { openPath?(p: string): Promise<string> } | undefined;
+  if (shell && typeof shell.openPath === 'function') {
+    const err = await shell.openPath(target);
+    return err === '' || err === undefined;
   }
 
   const opener =

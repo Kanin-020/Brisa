@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { projectRoot } from './config';
+import { electron } from './electron-env';
 
 /**
  * Versión de la propia app Brisa.
@@ -14,21 +15,13 @@ import { projectRoot } from './config';
 export function appVersion(): string {
   const injected = (globalThis as Record<string, unknown>).__BRISA_VERSION__;
   if (typeof injected === 'string' && injected) return injected;
-  try {
-    // En modo CLI (ELECTRON_RUN_AS_NODE) require("electron") devuelve un string
-    // (la ruta del binario), no el API, así que esto solo acierta en Electron.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS sync context, no se puede usar import() async
-    const electron = require('electron') as { app?: { getVersion?(): string } } | undefined;
-    if (
-      electron &&
-      typeof electron === 'object' &&
-      typeof electron.app?.getVersion === 'function'
-    ) {
-      const v = electron.app.getVersion();
-      if (v) return v;
-    }
-  } catch {
-    // fuera de Electron
+  if (
+    electron &&
+    typeof electron.app === 'object' &&
+    typeof (electron.app as { getVersion?: () => string }).getVersion === 'function'
+  ) {
+    const v = (electron.app as { getVersion: () => string }).getVersion();
+    if (v) return v;
   }
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(projectRoot(), 'package.json'), 'utf8')) as {
