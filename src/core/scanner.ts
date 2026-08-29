@@ -32,148 +32,218 @@ export interface ScanResult {
   missing: Manifest[];
 }
 
-/** Walk every roms dir recursively. */
-export function collectRomFiles(cfg: AppConfig): string[] {
-  const out: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
-      else if (entry.isFile()) out.push(full);
+/**
+ * Recorre recursivamente todos los directorios de ROMs y retorna las rutas
+ * absolutas de todos los archivos encontrados.
+ */
+export function collectRomFiles(config: AppConfig): string[] {
+  const filePaths: string[] = [];
+
+  const walkDirectory = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const fullPath = path.join(directory, entry.name);
+      if (entry.isDirectory()) {
+        walkDirectory(fullPath);
+      } else if (entry.isFile()) {
+        filePaths.push(fullPath);
+      }
     }
   };
-  for (const dir of cfg.romsDirs) {
-    if (!fs.existsSync(dir)) continue;
-    walk(dir);
+
+  for (const romsDir of config.romsDirs) {
+    if (!fs.existsSync(romsDir)) continue;
+    walkDirectory(romsDir);
   }
-  return out;
+
+  return filePaths;
 }
 
-/** SHA1 of a ROM file, cached by size + mtime so rescanning stays fast. */
-async function sha1WithCache(cfg: AppConfig, file: string): Promise<string> {
-  const cacheFile = hashCacheFile(cfg, file);
-  const fingerprint = fileFingerprint(file);
+/**
+ * Calcula el SHA1 de un archivo ROM con caché basado en tamaño + mtime.
+ * Esto permite que el escaneo repetido sea rápido sin recalcular hashes.
+ */
+async function sha1WithCache(config: AppConfig, filePath: string): Promise<string> {
+  const cacheFilePath = hashCacheFile(config, filePath);
+  const fileStats = fileFingerprint(filePath);
+
+  // Intentar leer del caché
   try {
-    const cached = JSON.parse(fs.readFileSync(cacheFile, "utf8")) as {
+    const cachedData = JSON.parse(fs.readFileSync(cacheFilePath, "utf8")) as {
       size: number;
       mtimeMs: number;
       sha1: string;
     };
-    if (cached.size === fingerprint.size && Math.abs(cached.mtimeMs - fingerprint.mtimeMs) < 1000) {
-      return cached.sha1;
+
+    // Verificar si el caché es válido (mismo tamaño y mtime cercano)
+    const isCacheValid =
+      cachedData.size === fileStats.size &&
+      Math.abs(cachedData.mtimeMs - fileStats.mtimeMs) < 1000;
+
+    if (isCacheValid) {
+      return cachedData.sha1;
     }
   } catch {
-    // no cache
+    // No hay caché válido, calcular SHA1
   }
-  const sha1 = await sha1File(file);
-  fs.mkdirSync(path.dirname(cacheFile), { recursive: true });
-  fs.writeFileSync(cacheFile, JSON.stringify({ ...fingerprint, sha1 }));
-  return sha1;
+
+  // Calcular SHA1 y guardar en caché
+  const sha1Hash = await sha1File(filePath);
+  fs.mkdirSync(path.dirname(cacheFilePath), { recursive: true });
+  fs.writeFileSync(cacheFilePath, JSON.stringify({ ...fileStats, sha1: sha1Hash }));
+
+  return sha1Hash;
 }
-
-export async function scanRoms(cfg: AppConfig): Promise<ScanResult> {
-  const roms: RomFile[] = [];
-  for (const file of collectRomFiles(cfg)) {
-    const stat = fs.statSync(file);
-    if (stat.size === 0) continue;
-    const sha1 = await sha1WithCache(cfg, file);
-    roms.push({ path: file, name: path.basename(file), size: stat.size, sha1, gameId: readDiscGameId(file) });
-  }
-
-  const manifests = listManifests(cfg);
-  const matches: RomMatch[] = [];
-  const missing: Manifest[] = [];
-
-  for (const manifest of manifests) {
-    // A ROM already claimed by an earlier requirement of this same manifest
-    // can't satisfy a later one (multirom manifests like SoH base + MQ).
-    const used = new Set<string>();
-    let anyMatched = false;
-    for (const requirement of manifest.roms) {
-      // 1) Hash match: authoritative when the manifest provides hashes, so a
-      // generic name pattern can never claim the wrong ROM.
-      let chosen: RomFile | null = null;
-      let matchedBy: "hash" | "gameid" | "name" | null = null;
-      if (requirement.sha1.length > 0) {
-        const byHash = roms.find((rom) => !used.has(rom.path) && requirement.sha1.includes(rom.sha1));
-        if (byHash) {
-          chosen = byHash;
-          matchedBy = "hash";
-        }
-      }
-      // 2) Game ID match: authoritative when the manifest lists game IDs. The
-      // ID is read from the disc header, so it works across .iso/.rvz/.gcz
-      // even though their SHA1 differs due to compression.
-      if (!chosen && (requirement.gameIds?.length ?? 0) > 0) {
-        const byGameId = roms.find(
-          (rom) => !used.has(rom.path) && rom.gameId !== null && requirement.gameIds!.includes(rom.gameId),
-        );
-        if (byGameId) {
-          chosen = byGameId;
-          matchedBy = "gameid";
-        }
-      }
-      // 3) Name pattern match: fallback only when there is nothing to verify
-      // against, or when the matching files could not be verified (unknown
-      // disc format). Ranked by pattern specificity (e.g. "tp.iso" beats
-      // "*.iso") so the most likely file is picked instead of the first one.
-      // The game ID filter only applies when the manifest opted into game ID
-      // verification; name-only manifests keep their previous behavior.
-      if (!chosen && requirement.sha1.length === 0) {
-        const byName = roms.filter((rom) => !used.has(rom.path) && anyMatch(requirement.patterns, rom.name));
-        const candidates =
-          (requirement.gameIds?.length ?? 0) > 0 ? byName.filter((rom) => rom.gameId === null) : byName;
-        if (candidates.length > 0) {
-          chosen = pickBestNameMatch(candidates, requirement.patterns);
-          matchedBy = "name";
-        }
-      }
-      if (chosen) {
-        used.add(chosen.path);
-        matches.push({
-          manifest,
-          requirement,
-          rom: chosen,
-          matchedBy: matchedBy!,
-        });
-        anyMatched = true;
-      }
-    }
-    if (!anyMatched) missing.push(manifest);
-  }
-
-  return { roms, matches, missing };
-}
-
-/** Glob metacharacters that make a pattern non-literal. */
-const WILDCARD_RE = /[*?{}\[\]]/;
 
 /**
- * Score how specific a filename match is for the given patterns.
- * Literal patterns (no wildcards) rank highest; among wildcard patterns,
- * a longer literal prefix wins (e.g. "mm.z64" beats "*.z64").
+ * Escanea todos los directorios de ROMs, calcula hashes y matching contra
+ * los manifiestos instalados.
+ *
+ * Retorna:
+ * - roms: lista de todas las ROMs encontradas
+ * - matches: ROMs que coinciden con algún manifiesto
+ * - missing: manifiestos que no tienen ROM disponible
  */
-export function patternSpecificity(patterns: string[], name: string): number {
-  let best = -1;
-  for (const pattern of patterns) {
-    if (!matchGlob(pattern, name)) continue;
-    const literalLen = pattern.split(WILDCARD_RE)[0].length;
-    const isLiteral = !WILDCARD_RE.test(pattern);
-    best = Math.max(best, isLiteral ? 1000 + literalLen : literalLen);
+export async function scanRoms(config: AppConfig): Promise<ScanResult> {
+  const discoveredRoms: RomFile[] = [];
+
+  // Descubrir y hashear todas las ROMs
+  for (const filePath of collectRomFiles(config)) {
+    const fileStats = fs.statSync(filePath);
+    if (fileStats.size === 0) continue;
+
+    const sha1Hash = await sha1WithCache(config, filePath);
+    discoveredRoms.push({
+      path: filePath,
+      name: path.basename(filePath),
+      size: fileStats.size,
+      sha1: sha1Hash,
+      gameId: readDiscGameId(filePath),
+    });
   }
-  return best;
+
+  // Realizar matching contra manifiestos
+  const manifests = listManifests(config);
+  const matchedRoms: RomMatch[] = [];
+  const missingManifests: Manifest[] = [];
+
+  for (const manifest of manifests) {
+    const usedRoms = new Set<string>();
+    let hasAnyMatch = false;
+
+    for (const requirement of manifest.roms) {
+      const matchResult = findMatchingRom(discoveredRoms, requirement, usedRoms);
+
+      if (matchResult) {
+        usedRoms.add(matchResult.rom.path);
+        matchedRoms.push({
+          manifest,
+          requirement,
+          rom: matchResult.rom,
+          matchedBy: matchResult.matchMethod,
+        });
+        hasAnyMatch = true;
+      }
+    }
+
+    if (!hasAnyMatch) {
+      missingManifests.push(manifest);
+    }
+  }
+
+  return { roms: discoveredRoms, matches: matchedRoms, missing: missingManifests };
 }
 
-/** Pick the candidate with the most specific pattern match (ties keep first). */
-function pickBestNameMatch(candidates: RomFile[], patterns: string[]): RomFile {
-  let best = candidates[0];
+/**
+ * Busca una ROM que coincida con un requisito dado.
+ * Intenta matching por: 1) SHA1, 2) Game ID, 3) Patrón de nombre.
+ * Retorna la ROM encontrada y el método de matching, o null si no hay coincidencia.
+ */
+function findMatchingRom(
+  availableRoms: RomFile[],
+  requirement: RomRequirement,
+  usedRoms: Set<string>,
+): { rom: RomFile; matchMethod: "hash" | "gameid" | "name" } | null {
+  // 1) Matching por SHA1: autoritativo cuando el manifiesto proporciona hashes
+  if (requirement.sha1.length > 0) {
+    const matchedByHash = availableRoms.find(
+      (rom) => !usedRoms.has(rom.path) && requirement.sha1.includes(rom.sha1),
+    );
+    if (matchedByHash) {
+      return { rom: matchedByHash, matchMethod: "hash" };
+    }
+  }
+
+  // 2) Matching por Game ID: autoritativo cuando el manifiesto lista game IDs.
+  //    El ID se lee del header del disco, así que funciona across .iso/.rvz/.gcz
+  if ((requirement.gameIds?.length ?? 0) > 0) {
+    const matchedByGameId = availableRoms.find(
+      (rom) =>
+        !usedRoms.has(rom.path) &&
+        rom.gameId !== null &&
+        requirement.gameIds!.includes(rom.gameId),
+    );
+    if (matchedByGameId) {
+      return { rom: matchedByGameId, matchMethod: "gameid" };
+    }
+  }
+
+  // 3) Matching por patrón de nombre: fallback cuando no hay hashes ni game IDs.
+  //    Se rankea por especificidad del patrón (ej: "tp.iso" gana a "*.iso").
+  if (requirement.sha1.length === 0) {
+    const matchedByName = availableRoms.filter(
+      (rom) => !usedRoms.has(rom.path) && anyMatch(requirement.patterns, rom.name),
+    );
+
+    // Filtrar por game ID si el manifiesto lo requiere
+    const candidates =
+      (requirement.gameIds?.length ?? 0) > 0
+        ? matchedByName.filter((rom) => rom.gameId === null)
+        : matchedByName;
+
+    if (candidates.length > 0) {
+      const bestMatch = pickBestNameMatch(candidates, requirement.patterns);
+      return { rom: bestMatch, matchMethod: "name" };
+    }
+  }
+
+  return null;
+}
+
+/** Caracteres especiales de glob que hacen un patrón no-literal. */
+const WILDCARD_REGEX = /[*?{}\\[\\]]/;
+
+/**
+ * Evalúa qué tan específico es un match de patrón para un nombre de archivo.
+ * Patrones literales (sin wildcards) rankean más alto; entre patrones con
+ * wildcards, un prefijo literal más largo gana (ej: "mm.z64" gana a "*.z64").
+ */
+export function patternSpecificity(patterns: string[], fileName: string): number {
   let bestScore = -1;
+
+  for (const pattern of patterns) {
+    if (!matchGlob(pattern, fileName)) continue;
+
+    const literalPrefixLength = pattern.split(WILDCARD_REGEX)[0].length;
+    const isLiteral = !WILDCARD_REGEX.test(pattern);
+    const score = isLiteral ? 1000 + literalPrefixLength : literalPrefixLength;
+    bestScore = Math.max(bestScore, score);
+  }
+
+  return bestScore;
+}
+
+/** Selecciona el candidato con el patrón más específico (empates mantienen el primero). */
+function pickBestNameMatch(candidates: RomFile[], patterns: string[]): RomFile {
+  let bestCandidate = candidates[0];
+  let bestScore = -1;
+
   for (const rom of candidates) {
     const score = patternSpecificity(patterns, rom.name);
     if (score > bestScore) {
       bestScore = score;
-      best = rom;
+      bestCandidate = rom;
     }
   }
-  return best;
+
+  return bestCandidate;
 }

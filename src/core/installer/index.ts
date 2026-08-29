@@ -25,219 +25,414 @@ export interface InstallOptions {
   signal?: AbortSignal;
 }
 
-export function resolveAssetForPlatform(m: Manifest): AssetDef | null {
-  const p = detectPlatform();
-  const direct = m.assets[p.key];
-  if (direct) return direct;
-  // Fallback: any asset of the same OS family.
-  const os = p.os;
-  const family = Object.entries(m.assets).find(([key]) => key.startsWith(os));
-  return family ? family[1] : null;
+/**
+ * Resuelve el asset de la plataforma actual para un manifiesto dado.
+ * Primero busca una coincidencia exacta por key de plataforma (ej: "linux-x64"),
+ * luego busca por familia de OS (ej: "linux-*") como fallback.
+ */
+export function resolveAssetForPlatform(manifest: Manifest): AssetDef | null {
+  const platform = detectPlatform();
+  const directMatch = manifest.assets[platform.key];
+  if (directMatch) return directMatch;
+
+  // Fallback: buscar cualquier asset de la misma familia de OS
+  const osFamily = platform.os;
+  const familyEntry = Object.entries(manifest.assets).find(([key]) =>
+    key.startsWith(osFamily),
+  );
+  return familyEntry ? familyEntry[1] : null;
 }
 
+/** Obtiene la ruta del directorio de un port por su id. */
 export function portDir(cfg: AppConfig, id: string): string {
   return path.join(cfg.portsDir, id);
 }
 
+/** Verifica si un port está instalado (tiene estado y directorio). */
 export function isInstalled(cfg: AppConfig, id: string): boolean {
   return readState(cfg, id) !== null && fs.existsSync(portDir(cfg, id));
 }
 
-export async function getLatestInfo(cfg: AppConfig, m: Manifest): Promise<ReleaseInfo | null> {
+/**
+ * Obtiene información de la última release de GitHub para un manifiesto.
+ * Retorna null si no se puede acceder a la API (error de red, rate limit, etc.).
+ */
+export async function getLatestInfo(
+  cfg: AppConfig,
+  manifest: Manifest,
+): Promise<ReleaseInfo | null> {
   try {
-    return await getLatestRelease(cfg, m.repo);
-  } catch (e) {
-    console.warn(`[${m.id}] could not check releases: ${(e as Error).message}`);
+    return await getLatestRelease(cfg, manifest.repo);
+  } catch (error) {
+    console.warn(
+      `[${manifest.id}] could not check releases: ${(error as Error).message}`,
+    );
     return null;
   }
 }
 
-export function resolveExecutable(portRoot: string, asset: { executable: string | null }): string | null {
+/**
+ * Resuelve la ruta del ejecutable del port.
+ * Primero busca en la ruta exacta especificada en el asset, luego busca
+ * recursivamente por nombre de archivo (case-insensitive) como fallback.
+ */
+export function resolveExecutable(
+  portRoot: string,
+  asset: { executable: string | null },
+): string | null {
   if (!asset.executable) return null;
-  const direct = path.join(portRoot, asset.executable);
-  if (fs.existsSync(direct)) return direct;
-  // Fallback: search recursively by basename.
+
+  const directPath = path.join(portRoot, asset.executable);
+  if (fs.existsSync(directPath)) return directPath;
+
+  // Fallback: buscar recursivamente por basename
   return findFileByName(portRoot, path.basename(asset.executable));
 }
 
+/**
+ * Descarga y extrae un port desde GitHub.
+ *
+ * Flujo:
+ * 1. Verifica que exista un asset para la plataforma actual
+ * 2. Obtiene la información de la release más reciente
+ * 3. Descarga el asset (con caché por tamaño)
+ * 4. Extrae el archivo al directorio del port
+ * 5. Restaura datos de usuario del port anterior
+ * 6. Resuelve el ejecutable y aplica permisos
+ * 7. Crea symlinks de ROMs
+ * 8. Guarda el estado y crea el launcher
+ */
 export async function installPort(
   cfg: AppConfig,
   manifest: Manifest,
   opts: InstallOptions = {},
 ): Promise<PortState> {
   const asset = resolveAssetForPlatform(manifest);
-  if (!asset) throw new Error(`[${manifest.id}] no asset definition for platform ${detectPlatform().key}`);
+  if (!asset) {
+    throw new Error(
+      `[${manifest.id}] no asset definition for platform ${detectPlatform().key}`,
+    );
+  }
 
+  // Paso 1: Obtener release
   opts.onProgress?.("release", 0, 1);
   const release = await getLatestInfo(cfg, manifest);
   throwIfAborted(opts.signal);
-  if (!release) throw new Error(`[${manifest.id}] no release found for ${manifest.repo}`);
+
+  if (!release) {
+    throw new Error(`[${manifest.id}] no release found for ${manifest.repo}`);
+  }
+
   const assetName = pickAsset(release, asset.pattern);
   if (!assetName) {
-    throw new Error(`[${manifest.id}] no asset matching "${asset.pattern}" in release ${release.tag}`);
+    throw new Error(
+      `[${manifest.id}] no asset matching "${asset.pattern}" in release ${release.tag}`,
+    );
   }
 
-  // Download
+  // Paso 2: Descargar
+  const downloadedFile = await downloadAsset(cfg, manifest.id, assetName, opts);
+
+  // Paso 3: Extraer
+  await extractToPort(cfg, manifest, asset, assetName, downloadedFile, opts);
+
+  // Paso 4: Configurar ejecutable y permisos
+  const portRoot = portDir(cfg, manifest.id);
+  const executable = resolveAndSetExecutable(portRoot, asset, assetName);
+
+  // Paso 5: Crear symlinks de ROMs
+  const linkedRoms = symlinkRoms(manifest, portRoot, opts.roms);
+
+  // Paso 6: Guardar estado y launcher
+  const state = createPortState(manifest, release, assetName, portRoot, executable, linkedRoms);
+  writeState(cfg, state);
+  writeLauncher(cfg, state);
+
+  return state;
+}
+
+/**
+ * Descarga el asset de un port si no existe o el tamaño no coincide.
+ * Retorna la ruta del archivo descargado.
+ */
+async function downloadAsset(
+  cfg: AppConfig,
+  portId: string,
+  asset: { name: string; url: string; size: number },
+  opts: InstallOptions,
+): Promise<string> {
   opts.onProgress?.("download", 0, 1);
-  const downloadedFile = downloadPath(cfg, manifest.id, assetName.name);
-  if (!fs.existsSync(downloadedFile) || fs.statSync(downloadedFile).size !== assetName.size) {
-    await download(cfg, assetName.url, downloadedFile, (done, total) =>
-      opts.onProgress?.("download", done, total),
-    { signal: opts.signal });
-  }
-  throwIfAborted(opts.signal);
+  const destination = downloadPath(cfg, portId, asset.name);
 
-  // Extract / place
+  if (fs.existsSync(destination) && fs.statSync(destination).size === asset.size) {
+    return destination;
+  }
+
+  await download(cfg, asset.url, destination, (done, total) => {
+    opts.onProgress?.("download", done, total);
+  }, { signal: opts.signal });
+
+  throwIfAborted(opts.signal);
+  return destination;
+}
+
+/**
+ * Extrae el asset descargado al directorio del port.
+ * Maneja backup del port anterior y restauración de datos de usuario.
+ */
+async function extractToPort(
+  cfg: AppConfig,
+  manifest: Manifest,
+  asset: AssetDef,
+  assetName: { name: string },
+  downloadedFile: string,
+  opts: InstallOptions,
+): Promise<void> {
   opts.onProgress?.("extract", 0, 1);
   const portRoot = portDir(cfg, manifest.id);
-  const backup = path.join(cfg.cacheDir, "old", manifest.id);
+  const backupPath = path.join(cfg.cacheDir, "old", manifest.id);
+
+  // Crear backup del port anterior si existe
   if (fs.existsSync(portRoot)) {
-    // Keep existing mods symlinks safe: move whole dir to backup, then remove.
-    fs.mkdirSync(path.dirname(backup), { recursive: true });
-    if (fs.existsSync(backup)) fs.rmSync(backup, { recursive: true, force: true });
-    fs.renameSync(portRoot, backup);
+    createBackup(portRoot, backupPath);
   }
+
   try {
+    // Extraer el asset según su tipo
     if (asset.type === "apk" || asset.type === "appimage") {
-      fs.mkdirSync(portRoot, { recursive: true });
-      fs.copyFileSync(downloadedFile, path.join(portRoot, assetName.name));
+      extractSingleFile(downloadedFile, portRoot, assetName.name);
     } else {
       await extractArchive(asset, downloadedFile, portRoot);
     }
-  } catch (e) {
-    // Rollback: descartar el extract parcial antes de devolver el backup.
-    // renameSync(backup, dir) lanzaría ENOTEMPTY si dir ya existe con contenido,
-    // dejando el port roto y el backup (con los saves) varado en cache/old, que
-    // la próxima actualización borraría perdiendo los datos del usuario.
-    if (fs.existsSync(portRoot)) fs.rmSync(portRoot, { recursive: true, force: true });
-    if (fs.existsSync(backup)) fs.renameSync(backup, portRoot);
-    throw e;
+  } catch (error) {
+    // Rollback: descartar el extract parcial antes de devolver el backup
+    rollbackExtract(portRoot, backupPath);
+    throw error;
   }
-  throwIfAborted(opts.signal);
-  // Restaurar saves/configs del port anterior antes de descartar el backup.
-  preserveUserData(backup, portRoot, manifest);
-  if (fs.existsSync(backup)) fs.rmSync(backup, { recursive: true, force: true });
 
-  // Resolve the executable: for appimage/apk the asset file itself is the executable.
-  let executable = resolveExecutable(portRoot, asset);
-  if (!executable && (asset.type === "appimage" || asset.type === "apk")) {
-    executable = path.join(portRoot, assetName.name);
+  throwIfAborted(opts.signal);
+
+  // Restaurar saves/configs del port anterior
+  preserveUserData(backupPath, portRoot, manifest);
+  cleanupBackup(backupPath);
+}
+
+/** Crea un backup del directorio del port moviéndolo a cache/old. */
+function createBackup(portRoot: string, backupPath: string): void {
+  fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+  if (fs.existsSync(backupPath)) {
+    fs.rmSync(backupPath, { recursive: true, force: true });
   }
-  // On Linux/macOS, apply chmod +x to the main executable AND all other
-  // ELF binaries in the port dir (shared libs, helpers, etc.).
-  ensureExecutable(executable);
+  fs.renameSync(portRoot, backupPath);
+}
+
+/** Extrae un archivo único (APK/AppImage) al directorio del port. */
+function extractSingleFile(source: string, destDir: string, fileName: string): void {
+  fs.mkdirSync(destDir, { recursive: true });
+  fs.copyFileSync(source, path.join(destDir, fileName));
+}
+
+/** Realiza rollback si falla la extracción: elimina portRoot y restaura backup. */
+function rollbackExtract(portRoot: string, backupPath: string): void {
+  if (fs.existsSync(portRoot)) {
+    fs.rmSync(portRoot, { recursive: true, force: true });
+  }
+  if (fs.existsSync(backupPath)) {
+    fs.renameSync(backupPath, portRoot);
+  }
+}
+
+/** Elimina el backup después de una extracción exitosa. */
+function cleanupBackup(backupPath: string): void {
+  if (fs.existsSync(backupPath)) {
+    fs.rmSync(backupPath, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Resuelve y configura el ejecutable del port.
+ * Para AppImage/APK, el asset file es el ejecutable.
+ * Aplica permisos de ejecución en Unix.
+ * Retorna la ruta absoluta del ejecutable, o null si no se encontró.
+ */
+function resolveAndSetExecutable(
+  portRoot: string,
+  asset: AssetDef,
+  assetName: { name: string },
+): string | null {
+  let executablePath = resolveExecutable(portRoot, asset);
+
+  // Para AppImage/APK, el asset file es el ejecutable
+  if (!executablePath && (asset.type === "appimage" || asset.type === "apk")) {
+    executablePath = path.join(portRoot, assetName.name);
+  }
+
+  // Aplicar permisos de ejecución en Unix
+  ensureExecutable(executablePath);
   ensureAllBinariesExecutable(portRoot);
 
-  throwIfAborted(opts.signal);
+  return executablePath;
+}
 
-  // Symlink the ROMs (one per requirement; optional ones only when provided)
-  const roms = opts.roms ?? {};
+/**
+ * Crea symlinks de ROMs para cada requisito del manifiesto.
+ * Solo crea symlinks para ROMs que fueron proporcionadas.
+ */
+function symlinkRoms(
+  manifest: Manifest,
+  portRoot: string,
+  roms?: Record<string, RomFile>,
+): Record<string, string> {
+  const providedRoms = roms ?? {};
   const linkedRoms: Record<string, string> = {};
+
   for (const requirement of manifest.roms) {
-    const rom = roms[requirement.id];
+    const rom = providedRoms[requirement.id];
     if (rom) {
       createSymlink(rom.path, path.join(portRoot, requirement.dest));
       linkedRoms[requirement.id] = rom.path;
     }
   }
 
-  const state: PortState = {
+  return linkedRoms;
+}
+
+/**
+ * Crea el objeto PortState con toda la información del port instalado.
+ */
+function createPortState(
+  manifest: Manifest,
+  release: ReleaseInfo,
+  assetName: { name: string },
+  portRoot: string,
+  executable: string | null,
+  linkedRoms: Record<string, string>,
+): PortState {
+  const platform = detectPlatform();
+  const relativeExecutable = executable
+    ? path.relative(portRoot, executable)
+    : assetName.name;
+
+  return {
     id: manifest.id,
     name: manifest.name,
     repo: manifest.repo,
     version: release.tag,
     assetName: assetName.name,
     installedAt: new Date().toISOString(),
-    platform: detectPlatform().key,
-    executable: executable ? path.relative(portRoot, executable) : assetName.name,
+    platform: platform.key,
+    executable: relativeExecutable,
     romLinked: linkedRoms[manifest.roms[0]?.id ?? ""] ?? null,
     romsLinked: linkedRoms,
   };
-  writeState(cfg, state);
-  // Launcher de Steam: se crea/actualiza con el port (también tras un update).
-  writeLauncher(cfg, state);
-  return state;
 }
 
+/**
+ * Desinstala un port, conservando archivos marcados con `preserve`.
+ * Si hay archivos preserve, se mantienen en el directorio para restauración
+ * automática al reinstalar.
+ */
 export function uninstallPort(cfg: AppConfig, id: string): void {
-  // Quitar su launcher de Steam antes de borrar dir/estado.
+  // Quitar launcher de Steam antes de borrar directorio/estado
   removeLauncher(cfg, id);
+
   const manifest = loadManifest(cfg, id);
-  const dir = portDir(cfg, id);
-  if (fs.existsSync(dir)) {
+  const portPath = portDir(cfg, id);
+
+  if (fs.existsSync(portPath)) {
     if (manifest?.preserve && manifest.preserve.length > 0) {
-      // Desinstalar sin perder los datos de usuario marcados con `preserve`
-      // (saves, configs): se borra todo lo demás y esos archivos se quedan en
-      // la carpeta del port, de modo que al reinstalarlo se restauran solos
-      // (el instalador trata la carpeta sobrante como instalación previa).
-      const kept = removeExceptPreserved(dir, manifest.preserve);
-      if (!kept) fs.rmSync(dir, { recursive: true, force: true });
+      // Desinstalar sin perder datos de usuario (saves, configs)
+      const hasPreservedFiles = removeExceptPreserved(portPath, manifest.preserve);
+      if (!hasPreservedFiles) {
+        fs.rmSync(portPath, { recursive: true, force: true });
+      }
     } else {
-      fs.rmSync(dir, { recursive: true, force: true });
+      fs.rmSync(portPath, { recursive: true, force: true });
     }
   }
+
+  // Eliminar archivo de estado
   const stateFile = path.join(cfg.cacheDir, "state", `${id}.json`);
-  if (fs.existsSync(stateFile)) fs.rmSync(stateFile, { force: true });
-}
-
-export function launchExecutable(cfg: AppConfig, id: string): string | null {
-  const state = readState(cfg, id);
-  if (!state) return null;
-  const executable = path.join(portDir(cfg, id), state.executable);
-  if (!fs.existsSync(executable)) return null;
-  ensureExecutable(executable);
-  return executable;
-}
-
-/** chmod +x on unix so spawn works (fixes EACCES on appimage/apk/binaries). */
-export function ensureExecutable(file: string | null): void {
-  if (!file || process.platform === "win32") return;
-  try {
-    fs.chmodSync(file, EXECUTABLE_MODE);
-  } catch {
-    // ok
+  if (fs.existsSync(stateFile)) {
+    fs.rmSync(stateFile, { force: true });
   }
 }
 
 /**
- * Walk the port dir and apply chmod +x to every ELF binary (no extension or
- * known executable extension). This ensures that helpers, shared libraries
- * and side binaries bundled by the port also get execute permission.
- * Only runs on Unix; no-op on Windows.
+ * Obtiene la ruta del ejecutable de un port instalado.
+ * Retorna null si el port no está instalado o el ejecutable no existe.
  */
-function ensureAllBinariesExecutable(dir: string): void {
+export function launchExecutable(cfg: AppConfig, id: string): string | null {
+  const state = readState(cfg, id);
+  if (!state) return null;
+
+  const executablePath = path.join(portDir(cfg, id), state.executable);
+  if (!fs.existsSync(executablePath)) return null;
+
+  ensureExecutable(executablePath);
+  return executablePath;
+}
+
+/**
+ * Aplica permisos de ejecución (chmod +x) en Unix.
+ * En Windows no tiene efecto (los permisos no aplican).
+ */
+export function ensureExecutable(file: string | null): void {
+  if (!file || process.platform === "win32") return;
+
+  try {
+    fs.chmodSync(file, EXECUTABLE_MODE);
+  } catch {
+    // Ignorar errores de permisos
+  }
+}
+
+/**
+ * Recorre el directorio del port y aplica chmod +x a todos los binarios ELF.
+ * Esto asegura que helpers, librerías compartidas y otros binarios tengan
+ * permisos de ejecución. Solo aplica en Unix.
+ */
+function ensureAllBinariesExecutable(directory: string): void {
   if (process.platform === "win32") return;
+
   const ELF_MAGIC = Buffer.from([0x7f, 0x45, 0x4c, 0x46]); // \x7fELF
-  const walk = (d: string) => {
+
+  const walkDirectory = (currentDir: string): void => {
     let entries: fs.Dirent[];
     try {
-      entries = fs.readdirSync(d, { withFileTypes: true });
+      entries = fs.readdirSync(currentDir, { withFileTypes: true });
     } catch {
       return;
     }
+
     for (const entry of entries) {
-      const full = path.join(d, entry.name);
+      const fullPath = path.join(currentDir, entry.name);
+
       if (entry.isDirectory()) {
-        walk(full);
+        walkDirectory(fullPath);
         continue;
       }
+
       if (!entry.isFile()) continue;
-      // Skip files that already have +x or are clearly not binaries.
+
       try {
-        const stat = fs.statSync(full);
-        if (stat.mode & 0o111) continue; // already executable
-        // Check ELF magic (first 4 bytes).
-        const fd = fs.openSync(full, "r");
-        const buf = Buffer.alloc(4);
-        fs.readSync(fd, buf, 0, 4, 0);
-        fs.closeSync(fd);
-        if (buf.equals(ELF_MAGIC)) {
-          fs.chmodSync(full, EXECUTABLE_MODE);
+        const stat = fs.statSync(fullPath);
+        if (stat.mode & 0o111) continue; // Ya tiene permisos de ejecución
+
+        // Verificar magic bytes de ELF (primeros 4 bytes)
+        const fileDescriptor = fs.openSync(fullPath, "r");
+        const magicBuffer = Buffer.alloc(4);
+        fs.readSync(fileDescriptor, magicBuffer, 0, 4, 0);
+        fs.closeSync(fileDescriptor);
+
+        if (magicBuffer.equals(ELF_MAGIC)) {
+          fs.chmodSync(fullPath, EXECUTABLE_MODE);
         }
       } catch {
-        // skip unreadable files
+        // Ignorar archivos ilegibles
       }
     }
   };
-  walk(dir);
+
+  walkDirectory(directory);
 }

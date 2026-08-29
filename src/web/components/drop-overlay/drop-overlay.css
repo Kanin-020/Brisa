@@ -1,0 +1,60 @@
+.drop-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(13, 17, 23, 0.72);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.drop-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drop-box {
+  border: 2px dashed var(--accent);
+  border-radius: 20px;
+  padding: 48px 72px;
+  text-align: center;
+  background: rgba(47, 129, 247, 0.08);
+  box-shadow: var(--shadow);
+  transform: scale(0.95);
+  transition: transform 0.18s ease;
+}
+
+.drop-overlay.show .drop-box {
+  transform: none;
+}
+
+.drop-icon {
+  font-size: 46px;
+  margin-bottom: 14px;
+  animation: drop-bounce 1.2s ease infinite;
+}
+
+@keyframes drop-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.drop-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.drop-hint {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 6px;
+}

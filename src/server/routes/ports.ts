@@ -17,11 +17,7 @@ export function registerPortsRoutes(router: ApiRouter, app: App): void {
     if (app.tasks.hasRunning(id)) {
       return sendError(res, 409, "Ya hay una operación en curso para este port");
     }
-    const { scan } = await app.status();
-    const roms: Record<string, RomFile> = {};
-    for (const match of scan.matches) {
-      if (match.manifest.id === id) roms[match.requirement.id] = match.rom;
-    }
+    const roms = await app.getRomsForPort(id);
     const { info } = app.tasks.start(
       { type: "install", portId: id, label: manifest.name },
       async (ctx) => {

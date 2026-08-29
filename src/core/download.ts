@@ -6,52 +6,82 @@ import { USER_AGENT } from "./constants";
 import type { AppConfig } from "./config";
 import { CancelledError, throwIfAborted } from "./tasks";
 
-export type ProgressFn = (done: number, total: number) => void;
+/** Tipo de callback para reportar progreso de descarga. */
+export type ProgressFn = (bytesDownloaded: number, totalBytes: number) => void;
 
 export interface DownloadOptions {
-  /** Si se aborta, la descarga se detiene y se borra el archivo parcial. */
+  /** Signal para cancelar la descarga. Si se aborta, se borra el archivo parcial. */
   signal?: AbortSignal;
 }
 
+/**
+ * Descarga un archivo desde una URL y lo guarda en disco.
+ * Soporta progreso en tiempo real y cancelación via AbortSignal.
+ * En caso de cancelación, elimina el archivo parcial.
+ */
 export async function download(
-  cfg: AppConfig,
+  config: AppConfig,
   url: string,
-  dest: string,
+  destinationPath: string,
   onProgress?: ProgressFn,
-  opts: DownloadOptions = {},
+  options: DownloadOptions = {},
 ): Promise<void> {
-  const { signal } = opts;
+  const { signal } = options;
+
+  // Verificar si ya está cancelado antes de empezar
   throwIfAborted(signal);
-  const res = await fetch(url, {
+
+  // Realizar petición HTTP
+  const response = await fetch(url, {
     headers: { "User-Agent": USER_AGENT, Accept: "application/octet-stream" },
     redirect: "follow",
     signal,
   });
-  if (!res.ok || !res.body) {
-    throw new Error(`Download failed: HTTP ${res.status} for ${url}`);
+
+  if (!response.ok || !response.body) {
+    throw new Error(`Download failed: HTTP ${response.status} for ${url}`);
   }
-  const total = Number(res.headers.get("content-length") ?? 0);
-  let done = 0;
-  const src = Readable.fromWeb(res.body as never);
-  fs.mkdirSync(path.dirname(dest), { recursive: true });
-  const file = fs.createWriteStream(dest);
-  src.on("data", (chunk: Buffer) => {
-    done += chunk.length;
-    onProgress?.(done, total);
+
+  const totalBytes = Number(response.headers.get("content-length") ?? 0);
+  let bytesDownloaded = 0;
+
+  // Convertir el body a un stream legible
+  const readableStream = Readable.fromWeb(response.body as never);
+
+  // Asegurar que el directorio destino existe
+  fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
+
+  // Crear stream de escritura
+  const writeStream = fs.createWriteStream(destinationPath);
+
+  // Reportar progreso en cada chunk recibido
+  readableStream.on("data", (chunk: Buffer) => {
+    bytesDownloaded += chunk.length;
+    onProgress?.(bytesDownloaded, totalBytes);
   });
+
   try {
-    // pipeline() con { signal } destruye los streams al abortar y rechaza con
-    // AbortError; lo convertimos en CancelledError y limpiamos el parcial.
-    await pipeline(src, file, { signal });
-  } catch (err) {
+    // pipeline() destruye los streams al abortar y rechaza con AbortError;
+    // lo convertimos en CancelledError y limpiamos el archivo parcial.
+    await pipeline(readableStream, writeStream, { signal });
+  } catch (error) {
     if (signal?.aborted) {
-      fs.rmSync(dest, { force: true });
+      // Limpiar archivo parcial en caso de cancelación
+      fs.rmSync(destinationPath, { force: true });
       throw new CancelledError("Descarga cancelada");
     }
-    throw err;
+    throw error;
   }
 }
 
-export function downloadPath(cfg: AppConfig, portId: string, assetName: string): string {
-  return path.join(cfg.cacheDir, "downloads", portId, assetName);
+/**
+ * Obtiene la ruta donde se guardará un asset descargado.
+ * Estructura: cache/downloads/<portId>/<assetName>
+ */
+export function downloadPath(
+  config: AppConfig,
+  portId: string,
+  assetName: string,
+): string {
+  return path.join(config.cacheDir, "downloads", portId, assetName);
 }

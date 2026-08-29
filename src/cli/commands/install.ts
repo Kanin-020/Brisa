@@ -15,11 +15,7 @@ export function registerInstallCommand(program: Command, app: App): void {
         console.error(`Port no encontrado: ${portId}`);
         process.exit(1);
       }
-      const { matches } = await app.scan();
-      const romsByRequirement: Record<string, RomFile> = {};
-      for (const match of matches) {
-        if (match.manifest.id === portId) romsByRequirement[match.requirement.id] = match.rom;
-      }
+      const romsByRequirement = await app.getRomsForPort(portId);
       const missingRequired = manifest.roms.filter(
         (requirement) => requirement.required !== false && !romsByRequirement[requirement.id],
       );

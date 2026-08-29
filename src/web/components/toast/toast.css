@@ -1,0 +1,45 @@
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.25s ease,
+    opacity 0.25s ease;
+  opacity: 0;
+  z-index: 99;
+  max-width: 90vw;
+  font-size: 13px;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.error {
+  border-color: var(--red);
+}
+
+.toast.ok {
+  border-color: var(--green);
+}
+
+.toast.warn {
+  border-color: var(--yellow);
+}
+
+.toast.clickable {
+  cursor: pointer;
+}
+
+.toast.clickable:hover {
+  border-color: var(--yellow);
+  filter: brightness(1.1);
+}

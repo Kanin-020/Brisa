@@ -70,6 +70,21 @@ export class App {
     return scanRoms(this.cfg);
   }
 
+  /**
+   * Obtiene las ROMs disponibles para un port específico.
+   * Retorna un mapa de requirementId -> RomFile con las ROMs que coinciden.
+   */
+  async getRomsForPort(portId: string): Promise<Record<string, RomFile>> {
+    const { matches } = await this.scan();
+    const romsByRequirement: Record<string, RomFile> = {};
+    for (const match of matches) {
+      if (match.manifest.id === portId) {
+        romsByRequirement[match.requirement.id] = match.rom;
+      }
+    }
+    return romsByRequirement;
+  }
+
   async status(): Promise<StatusResult> {
     const manifests = this.manifests();
     syncModsFolders(this.cfg, manifests);
