@@ -6,6 +6,9 @@ import type { RomFile } from "../../core/scanner";
 import { requireId, sendError, sendJson } from "../http";
 import type { ApiRouter } from "../router";
 
+/** PortId → child PID of game launched from Brisa. */
+const runningProcesses = new Map<string, number>();
+
 export function registerPortsRoutes(router: ApiRouter, app: App): void {
   // Instalación como tarea en segundo plano: responde 202 con la tarea y el
   // progreso se consulta por GET /api/tasks (barra real + cancelación).
@@ -86,7 +89,26 @@ export function registerPortsRoutes(router: ApiRouter, app: App): void {
     child.on("error", (err: Error) => {
       console.error(`[launch] ${executable}: ${err.message}`);
     });
+    if (child.pid) runningProcesses.set(id, child.pid);
+    child.on("exit", () => { runningProcesses.delete(id); });
     child.unref();
-    sendJson(res, 200, { ok: true, exe: executable });
+    sendJson(res, 200, { ok: true, exe: executable, pid: child.pid ?? null });
+  });
+
+  // ── Stop a running game launched from Brisa ──
+  router.post("/api/stop", async (_req, res, body) => {
+    const id = requireId(body, res);
+    if (!id) return;
+    const pid = runningProcesses.get(id);
+    if (!pid) return sendError(res, 404, "no running process for this port");
+    try {
+      process.kill(pid, "SIGTERM");
+      runningProcesses.delete(id);
+      sendJson(res, 200, { ok: true });
+    } catch (err) {
+      // Process may have already exited
+      runningProcesses.delete(id);
+      sendError(res, 500, `failed to kill process: ${(err as Error).message}`);
+    }
   });
 }

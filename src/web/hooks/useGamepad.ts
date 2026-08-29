@@ -13,20 +13,29 @@ export interface GamepadActions {
   onConfirm: () => void;
   onCancel: () => void;
   onMenu: () => void;
+  onTabNext: () => void;
+  onTabPrev: () => void;
+  onExit: () => void;
+  onToggleLayout: () => void;
+  onOpenSettings: () => void;
 }
 
 /** Maps standard gamepad buttons to actions. */
 const BUTTON_MAP: Record<number, keyof GamepadActions> = {
-  0: 'onConfirm',   // A / Cross
-  1: 'onCancel',    // B / Circle
-  2: 'onCancel',    // X / Square (alt cancel)
-  3: 'onMenu',      // Y / Triangle
-  8: 'onMenu',      // Select / Back
-  9: 'onMenu',      // Start
-  12: 'onUp',       // D-pad Up
-  13: 'onDown',     // D-pad Down
-  14: 'onLeft',     // D-pad Left
-  15: 'onRight',    // D-pad Right
+  0: 'onConfirm',      // A / Cross
+  1: 'onCancel',       // B / Circle
+  2: 'onToggleLayout', // X / Square → toggle grid/carousel
+  3: 'onMenu',         // Y / Triangle → tab switch
+  4: 'onTabPrev',      // LB / L1
+  5: 'onTabNext',      // RB / R1
+  6: 'onTabPrev',      // LT / L2 (alt)
+  7: 'onTabNext',      // RT / R2 (alt)
+  8: 'onExit',         // Select / Back → exit game mode
+  9: 'onOpenSettings', // Start → open settings
+  12: 'onUp',          // D-pad Up
+  13: 'onDown',        // D-pad Down
+  14: 'onLeft',        // D-pad Left
+  15: 'onRight',       // D-pad Right
 };
 
 /** Axis threshold for D-pad emulation via analog sticks. */
@@ -36,6 +45,7 @@ export function useGamepad(actions: GamepadActions) {
   const stateRef = useRef<GamepadState>({ connected: false, id: '' });
   const actionsRef = useRef(actions);
   const prevPressed = useRef<Set<number>>(new Set());
+  const prevAxis = useRef<Map<string, boolean>>(new Map());
   const cooldown = useRef<Set<number>>(new Set());
 
   // Keep actions ref current
@@ -61,29 +71,29 @@ export function useGamepad(actions: GamepadActions) {
 
   const handleAxis = useCallback((axisIndex: number, value: number) => {
     const key = `axis_${axisIndex}`;
-    const prev = (prevPressed.current as unknown as Map<string, boolean>).get(key);
+    const prev = prevAxis.current.get(key);
 
     if (axisIndex === 0) {
       // Left stick X
       if (value < -AXIS_THRESHOLD && !prev) {
         actionsRef.current.onLeft();
-        (prevPressed.current as unknown as Map<string, boolean>).set(key, true);
+        prevAxis.current.set(key, true);
       } else if (value > AXIS_THRESHOLD && !prev) {
         actionsRef.current.onRight();
-        (prevPressed.current as unknown as Map<string, boolean>).set(key, true);
+        prevAxis.current.set(key, true);
       } else if (Math.abs(value) < AXIS_THRESHOLD / 2) {
-        (prevPressed.current as unknown as Map<string, boolean>).set(key, false);
+        prevAxis.current.set(key, false);
       }
     } else if (axisIndex === 1) {
       // Left stick Y (inverted: up is negative)
       if (value < -AXIS_THRESHOLD && !prev) {
         actionsRef.current.onUp();
-        (prevPressed.current as unknown as Map<string, boolean>).set(key, true);
+        prevAxis.current.set(key, true);
       } else if (value > AXIS_THRESHOLD && !prev) {
         actionsRef.current.onDown();
-        (prevPressed.current as unknown as Map<string, boolean>).set(key, true);
+        prevAxis.current.set(key, true);
       } else if (Math.abs(value) < AXIS_THRESHOLD / 2) {
-        (prevPressed.current as unknown as Map<string, boolean>).set(key, false);
+        prevAxis.current.set(key, false);
       }
     }
   }, []);
@@ -122,9 +132,14 @@ export function useGamepad(actions: GamepadActions) {
     window.addEventListener('gamepadconnected', onConnect);
     window.addEventListener('gamepaddisconnected', onDisconnect);
 
-    // Start polling if already connected
-    if (navigator.getGamepads().length > 0) {
-      animFrame = requestAnimationFrame(poll);
+    // Start polling if a gamepad is already connected
+    const pads = navigator.getGamepads();
+    for (const gp of pads) {
+      if (gp && gp.connected) {
+        stateRef.current = { connected: true, id: gp.id };
+        animFrame = requestAnimationFrame(poll);
+        break;
+      }
     }
 
     return () => {
