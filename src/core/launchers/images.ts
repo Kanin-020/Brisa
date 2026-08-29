@@ -9,10 +9,8 @@ export function imagesDir(config: AppConfig): string {
 }
 
 /**
- * Ruta de la AppImage de la propia Brisa en image/ (symlink o copia;
+ * Ruta de la AppImage de la propia Brisa en image/ (copia;
  * el nombre cambia con la versión), o null si no hay ninguna.
- * Si el symlink apunta a un destino que ya no existe (p. ej. tras un
- * self-update que borró la AppImage vieja), se ignora.
  */
 export function selfImagePath(config: AppConfig): string | null {
   try {
@@ -21,17 +19,7 @@ export function selfImagePath(config: AppConfig): string | null {
     const files = fs
       .readdirSync(dir)
       .filter((file) => /^Brisa-.*\.AppImage$/i.test(file))
-      .map((file) => {
-        const full = path.join(dir, file);
-        // Si es un symlink roto (destino borrado tras self-update), ignorarlo.
-        try {
-          if (fs.lstatSync(full).isSymbolicLink() && !fs.existsSync(full)) return null;
-        } catch {
-          return null;
-        }
-        return full;
-      })
-      .filter((x): x is string => x !== null)
+      .map((file) => path.join(dir, file))
       .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
     return files[0] ?? null;
   } catch {
@@ -40,10 +28,9 @@ export function selfImagePath(config: AppConfig): string | null {
 }
 
 /**
- * Crea un symlink en `image/` apuntando a la AppImage de la propia Brisa
- * (solo cuando la app corre desde su AppImage de Linux; el archivo original
- * no se toca). Si el symlink ya apunta al destino correcto, no hace nada;
- * las copias completas de versiones anteriores se reemplazan por symlinks.
+ * Copia la AppImage de la propia Brisa en `image/` (solo cuando la app
+ * corre desde su AppImage de Linux; el archivo original no se toca).
+ * Si la copia ya existe y tiene el mismo tamaño y timestamp, no hace nada.
  * Best-effort: un fallo aquí nunca debe impedir que Brisa arranque.
  */
 export function ensureSelfImageCopy(config: AppConfig): string | null {
@@ -52,12 +39,12 @@ export function ensureSelfImageCopy(config: AppConfig): string | null {
   try {
     const dir = imagesDir(config);
     fs.mkdirSync(dir, { recursive: true });
-    const link = path.join(dir, path.basename(source));
-    // Mantener image/ limpio: borrar cualquier AppImage que no sea el
-    // symlink actual (copias viejas de versiones anteriores).
+    const dest = path.join(dir, path.basename(source));
+    // Mantener image/ limpio: borrar cualquier AppImage que no sea la
+    // copia actual (copias viejas de versiones anteriores).
     for (const file of fs.readdirSync(dir)) {
       const full = path.join(dir, file);
-      if (full === link) continue;
+      if (full === dest) continue;
       if (/^Brisa-.*\.AppImage$/i.test(file)) {
         try {
           fs.rmSync(full, { force: true });
@@ -66,48 +53,23 @@ export function ensureSelfImageCopy(config: AppConfig): string | null {
         }
       }
     }
-    // Si el symlink (o copia vieja) ya existe y apunta al destino correcto,
-    // no hacemos nada.
-    let currentTarget: string | null = null;
+    // Si la copia ya existe con el mismo tamaño y fecha, no hacer nada.
     try {
-      const stat = fs.lstatSync(link);
-      if (stat.isSymbolicLink()) {
-        currentTarget = fs.realpathSync(link);
-      } else {
-        // Es una copia completa de una versión anterior: reemplazar por symlink.
-        fs.rmSync(link, { force: true });
+      const srcStat = fs.statSync(source);
+      const destStat = fs.statSync(dest);
+      if (srcStat.size === destStat.size && srcStat.mtimeMs === destStat.mtimeMs) {
+        return dest;
       }
     } catch {
-      // No existe: hay que crear el symlink.
+      // No existe: hay que crear la copia.
     }
-    const realSource = fs.realpathSync(source);
-    if (currentTarget === realSource) return link;
-    // Crear el symlink (relativo para que funcione si se mueve la carpeta root).
-    const relativeSource = path.relative(dir, source);
+    fs.copyFileSync(source, dest);
     try {
-      // Intentar symlink relativo primero (no requiere permisos especiales).
-      fs.symlinkSync(relativeSource, link);
-    } catch {
-      // Fallback: symlink absoluto (funciona siempre en Linux sin permisos extra).
-      try {
-        fs.symlinkSync(source, link);
-      } catch {
-        // Último recurso: copia completa (solo si symlink falla, p. ej. FS
-        // que no soporta symlinks como FAT32).
-        fs.copyFileSync(source, link);
-        try {
-          fs.chmodSync(link, 0o755);
-        } catch {
-          // ok
-        }
-      }
-    }
-    try {
-      fs.chmodSync(link, 0o755);
+      fs.chmodSync(dest, 0o755);
     } catch {
       // ok
     }
-    return link;
+    return dest;
   } catch {
     return null;
   }
