@@ -2,6 +2,20 @@
 
 Todas las versiones notables de Brisa.
 
+## 0.6.0 (2026-08-29)
+
+### 🔧 Otros
+- Performance improvements. (`abd1efb`)
+- Refactors and docs. (`e8dcea6`)
+- Linter 3 (`6d9cd0c`)
+- fix lint 2 (`e1f9f5f`)
+- Format and lint 1. (`e10d505`)
+- format fix (`fd93a6e`)
+- Fix game mode control. (`bffff4a`)
+- Missing icons. (`e1886d9`)
+
+[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.5.1...0.6.0)
+
 ## 0.5.1 (2026-08-29)
 
 ### 🔧 Otros
