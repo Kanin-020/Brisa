@@ -2,6 +2,17 @@
 
 Todas las versiones notables de Brisa.
 
+## 0.5.0 (2026-08-29)
+
+### 🔧 Otros
+- Ts in release.yml (`7945e9c`)
+- Gamemode (`3430013`)
+- TS migration. (`badcb22`)
+- Big refactor and PReact. (`e9fab75`)
+- More ports and improvements (`c81d2bf`)
+
+[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.4.0...0.5.0)
+
 ## 0.4.0 (2026-08-12)
 
 ### 🔧 Otros
