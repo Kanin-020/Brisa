@@ -14,12 +14,29 @@ function buildBundle(): void {
   execSync(`npx tsx ${script}`, { stdio: 'inherit' });
 }
 
+function copyDir(from: string, to: string): void {
+  fs.mkdirSync(to, { recursive: true });
+  for (const entry of fs.readdirSync(from, { withFileTypes: true })) {
+    const srcPath = path.join(from, entry.name);
+    const destPath = path.join(to, entry.name);
+    if (entry.isDirectory()) {
+      copyDir(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
 function copyAll(): void {
   buildBundle();
   // Copy static assets (HTML, images) to dist/web
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (entry.isFile() && /\.(html|png|svg|ico|json)$/.test(entry.name)) {
       fs.copyFileSync(path.join(src, entry.name), path.join(dest, entry.name));
+    }
+    // Copy subdirectories like assets/
+    if (entry.isDirectory()) {
+      copyDir(path.join(src, entry.name), path.join(dest, entry.name));
     }
   }
   console.log('copied src/web → dist/web (with Preact bundle)');
