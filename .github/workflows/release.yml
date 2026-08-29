@@ -71,16 +71,16 @@ jobs:
           INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
           if [ -n "$INPUT_VERSION" ]; then
-            VERSION=$(node scripts/bump-version.mjs "$INPUT_VERSION" | sed -n 's/^version=//p')
+            VERSION=$(npx tsx scripts/bump-version.ts "$INPUT_VERSION" | sed -n 's/^version=//p')
           else
-            VERSION=$(node scripts/bump-version.mjs | sed -n 's/^version=//p')
+            VERSION=$(npx tsx scripts/bump-version.ts | sed -n 's/^version=//p')
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Update CHANGELOG.md
         env:
           VERSION: ${{ steps.release.outputs.version }}
-        run: node scripts/changelog.mjs "$VERSION" --write
+        run: npx tsx scripts/changelog.ts "$VERSION" --write
       - name: Commit version + changelog, push tag and main
         env:
           VERSION: ${{ steps.release.outputs.version }}
@@ -144,7 +144,7 @@ jobs:
       - name: Build (TypeScript + web)
         run: npm run build
       - name: Package desktop (${{ matrix.target }})
-        run: node scripts/build-desktop.mjs --only ${{ matrix.target }}
+        run: npx tsx scripts/build-desktop.ts --only ${{ matrix.target }}
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -171,7 +171,7 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           EXTRA_NOTES: ${{ github.event.inputs.notes }}
         run: |
-          node scripts/changelog.mjs "$VERSION" > /tmp/release-notes.md
+          npx tsx scripts/changelog.ts "$VERSION" > /tmp/release-notes.md
           if [ -n "$EXTRA_NOTES" ]; then
             printf '\n---\n\n%s\n' "$EXTRA_NOTES" >> /tmp/release-notes.md
           fi
