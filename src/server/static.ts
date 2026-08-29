@@ -40,7 +40,11 @@ export function serveStatic(res: ServerResponse, pathname: string): void {
   for (const file of candidates) {
     if (fs.existsSync(file) && fs.statSync(file).isFile()) {
       const ext = path.extname(file);
-      res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream' });
+      const cacheControl = ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable';
+      res.writeHead(200, {
+        'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
+        'Cache-Control': cacheControl,
+      });
       fs.createReadStream(file).pipe(res);
       return;
     }

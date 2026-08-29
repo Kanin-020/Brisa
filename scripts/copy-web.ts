@@ -22,6 +22,9 @@ function copyDir(from: string, to: string): void {
     if (entry.isDirectory()) {
       copyDir(srcPath, destPath);
     } else {
+      // Skip source files already bundled by esbuild (JS, TS, TSX).
+      // Only copy CSS, JSON, images, and other static assets.
+      if (/\.(ts|tsx|js|mjs|cjs)$/.test(entry.name)) continue;
       fs.copyFileSync(srcPath, destPath);
     }
   }
@@ -29,12 +32,13 @@ function copyDir(from: string, to: string): void {
 
 function copyAll(): void {
   buildBundle();
-  // Copy static assets (HTML, images) to dist/web
+  // Copy only needed static assets to dist/web (NOT .js/.ts/.tsx — those
+  // are in bundle.js produced by esbuild above).
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     if (entry.isFile() && /\.(html|png|svg|ico|json)$/.test(entry.name)) {
       fs.copyFileSync(path.join(src, entry.name), path.join(dest, entry.name));
     }
-    // Copy subdirectories like assets/
+    // Copy subdirectories like assets/ and lang/
     if (entry.isDirectory()) {
       copyDir(path.join(src, entry.name), path.join(dest, entry.name));
     }

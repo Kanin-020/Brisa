@@ -53,8 +53,14 @@ export function projectRoot(): string {
   // Las builds empaquetadas (AppImage/.exe) redirigen la raíz de datos de
   // usuario con BRISA_ROOT (src/desktop/main.ts la establece en $HOME/Brisa).
   if (process.env.BRISA_ROOT) return path.resolve(process.env.BRISA_ROOT);
-  // dist/core/config.js  -> up 2 is project root
-  // src/core/config.ts   -> up 2 is project root (tsx dev)
+  // Walk up from __dirname to find the directory containing package.json.
+  // Works whether bundled (dist/cli.js) or unbundled (dist/core/config.js).
+  let dir = __dirname;
+  while (dir !== path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, 'package.json'))) return dir;
+    dir = path.dirname(dir);
+  }
+  // Fallback: assume two levels up (unbundled layout).
   return path.resolve(__dirname, '..', '..');
 }
 

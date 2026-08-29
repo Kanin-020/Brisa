@@ -14,7 +14,7 @@ const shared = {
   target: 'es2020' as const,
   outdir: dest,
   entryNames: 'bundle',
-  minify: false,
+  minify: true,
   sourcemap: false,
   loader: {
     '.ts': 'ts' as const,

@@ -42,6 +42,14 @@ export class App {
   /** Tareas de larga duración con progreso y cancelación (usadas por el servidor web). */
   readonly tasks = new TaskManager();
 
+  /** Scan cache: evita re-escanear ROMs en requests sucesivos (~5s TTL). */
+  private scanCache: { result: ScanResult; at: number } | null = null;
+  private static SCAN_CACHE_TTL_MS = 5_000;
+
+  /** Full status cache: evita re-ejecutar status() completo en requests rápidos (~3s TTL). */
+  private statusCache: { result: StatusResult; at: number } | null = null;
+  private static STATUS_CACHE_TTL_MS = 3_000;
+
   constructor() {
     this.config = loadConfig();
     ensureDirs(this.config);
@@ -74,7 +82,18 @@ export class App {
   }
 
   async scan(): Promise<ScanResult> {
-    return scanRoms(this.config);
+    if (this.scanCache && Date.now() - this.scanCache.at < App.SCAN_CACHE_TTL_MS) {
+      return this.scanCache.result;
+    }
+    const result = await scanRoms(this.config);
+    this.scanCache = { result, at: Date.now() };
+    return result;
+  }
+
+  /** Invalida el caché de escaneo y status (llamar tras install/uninstall/upload). */
+  invalidateScanCache(): void {
+    this.scanCache = null;
+    this.statusCache = null;
   }
 
   /**
@@ -93,16 +112,21 @@ export class App {
   }
 
   async status(): Promise<StatusResult> {
+    if (this.statusCache && Date.now() - this.statusCache.at < App.STATUS_CACHE_TTL_MS) {
+      return this.statusCache.result;
+    }
     const manifests = this.manifests();
     syncModsFolders(this.config, manifests);
     const scan = await this.scan();
     const ports = await buildPortStatuses(this.config, manifests, scan);
     const self = await checkSelfUpdate(this.config);
-    return {
+    const result: StatusResult = {
       scan,
       ports,
       self: self ? normalizeSelfUpdateInfo(self) : null,
     };
+    this.statusCache = { result, at: Date.now() };
+    return result;
   }
 
   async install(
@@ -114,6 +138,7 @@ export class App {
     if (!manifest) throw new Error(`Port not found: ${id}`);
     const state = await installPort(this.config, manifest, { ...opts, onProgress });
     syncModsFolders(this.config, this.manifests());
+    this.invalidateScanCache();
     return state;
   }
 
@@ -122,6 +147,7 @@ export class App {
     if (manifest) unlinkAllMods(this.config, manifest);
     uninstallPort(this.config, id);
     syncModsFolders(this.config, this.manifests());
+    this.invalidateScanCache();
   }
 
   launch(id: string): string | null {
@@ -239,16 +265,19 @@ export class App {
   }
 
   /** Stream an uploaded ROM file into the roms dir (see roms.saveRomFile). */
-  saveRomFile(
+  async saveRomFile(
     name: string,
     source: NodeJS.ReadableStream,
   ): Promise<{ saved: boolean; skipped: boolean; name: string }> {
-    return saveRomFile(this.config, name, source);
+    const result = await saveRomFile(this.config, name, source);
+    if (result.saved) this.invalidateScanCache();
+    return result;
   }
 
   /** Delete a ROM file (path-traversal guard + cached hash invalidation). */
   deleteRom(file: string): void {
     deleteRom(this.config, file);
+    this.invalidateScanCache();
   }
 
   /**

@@ -1,9 +1,60 @@
 import * as http from 'node:http';
+import { gzipSync } from 'node:zlib';
 import type { App } from '../core/app';
 import { openUrlInBrowser } from '../core/folders';
 import { sendJson, readJsonBody } from './http';
 import { ApiRouter } from './router';
 import { serveStatic } from './static';
+
+/** Wraps a ServerResponse to transparently compress JSON bodies with gzip. */
+function withCompression(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+): http.ServerResponse {
+  const accept = req.headers['accept-encoding'] ?? '';
+  if (!accept.includes('gzip')) return res;
+
+  const originalWriteHead = res.writeHead.bind(res);
+  const originalEnd = res.end.bind(res);
+  let headersSent = false;
+
+  res.writeHead = function (statusCode: number, headers?: http.OutgoingHttpHeaders | number) {
+    // Store headers for later; we'll add Content-Encoding when we know the body.
+    (res as any).__statusHead = statusCode;
+    (res as any).__statusHeaders = headers ?? {};
+    return res;
+  } as typeof res.writeHead;
+
+  res.end = function (this: http.ServerResponse, chunk?: any, ...rest: any[]) {
+    if (headersSent) return originalEnd(chunk, ...rest);
+
+    const body = typeof chunk === 'string' ? Buffer.from(chunk) : chunk instanceof Buffer ? chunk : Buffer.alloc(0);
+    const contentType = ((res as any).__statusHeaders as http.OutgoingHttpHeaders)?.['content-type'] ??
+      this.getHeader('content-type') ?? '';
+    const isJson = String(contentType).includes('application/json');
+
+    if (isJson && body.length > 1024) {
+      const compressed = gzipSync(body, { level: 6 });
+      originalWriteHead((res as any).__statusHead, {
+        ...(res as any).__statusHeaders,
+        'Content-Encoding': 'gzip',
+        'Content-Length': compressed.length,
+      });
+      headersSent = true;
+      return originalEnd(compressed);
+    }
+
+    // No compression: send original headers and body.
+    originalWriteHead((res as any).__statusHead, {
+      ...(res as any).__statusHeaders,
+      'Content-Length': body.length,
+    });
+    headersSent = true;
+    return originalEnd(body);
+  } as typeof res.end;
+
+  return res;
+}
 import { registerStatusRoute } from './routes/status';
 import { registerTasksRoutes } from './routes/tasks';
 import { registerPortsRoutes } from './routes/ports';
@@ -40,22 +91,24 @@ export function startServer(
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
     const method = req.method ?? 'GET';
-
-    // Static files
+    // Static files — served directly without compression wrapper (streaming).
     if (!url.pathname.startsWith('/api/')) {
       serveStatic(res, url.pathname);
       return;
     }
 
+    // Wrap response for transparent gzip compression on JSON API responses only.
+    const resC = withCompression(req, res);
+
     // Upload de ROM: flujo binario directo a disco (sin buffering en RAM).
     if (url.pathname === '/api/roms/upload' && method === 'POST') {
-      await handleRomUpload(app, req, res);
+      await handleRomUpload(app, req, resC);
       return;
     }
 
     const body = method === 'POST' ? await readJsonBody(req) : null;
-    const handled = await router.dispatch(req, res, method, url.pathname, body);
-    if (!handled) sendJson(res, 404, { error: 'not found' });
+    const handled = await router.dispatch(req, resC, method, url.pathname, body);
+    if (!handled) sendJson(resC, 404, { error: 'not found' });
   });
 
   server.listen(port, () => {

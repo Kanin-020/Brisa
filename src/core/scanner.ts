@@ -7,6 +7,28 @@ import type { Manifest, RomRequirement } from './manifest';
 import { listManifests } from './manifest';
 import { readDiscGameId } from './discid';
 
+async function parallelMap<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R | null>,
+): Promise<R[]> {
+  const results: R[] = [];
+  let i = 0;
+
+  async function worker(): Promise<void> {
+    while (i < items.length) {
+      const idx = i++;
+      const result = await fn(items[idx]);
+      if (result !== null) results.push(result);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, () => worker()),
+  );
+  return results;
+}
+
 export interface RomFile {
   /** Absolute path of the ROM file in the roms dir. */
   path: string;
@@ -105,19 +127,26 @@ async function sha1WithCache(config: AppConfig, filePath: string): Promise<strin
 export async function scanRoms(config: AppConfig): Promise<ScanResult> {
   const discoveredRoms: RomFile[] = [];
 
-  // Descubrir y hashear todas las ROMs
-  for (const filePath of collectRomFiles(config)) {
+  // Descubrir archivos ROM y calcular hashes en paralelo (con límite de
+  // concurrencia para no agotar file handles en directorios con miles de ROMs).
+  const filePaths = collectRomFiles(config);
+  const PARALLEL_HASH_LIMIT = 8;
+  const romResults = await parallelMap(filePaths, PARALLEL_HASH_LIMIT, async (filePath) => {
     const fileStats = fs.statSync(filePath);
-    if (fileStats.size === 0) continue;
+    if (fileStats.size === 0) return null;
 
     const sha1Hash = await sha1WithCache(config, filePath);
-    discoveredRoms.push({
+    return {
       path: filePath,
       name: path.basename(filePath),
       size: fileStats.size,
       sha1: sha1Hash,
       gameId: readDiscGameId(filePath),
-    });
+    };
+  });
+
+  for (const result of romResults) {
+    if (result) discoveredRoms.push(result);
   }
 
   // Realizar matching contra manifiestos
