@@ -560,6 +560,17 @@ export function BrisaApp() {
             {ti('btn.refresh')}
           </button>
           <button
+            class="btn ghost sm"
+            title="Game Mode"
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('gamemode', '');
+              window.location.href = url.toString();
+            }}
+          >
+            🎮
+          </button>
+          <button
             class="btn ghost sm settings-btn"
             title={ti('settings.title')}
             onClick={() => setSettingsOpen(true)}

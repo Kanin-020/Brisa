@@ -12,3 +12,4 @@ import './components/progress-bar/progress-bar.css';
 import './components/toast/toast.css';
 import './components/drop-overlay/drop-overlay.css';
 import './components/help/help.css';
+import './components/game-mode/game-mode.css';
