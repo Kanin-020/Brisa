@@ -124,8 +124,10 @@ function wineAvailable() {
 async function runBuilder() {
   const targets = [];
   const wantLinux = ONLY === "all" || ONLY === "linux";
+  const wantFlatpak = ONLY === "all" || ONLY === "flatpak";
   const wantWindows = ONLY === "all" || ONLY === "windows";
   if (wantLinux) targets.push("--linux", "AppImage");
+  if (wantFlatpak) targets.push("--linux", "flatpak");
   if (wantWindows) {
     // electron-builder necesita wine para editar los recursos del .exe al
     // hacer cross-build desde Linux (icono/versión). En Windows no hace falta.
@@ -158,12 +160,12 @@ async function runBuilder() {
 // ---------------------------------------------------------------------------
 
 (async () => {
-  if (["all", "linux", "windows"].includes(ONLY)) {
+  if (["all", "linux", "flatpak", "windows"].includes(ONLY)) {
     await bundleCliEntry();
     await runBuilder();
-    step("3/3 ¡Listo! Artefactos en release/ (AppImage para Linux, .zip para Windows)");
+    step("3/3 ¡Listo! Artefactos en release/ (AppImage y Flatpak para Linux, .zip para Windows)");
   } else {
-    console.error("Opción --only inválida. Usa: linux | windows");
+    console.error("Opción --only inválida. Usa: linux | flatpak | windows");
     process.exit(1);
   }
 })();

@@ -1,6 +1,6 @@
 {
   "name": "brisa",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Recopilador y gestor de ports nativos de PC al estilo EmuDeck, basado en manifiestos.",
   "license": "MIT",
   "author": "Kanin",
@@ -20,6 +20,7 @@
     "desktop": "npm run build && electron .",
     "package": "npm run build && npx tsx scripts/build-desktop.ts",
     "package:linux": "npm run build && npx tsx scripts/build-desktop.ts --only linux",
+    "package:flatpak": "npm run build && npx tsx scripts/build-desktop.ts --only flatpak",
     "package:windows": "npm run build && npx tsx scripts/build-desktop.ts --only windows",
     "test": "tsx --test test/glob.test.ts test/version.test.ts test/hash.test.ts test/preserve.test.ts test/tasks.test.ts test/config.test.ts test/cache.test.ts test/manifest.test.ts test/output.test.ts test/status.test.ts",
     "test:selfupdate": "npx tsx scripts/test-selfupdate.ts",

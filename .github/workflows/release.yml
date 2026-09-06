@@ -116,6 +116,8 @@ jobs:
         include:
           - os: ubuntu-latest
             target: linux
+          - os: ubuntu-latest
+            target: flatpak
           - os: windows-latest
             target: windows
     # Cachés de electron-builder en el workspace (rutas iguales en Linux y
@@ -141,6 +143,13 @@ jobs:
           key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install dependencies
         run: npm ci
+      - name: Install Flatpak dependencies
+        if: matrix.target == 'flatpak'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y flatpak flatpak-builder
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          sudo flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 || true
       - name: Build (TypeScript + web)
         run: npm run build
       - name: Package desktop (${{ matrix.target }})

@@ -22,9 +22,27 @@ extraResources:
 linux:
   target:
     - AppImage
+    - flatpak
   icon: src/web/icon.png
   category: Utility
   maintainer: Brisa
+
+flatpak:
+  runtime: org.freedesktop.Platform
+  sdk: org.freedesktop.Sdk
+  runtimeVersion: "24.08"
+  branch: stable
+  finishArgs:
+    - "--socket=wayland"
+    - "--socket=x11"
+    - "--share=ipc"
+    - "--device=dri"
+    - "--socket=pulseaudio"
+    - "--filesystem=home"
+    - "--share=network"
+    - "--talk-name=org.freedesktop.Notifications"
+    - "--talk-name=org.kde.StatusNotifierWatcher"
+    - "--talk-name=com.canonical.AppMenu.Registrar"
 
 win:
   target:
