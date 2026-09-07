@@ -2,6 +2,8 @@
 
 **Compiler and manager for native PC ports** in the style of EmuDeck, based on manifests.
 
+> **AI disclosure:** this project was generated entirely with AI assistance under human supervision. See [AI_DISCLOSURE.md](../AI_DISCLOSURE.md).
+
 ## About
 
 ### What it is

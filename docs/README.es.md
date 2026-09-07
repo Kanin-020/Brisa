@@ -2,6 +2,8 @@
 
 **Compilador y gestor de ports nativos de PC** al estilo EmuDeck, basado en manifiestos.
 
+> **Divulgación de IA:** todo este proyecto fue generado con asistencia de IA bajo supervisión humana. Ver [AI_DISCLOSURE.md](../AI_DISCLOSURE.md).
+
 ## Acerca de
 
 ### Qué es
