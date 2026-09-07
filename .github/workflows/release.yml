@@ -164,20 +164,6 @@ jobs:
           echo "=== Checking runtime installation ==="
           flatpak info org.freedesktop.Platform//24.08 2>&1 || true
           flatpak info org.freedesktop.Sdk//24.08 2>&1 || true
-          echo "=== Testing flatpak build init ==="
-          mkdir -p /tmp/flatpak-test
-          cd /tmp/flatpak-test
-          cat > manifest.json << 'EOF'
-{
-  "app-id": "io.brisa.desktop",
-  "runtime": "org.freedesktop.Platform",
-  "runtime-version": "24.08",
-  "sdk": "org.freedesktop.Sdk",
-  "command": "bash",
-  "modules": []
-}
-EOF
-          flatpak-builder --show-manifest-manifest --run /tmp/flatpak-test/manifest.json 2>&1 | head -20 || true
       - name: Package desktop (${{ matrix.target }})
         run: npx tsx scripts/build-desktop.ts --only ${{ matrix.target }}
         env:
