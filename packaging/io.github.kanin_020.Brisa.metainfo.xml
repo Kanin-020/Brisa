@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  AppStream metadata for the Brisa Flatpak (io.github.kanin_020.Brisa).
+
+  TODO before submitting to Flathub:
+  - Add real UI screenshots under <screenshots> (https URLs, hosted on the
+    project's website or as GitHub raw/usercontent links).
+  - Add a <release> entry per published version when tagging new releases.
+-->
+<component type="desktop-application">
+  <id>io.github.kanin_020.Brisa</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>Apache-2.0</project_license>
+
+  <name>Brisa</name>
+  <name xml:lang="es">Brisa</name>
+
+  <summary>Compiler and manager for native PC ports, based on manifests</summary>
+  <summary xml:lang="es">Compilador y gestor de ports nativos de PC, basado en manifiestos</summary>
+
+  <description>
+    <p>
+      Brisa is a compiler and manager for native PC ports (decompilation
+      projects released on GitHub), in the style of EmuDeck and built on
+      machine-readable JSON manifests. It scans a single ROM directory, links
+      each ROM where the port expects it, installs and updates ports from their
+      GitHub releases, and manages per-game mods with symlinks — keeping saves
+      and configuration safe across updates.
+    </p>
+    <p>
+      It ships a native desktop interface (gamepad-friendly game mode included)
+      and a full CLI, so it also works headless or integrated with Steam via
+      generated launchers. All data stays in a single user folder
+      (roms/, ports/, mods/...).
+    </p>
+    <p>Brisa does not include or download ROMs: ports require the original game, of which the user must own a legal copy. All managed software is open source (decompilations).</p>
+  </description>
+
+  <developer id="io.github.kanin_020">
+    <name>Kanin</name>
+  </developer>
+
+  <url type="homepage">https://github.com/Kanin-020/Brisa</url>
+  <url type="bugtracker">https://github.com/Kanin-020/Brisa/issues</url>
+
+  <launchable type="desktop-id">io.github.kanin_020.Brisa.desktop</launchable>
+
+  <!-- TODO: add real screenshots before submitting to Flathub.
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://example.org/screenshots/main.png</image>
+    </screenshot>
+  </screenshots>
+  -->
+
+  <categories>
+    <category>Utility</category>
+  </categories>
+
+  <keywords>
+    <keyword>ports</keyword>
+    <keyword>rom</keyword>
+    <keyword>game</keyword>
+    <keyword>emudeck</keyword>
+    <keyword xml:lang="es">ports</keyword>
+    <keyword xml:lang="es">juegos</keyword>
+  </keywords>
+
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-cartoon">none</content_attribute>
+    <content_attribute id="violence-fantasy">none</content_attribute>
+    <content_attribute id="violence-realistic">none</content_attribute>
+    <content_attribute id="violence-bloodshed">none</content_attribute>
+    <content_attribute id="violence-sexual">none</content_attribute>
+    <content_attribute id="drugs-alcohol">none</content_attribute>
+    <content_attribute id="drugs-narcotics">none</content_attribute>
+    <content_attribute id="drugs-tobacco">none</content_attribute>
+    <content_attribute id="sex-nudity">none</content_attribute>
+    <content_attribute id="sex-themes">none</content_attribute>
+    <content_attribute id="sex-homosexuality">none</content_attribute>
+    <content_attribute id="sex-prostitution">none</content_attribute>
+    <content_attribute id="sex-adultery">none</content_attribute>
+    <content_attribute id="sex-appearance">none</content_attribute>
+    <content_attribute id="language-profanity">none</content_attribute>
+    <content_attribute id="language-humor">none</content_attribute>
+    <content_attribute id="language-discrimination">none</content_attribute>
+    <content_attribute id="social-chat">none</content_attribute>
+    <content_attribute id="social-info">none</content_attribute>
+    <content_attribute id="social-audio">none</content_attribute>
+    <content_attribute id="social-location">none</content_attribute>
+    <content_attribute id="social-contacts">none</content_attribute>
+    <content_attribute id="money-purchasing">none</content_attribute>
+    <content_attribute id="money-gambling">none</content_attribute>
+  </content_rating>
+
+  <releases>
+    <release version="0.6.2" date="2026-09-07"/>
+  </releases>
+</component>

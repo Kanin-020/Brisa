@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Brisa
+Name[es]=Brisa
+Comment=Compiler and manager for native PC ports
+Comment[es]=Compilador y gestor de ports nativos de PC
+Exec=brisa
+Icon=io.github.kanin_020.Brisa
+Terminal=false
+Type=Application
+Categories=Utility;
+StartupWMClass=brisa

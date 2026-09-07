@@ -1,0 +1,81 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Flathub manifest (DRAFT) — io.github.kanin_020.Brisa
+#
+# Sigue la estructura del ejemplo oficial de Electron en Flatpak
+# (org.flathub.electron-sample-app). Para usarla en la submission:
+#
+#   1. Renombra el repo público de GitHub a "Brisa" (Kanin-020/Brisa) para que
+#      el App ID derive del repo real.
+#   2. Sube la versión del tag (TAG) y ejecuta:
+#        bash packaging/prepare-flathub.sh
+#      para generar packaging/flathub/ con el manifest final (sha256 del tag
+#      rellenado) y packaging/flathub/generated-sources.json (dependencias npm).
+#   3. Valida el build localmente con flatpak-builder (ver packaging/README.md)
+#      y ajusta runtime-version/base-version a la última disponible en Flathub.
+#   4. Abre el PR en flathub/flathub copiando packaging/flathub/* — la
+#      descripción y el commit los escribes TÚ a mano (política de IA de Flathub).
+# ─────────────────────────────────────────────────────────────────────────────
+app-id: io.github.kanin_020.Brisa
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: '24.08'
+sdk-extensions:
+- org.freedesktop.Sdk.Extension.node22
+command: brisa
+separate-locales: false
+finish-args:
+- --share=ipc
+- --socket=wayland
+- --socket=fallback-x11
+- --socket=pulseaudio
+- --share=network
+# Brisa gestiona ROMs/ports/mods en el home del usuario (carpeta única ~/Brisa
+# y ROMs en cualquier subcarpeta) y descarga ports de GitHub en runtime.
+- --filesystem=home
+- --device=dri
+- --env=XCURSOR_PATH=/run/host/user-share/icons:/run/host/share/icons
+build-options:
+  append-path: /usr/lib/sdk/node22/bin
+  env:
+    NPM_CONFIG_LOGLEVEL: info
+modules:
+- name: brisa
+  buildsystem: simple
+  build-options:
+    env:
+      XDG_CACHE_HOME: /run/build/brisa/flatpak-node/cache
+      npm_config_cache: /run/build/brisa/flatpak-node/npm-cache
+      npm_config_offline: 'true'
+      # El binario de Electron lo empaqueta electron-builder (offline, desde el
+      # caché que siembra flatpak-node-generator); con esto npm no intenta
+      # descargarlo en el postinstall del paquete `electron`.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+  subdir: main
+  sources:
+  - type: archive
+    url: https://github.com/Kanin-020/Brisa/archive/refs/tags/0.6.2.tar.gz
+    sha256: TAG_SHA256
+    dest: main
+  # Generado por flatpak-node-generator (ver packaging/README.md). Debe existir
+  # junto a este manifest en la carpeta de la submission.
+  - generated-sources.json
+  # Wrapper de lanzamiento (zypak) — comando `brisa` de la app.
+  - type: script
+    dest-filename: brisa
+    commands:
+    - zypak-wrapper.sh /app/main/brisa "$@"
+  build-commands:
+  - |
+    . ../flatpak-node/electron-builder-arch-args.sh
+    npm install --offline
+  - |
+    . ../flatpak-node/electron-builder-arch-args.sh
+    npx electron-builder --linux dir $ELECTRON_BUILDER_ARCH_ARGS
+  - cp -a release/linux-unpacked /app/main
+  - install -Dm755 ../brisa /app/bin/brisa
+  # Metadatos AppStream: metainfo, desktop file e icono (nombrados por App ID).
+  - install -Dm644 packaging/io.github.kanin_020.Brisa.metainfo.xml /app/share/metainfo/io.github.kanin_020.Brisa.metainfo.xml
+  - install -Dm644 packaging/io.github.kanin_020.Brisa.desktop /app/share/applications/io.github.kanin_020.Brisa.desktop
+  - install -Dm644 packaging/icons/512x512/apps/io.github.kanin_020.Brisa.png /app/share/icons/hicolor/512x512/apps/io.github.kanin_020.Brisa.png
