@@ -4,13 +4,13 @@ English
 ---
 **Compiler and manager for native PC ports** in the style of EmuDeck, based on manifests.
 
-**AI disclosure:** this project was generated entirely with AI assistance under human supervision. See [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
+**AI disclosure:** this project was generated entirely with AI assistance under human supervision. See [AI_DISCLOSURE.en.md](docs/AI_DISCLOSURE.en.md).
 
 Español
 ---
 **Recopilador y gestor de ports nativos de PC** al estilo EmuDeck, basado en manifiestos.
 
-**Divulgación de IA:** todo este proyecto fue generado con asistencia de IA bajo supervisión humana. Ver [AI_DISCLOSURE.md](AI_DISCLOSURE.md).
+**Divulgación de IA:** todo este proyecto fue generado con asistencia de IA bajo supervisión humana. Ver [AI_DISCLOSURE.es.md](docs/AI_DISCLOSURE.es.md).
 
 ## Idiomas / Languages
 
