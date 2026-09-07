@@ -152,7 +152,22 @@ async function runBuilder() {
   // --publish never: en CI electron-builder detecta el entorno y, si no hay
   // GH_TOKEN, falla al intentar publicar a GitHub (la release la crea el
   // workflow con softprops/action-gh-release después del build).
-  run(builder, [...targets, "--publish", "never"]);
+  // Usar stdio: 'pipe' y capturar salida para poder mostrar el error de flatpak.
+  try {
+    const result = execFileSync(builder, [...targets, "--publish", "never"], {
+      stdio: "pipe",
+      cwd: ROOT,
+      encoding: "utf8",
+      env: { ...process.env, DEBUG: process.env.DEBUG || "*" },
+    });
+    if (result) process.stdout.write(result);
+  } catch (err: any) {
+    console.error("\n[build-desktop] ⛔ Error de electron-builder:");
+    if (err.stdout) console.error("STDOUT:\n", err.stdout);
+    if (err.stderr) console.error("STDERR:\n", err.stderr);
+    if (err.message) console.error("Message:", err.message);
+    process.exit(1);
+  }
 }
 
 // ---------------------------------------------------------------------------

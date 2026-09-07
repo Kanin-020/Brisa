@@ -152,8 +152,36 @@ jobs:
           sudo flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 || true
       - name: Build (TypeScript + web)
         run: npm run build
+      - name: Debug flatpak setup
+        if: matrix.target == 'flatpak'
+        run: |
+          echo "=== Flatpak version ==="
+          flatpak --version || true
+          echo "=== Flatpak-builder version ==="
+          flatpak-builder --version || true
+          echo "=== Installed runtimes ==="
+          flatpak list --app 2>/dev/null || true
+          echo "=== Checking runtime installation ==="
+          flatpak info org.freedesktop.Platform//24.08 2>&1 || true
+          flatpak info org.freedesktop.Sdk//24.08 2>&1 || true
+          echo "=== Testing flatpak build init ==="
+          mkdir -p /tmp/flatpak-test
+          cd /tmp/flatpak-test
+          cat > manifest.json << 'EOF'
+{
+  "app-id": "io.brisa.desktop",
+  "runtime": "org.freedesktop.Platform",
+  "runtime-version": "24.08",
+  "sdk": "org.freedesktop.Sdk",
+  "command": "bash",
+  "modules": []
+}
+EOF
+          flatpak-builder --show-manifest-manifest --run /tmp/flatpak-test/manifest.json 2>&1 | head -20 || true
       - name: Package desktop (${{ matrix.target }})
         run: npx tsx scripts/build-desktop.ts --only ${{ matrix.target }}
+        env:
+          DEBUG: "*"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
