@@ -59,7 +59,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -132,7 +132,7 @@ jobs:
           fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - name: Cache Electron binaries
         uses: actions/cache@v4
@@ -148,8 +148,19 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y flatpak flatpak-builder
+          # Runtime y SDK en la instalación de sistema (el runner de GitHub ya
+          # trae la 24.08; si no, este paso la instala).
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
           sudo flatpak install -y flathub org.freedesktop.Platform//24.08 org.freedesktop.Sdk//24.08 || true
+          # electron-builder corre como el usuario runner y gestiona el BaseApp
+          # de Electron en la instalación de USUARIO de flatpak (flatpak install
+          # --user). El remote añadido con sudo arriba es solo de sistema y no
+          # le sirve: sin remote en user, su auto-instalado falla con
+          # "No remote refs found". Se registra flathub en user y se preinstala
+          # ahí el BaseApp con la misma versión que baseVersion/runtimeVersion
+          # en electron-builder.yml.
+          flatpak remote-add --if-not-exists --user flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak install -y --user flathub org.electronjs.Electron2.BaseApp/x86_64/24.08
       - name: Build (TypeScript + web)
         run: npm run build
       - name: Debug flatpak setup
@@ -167,7 +178,9 @@ jobs:
       - name: Package desktop (${{ matrix.target }})
         run: npx tsx scripts/build-desktop.ts --only ${{ matrix.target }}
         env:
-          DEBUG: "*"
+          # Solo el bundler de flatpak usa debug; DEBUG="*" inundaba el log con
+          # el escaneo de @electron/rebuild.
+          DEBUG: "@malept/flatpak-bundler"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -188,7 +201,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
       - name: Generate release notes
         env:
           VERSION: ${{ needs.prepare.outputs.version }}

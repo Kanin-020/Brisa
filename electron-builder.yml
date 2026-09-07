@@ -31,6 +31,7 @@ flatpak:
   runtime: org.freedesktop.Platform
   sdk: org.freedesktop.Sdk
   runtimeVersion: "24.08"
+  baseVersion: "24.08"
   branch: stable
   finishArgs:
     - "--socket=wayland"

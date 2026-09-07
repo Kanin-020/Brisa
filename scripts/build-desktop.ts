@@ -18,7 +18,7 @@
 //   node scripts/build-desktop.mjs --only linux    # AppImage
 //   node scripts/build-desktop.mjs --only windows  # .zip de Windows
 // ---------------------------------------------------------------------------
-import { execFileSync } from "node:child_process";
+import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -33,22 +33,21 @@ const args = process.argv.slice(2);
 const onlyIdx = args.indexOf("--only");
 const ONLY = onlyIdx >= 0 ? args[onlyIdx + 1] : "all";
 
-const step = (msg) => console.info(`\n[build-desktop] ${msg}`);
+const step = (msg: string) => console.info(`\n[build-desktop] ${msg}`);
 
-function run(cmd, cargs, opts = {}) {
+function run(cmd: string, cargs: string[], opts: ExecFileSyncOptions = {}) {
   if (process.platform === "win32" && cmd.endsWith(".cmd")) {
-    execFileSync("cmd.exe", ["/c", cmd, ...cargs], {
-      stdio: "inherit",
-      cwd: ROOT,
-      ...opts,
-    });
-  } else {
-    execFileSync(cmd, cargs, {
+    return execFileSync("cmd.exe", ["/c", cmd, ...cargs], {
       stdio: "inherit",
       cwd: ROOT,
       ...opts,
     });
   }
+  return execFileSync(cmd, cargs, {
+    stdio: "inherit",
+    cwd: ROOT,
+    ...opts,
+  });
 }
 
 const TEXT_DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -153,12 +152,13 @@ async function runBuilder() {
   // GH_TOKEN, falla al intentar publicar a GitHub (la release la crea el
   // workflow con softprops/action-gh-release después del build).
   // Usar stdio: 'pipe' y capturar salida para poder mostrar el error de flatpak.
+  // Nota: se usa run() (no execFileSync directo) porque en Windows Node no
+  // puede ejecutar el shim .cmd por sí solo (spawnSync ... EINVAL): run() lo
+  // lanza vía cmd.exe /c.
   try {
-    const result = execFileSync(builder, [...targets, "--publish", "never"], {
+    const result = run(builder, [...targets, "--publish", "never"], {
       stdio: "pipe",
-      cwd: ROOT,
       encoding: "utf8",
-      env: { ...process.env, DEBUG: process.env.DEBUG || "*" },
     });
     if (result) process.stdout.write(result);
   } catch (err: any) {
