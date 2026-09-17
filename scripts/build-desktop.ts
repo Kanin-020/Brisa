@@ -18,7 +18,7 @@
 //   node scripts/build-desktop.mjs --only linux    # AppImage
 //   node scripts/build-desktop.mjs --only windows  # .zip de Windows
 // ---------------------------------------------------------------------------
-import { execFileSync, type ExecFileSyncOptions } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -33,21 +33,22 @@ const args = process.argv.slice(2);
 const onlyIdx = args.indexOf("--only");
 const ONLY = onlyIdx >= 0 ? args[onlyIdx + 1] : "all";
 
-const step = (msg: string) => console.info(`\n[build-desktop] ${msg}`);
+const step = (msg) => console.info(`\n[build-desktop] ${msg}`);
 
-function run(cmd: string, cargs: string[], opts: ExecFileSyncOptions = {}) {
+function run(cmd, cargs, opts = {}) {
   if (process.platform === "win32" && cmd.endsWith(".cmd")) {
-    return execFileSync("cmd.exe", ["/c", cmd, ...cargs], {
+    execFileSync("cmd.exe", ["/c", cmd, ...cargs], {
+      stdio: "inherit",
+      cwd: ROOT,
+      ...opts,
+    });
+  } else {
+    execFileSync(cmd, cargs, {
       stdio: "inherit",
       cwd: ROOT,
       ...opts,
     });
   }
-  return execFileSync(cmd, cargs, {
-    stdio: "inherit",
-    cwd: ROOT,
-    ...opts,
-  });
 }
 
 const TEXT_DECODER = new TextDecoder("utf-8", { fatal: true });
@@ -123,10 +124,8 @@ function wineAvailable() {
 async function runBuilder() {
   const targets = [];
   const wantLinux = ONLY === "all" || ONLY === "linux";
-  const wantFlatpak = ONLY === "all" || ONLY === "flatpak";
   const wantWindows = ONLY === "all" || ONLY === "windows";
   if (wantLinux) targets.push("--linux", "AppImage");
-  if (wantFlatpak) targets.push("--linux", "flatpak");
   if (wantWindows) {
     // electron-builder necesita wine para editar los recursos del .exe al
     // hacer cross-build desde Linux (icono/versión). En Windows no hace falta.
@@ -151,23 +150,7 @@ async function runBuilder() {
   // --publish never: en CI electron-builder detecta el entorno y, si no hay
   // GH_TOKEN, falla al intentar publicar a GitHub (la release la crea el
   // workflow con softprops/action-gh-release después del build).
-  // Usar stdio: 'pipe' y capturar salida para poder mostrar el error de flatpak.
-  // Nota: se usa run() (no execFileSync directo) porque en Windows Node no
-  // puede ejecutar el shim .cmd por sí solo (spawnSync ... EINVAL): run() lo
-  // lanza vía cmd.exe /c.
-  try {
-    const result = run(builder, [...targets, "--publish", "never"], {
-      stdio: "pipe",
-      encoding: "utf8",
-    });
-    if (result) process.stdout.write(result);
-  } catch (err: any) {
-    console.error("\n[build-desktop] ⛔ Error de electron-builder:");
-    if (err.stdout) console.error("STDOUT:\n", err.stdout);
-    if (err.stderr) console.error("STDERR:\n", err.stderr);
-    if (err.message) console.error("Message:", err.message);
-    process.exit(1);
-  }
+  run(builder, [...targets, "--publish", "never"]);
 }
 
 // ---------------------------------------------------------------------------
@@ -175,12 +158,12 @@ async function runBuilder() {
 // ---------------------------------------------------------------------------
 
 (async () => {
-  if (["all", "linux", "flatpak", "windows"].includes(ONLY)) {
+  if (["all", "linux", "windows"].includes(ONLY)) {
     await bundleCliEntry();
     await runBuilder();
-    step("3/3 ¡Listo! Artefactos en release/ (AppImage y Flatpak para Linux, .zip para Windows)");
+    step("3/3 ¡Listo! Artefactos en release/ (AppImage para Linux, .zip para Windows)");
   } else {
-    console.error("Opción --only inválida. Usa: linux | flatpak | windows");
+    console.error("Opción --only inválida. Usa: linux | windows");
     process.exit(1);
   }
 })();

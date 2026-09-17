@@ -2,15 +2,6 @@
 
 Todas las versiones notables de Brisa.
 
-## 0.6.2 (2026-09-07)
-
-### 🔧 Otros
-- Fix flatpka build 2. (`a894613`)
-- fix (`d2dde9f`)
-- fix release flakpak (`76e613b`)
-- Flatpak build (`e20f787`)
-
-[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.6.1...0.6.2)
 ## 0.6.1 (2026-08-29)
 
 ### 🔧 Otros
