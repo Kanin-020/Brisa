@@ -1,0 +1,17 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+	<style>
+		.s0 { fill: #4255ff } 
+		.s1 { fill: none;stroke: #ffffff;stroke-linecap: round;stroke-linejoin: round;stroke-width: 24 } 
+		.s2 { opacity: .75;fill: none;stroke: #ffffff;stroke-linecap: round;stroke-linejoin: round;stroke-width: 20 } 
+		.s3 { fill: none;stroke: #ffffff;stroke-linecap: round;stroke-linejoin: round;stroke-width: 18 } 
+	</style>
+	<g id="Layer 1">
+		<path id="Forma 3" fill-rule="evenodd" class="s0" d="m80 0h352c44.18 0 80 35.82 80 80v352c0 44.18-35.82 80-80 80h-352c-44.18 0-80-35.82-80-80v-352c0-44.18 35.82-80 80-80z"/>
+		<g>
+			<path class="s1" d="m120 180h180c26.5 0 48-21.5 48-48 0-26.5-21.5-48-48-48-26.5 0-48 21.5-48 48"/>
+			<path class="s2" d="m96 240h244c35.3 0 64-28.7 64-64 0-35.3-28.7-64-64-64-35.3 0-64 28.7-64 64"/>
+			<path class="s1" d="m80 300h260c35.3 0 64 28.7 64 64 0 35.3-28.7 64-64 64-35.3 0-64-28.7-64-64"/>
+			<path class="s3" d="m140 380h40c13.3 0 24 10.7 24 24 0 13.3-10.7 24-24 24-13.3 0-24-10.7-24-24"/>
+		</g>
+	</g>
+</svg>
