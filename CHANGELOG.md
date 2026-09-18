@@ -2,6 +2,21 @@
 
 Todas las versiones notables de Brisa.
 
+## 0.7.0 (2026-09-18)
+
+### 🚀 Novedades
+- New icon (`1a05434`)
+- Visual rework. (`2b6c066`)
+- Roll back flatpak deployments (`73f5ec6`)
+
+### 📚 Documentación
+- Deleted disclosures flatpak rollback. (`472b6f4`)
+- Corrected AI_DISCLOSURE. (`ba79874`)
+- Added LICENSE (`2562cd2`)
+- AI DISCLOSURE. (`880dfba`)
+
+[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.6.2...0.7.0)
+
 ## 0.6.1 (2026-08-29)
 
 ### 🔧 Otros
