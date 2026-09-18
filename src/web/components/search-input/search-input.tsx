@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useState, useRef, useCallback } from 'preact/hooks';
 import type { SearchInputProps } from '../../types';
+import { MaterialIcon } from '../icons';
 
 export function BrisaSearchInput({
   placeholder = 'Buscar…',
@@ -33,7 +34,7 @@ export function BrisaSearchInput({
 
   return (
     <div class="search-wrap">
-      <span class="search-icon">🔍</span>
+      <MaterialIcon name="search" size={16} />
       <input
         type="search"
         placeholder={placeholder}

@@ -4,6 +4,7 @@ import { t } from '../../helpers';
 import { useGamepad } from '../../hooks/useGamepad';
 import type { AppState, Port, Task, ActiveTask } from '../../types';
 import { BrisaToast } from '../toast/toast';
+import { MaterialIcon } from '../icons';
 
 type GameTab = 'installed' | 'available';
 type FocusZone = 'tabs' | 'grid';
@@ -18,6 +19,7 @@ interface GameCardProps {
   onDblClick: () => void;
   onAction: () => void;
   mainLabel: string;
+  mainIcon: 'play' | 'stop' | 'update' | 'install' | null;
 }
 
 function GameCard({
@@ -30,6 +32,7 @@ function GameCard({
   onDblClick,
   onAction,
   mainLabel,
+  mainIcon,
 }: GameCardProps) {
   return (
     <div
@@ -55,15 +58,21 @@ function GameCard({
             <span class="badge version">{port.version}</span>
           )}
           {port.updateAvailable && port.updateInfo && (
-            <span class="badge update">⬆ {port.updateInfo.latest}</span>
+            <span class="badge update">
+              <MaterialIcon name="upload" size={12} /> {port.updateInfo.latest}
+            </span>
           )}
-          {running && <span class="badge running-badge">▶ Running</span>}
+          {running && (
+            <span class="badge running-badge">
+              <MaterialIcon name="play_arrow" size={12} filled /> Running
+            </span>
+          )}
         </div>
       </div>
       {port.roms?.map((slot, j) => (
         <div key={j} class="gm-card-rom">
           <span class={`badge ${slot.matched ? 'rom-ok' : 'rom-missing'}`}>
-            {slot.matched ? '✓' : '✗'}
+            <MaterialIcon name={slot.matched ? 'check' : 'close'} size={12} />
           </span>
           <span>{slot.name}</span>
         </div>
@@ -76,7 +85,12 @@ function GameCard({
           onAction();
         }}
       >
-        {mainLabel}
+        {busy && <MaterialIcon name="progress_activity" size={16} />}
+        {mainIcon === 'play' && <MaterialIcon name="play_arrow" size={16} filled />}
+        {mainIcon === 'stop' && <MaterialIcon name="stop" size={16} filled />}
+        {mainIcon === 'update' && <MaterialIcon name="upload" size={16} />}
+        {mainIcon === 'install' && <MaterialIcon name="download" size={16} />}
+        <span>{mainLabel}</span>
       </button>
       {busy && task && (
         <div class="gm-progress">
@@ -299,7 +313,7 @@ export function GameMode({ onExit }: GameModeProps) {
             n.delete(portId);
             return n;
           });
-          showToast(`⏹ Stopped ${port.manifest.name}`, 'ok');
+          showToast(`Stopped ${port.manifest.name}`, 'ok');
         } catch (err) {
           showToast(err instanceof Error ? err.message : String(err), 'error');
         }
@@ -322,7 +336,7 @@ export function GameMode({ onExit }: GameModeProps) {
           setRunningPorts((prev) => new Set([...prev, portId]));
         }
         showToast(
-          `${action === 'launch' ? '▶ Launching' : action === 'install' ? '⬇ Installing' : '⬆ Updating'} ${port.manifest.name}...`,
+          `${action === 'launch' ? 'Launching' : action === 'install' ? 'Installing' : 'Updating'} ${port.manifest.name}...`,
           'ok',
         );
       } catch (err) {
@@ -686,12 +700,18 @@ export function GameMode({ onExit }: GameModeProps) {
 
   const isBusy = (portId: string) => busyPorts.has(portId);
   const isRunning = (portId: string) => runningPorts.has(portId);
+  const getMainIcon = (port: Port): 'play' | 'stop' | 'update' | 'install' | null => {
+    if (isBusy(port.manifest.id)) return null; // busy state shows a spinner icon
+    if (isRunning(port.manifest.id)) return 'stop';
+    if (port.installed) return port.updateAvailable ? 'update' : 'play';
+    return 'install';
+  };
+
   const getMainLabel = (port: Port) => {
-    if (isBusy(port.manifest.id)) return '⏳ ...';
-    if (isRunning(port.manifest.id)) return `⏹ ${t('port.stop') ?? 'Stop'}`;
-    if (port.installed)
-      return port.updateAvailable ? `⬆ ${t('port.update')}` : `▶ ${t('port.launch')}`;
-    return port.hasRom ? `⬇ ${t('port.install')}` : `⬇ ${t('port.installNoRom')}`;
+    if (isBusy(port.manifest.id)) return t('loading');
+    if (isRunning(port.manifest.id)) return t('port.stop');
+    if (port.installed) return port.updateAvailable ? t('port.update') : t('port.launch');
+    return port.hasRom ? t('port.install') : t('port.installNoRom');
   };
 
   return (
@@ -727,21 +747,21 @@ export function GameMode({ onExit }: GameModeProps) {
           title={layoutMode === 'grid' ? 'Carousel' : 'Grid'}
           onClick={toggleLayout}
         >
-          {layoutMode === 'grid' ? '☰' : '▦'}
+          <MaterialIcon name={layoutMode === 'grid' ? 'view_list' : 'grid_view'} size={20} />
         </button>
         <button class="gm-settings-btn" onClick={() => setSettingsOpen(true)}>
-          ⚙️
+          <MaterialIcon name="settings" size={20} />
         </button>
         <button class="gm-exit-btn" onClick={onExit}>
-          ✕ {t('settings.close')}
+          <MaterialIcon name="close" size={16} /> {t('settings.close')}
         </button>
       </header>
 
       {/* Gamepad hint */}
       <div class="gm-hint">
         {gamepad.current.connected
-          ? `🎮 Select=Salir · Start=Config · X=Layout · R1/R2=Pestaña · A=Acción`
-          : '⌨ ↑↓←→ Enter=Acción · Tab=Pestaña · Esc=Salir'}
+          ? `Select=Salir · Start=Config · X=Layout · R1/R2=Pestaña · A=Acción`
+          : 'Flechas: mover · Enter: Acción · Tab: Pestaña · Esc: Salir'}
       </div>
 
       {/* Grid / Carousel */}
@@ -782,6 +802,7 @@ export function GameMode({ onExit }: GameModeProps) {
                     else doAction(port, 'install');
                   }}
                   mainLabel={getMainLabel(port)}
+                  mainIcon={getMainIcon(port)}
                 />
               ))
             )}
@@ -819,6 +840,7 @@ export function GameMode({ onExit }: GameModeProps) {
                   else doAction(port, 'install');
                 }}
                 mainLabel={getMainLabel(port)}
+                mainIcon={getMainIcon(port)}
               />
             ))
           )}
@@ -835,9 +857,9 @@ export function GameMode({ onExit }: GameModeProps) {
         <div class="gm-settings-overlay" onClick={() => setSettingsOpen(false)}>
           <div class="gm-settings-modal" onClick={(e) => e.stopPropagation()}>
             <div class="gm-settings-head">
-              <h3>⚙️ {t('settings.title')}</h3>
+              <h3>{t('settings.title')}</h3>
               <button class="gm-settings-close" onClick={() => setSettingsOpen(false)}>
-                ✕
+                <MaterialIcon name="close" size={18} />
               </button>
             </div>
             <div class="gm-settings-body">
@@ -849,13 +871,13 @@ export function GameMode({ onExit }: GameModeProps) {
                     class={`gm-settings-btn-opt ${layoutMode === 'grid' ? 'active' : ''} ${settingsFocus === 0 ? 'gm-focused' : ''}`}
                     onClick={() => applyLayout('grid')}
                   >
-                    {'▦'} Grid
+                    <MaterialIcon name="grid_view" size={16} /> Grid
                   </button>
                   <button
                     class={`gm-settings-btn-opt ${layoutMode === 'carousel' ? 'active' : ''} ${settingsFocus === 1 ? 'gm-focused' : ''}`}
                     onClick={() => applyLayout('carousel')}
                   >
-                    {'☰'} Carousel
+                    <MaterialIcon name="view_carousel" size={16} /> Carousel
                   </button>
                 </div>
               </div>
@@ -867,13 +889,13 @@ export function GameMode({ onExit }: GameModeProps) {
                     class={`gm-settings-btn-opt ${currentTheme === 'light' ? 'active' : ''} ${settingsFocus === 2 ? 'gm-focused' : ''}`}
                     onClick={() => applyTheme('light')}
                   >
-                    {'☀️'} {t('settings.themeLight')}
+                    <MaterialIcon name="light_mode" size={16} /> {t('settings.themeLight')}
                   </button>
                   <button
                     class={`gm-settings-btn-opt ${currentTheme === 'dark' ? 'active' : ''} ${settingsFocus === 3 ? 'gm-focused' : ''}`}
                     onClick={() => applyTheme('dark')}
                   >
-                    {'🌙'} {t('settings.themeDark')}
+                    <MaterialIcon name="dark_mode" size={16} /> {t('settings.themeDark')}
                   </button>
                 </div>
               </div>
@@ -903,7 +925,7 @@ export function GameMode({ onExit }: GameModeProps) {
                   class={`gm-settings-exit-btn ${settingsFocus === settingsOptionCount - 1 ? 'gm-focused' : ''}`}
                   onClick={onExit}
                 >
-                  ✕ {t('settings.close')} Game Mode
+                  <MaterialIcon name="logout" size={16} /> {t('settings.close')} Game Mode
                 </button>
               </div>
             </div>

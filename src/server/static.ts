@@ -17,6 +17,30 @@ const MIME_TYPES: Record<string, string> = {
   '.json': 'application/json',
 };
 
+/**
+ * Cache policy per asset type.
+ *
+ * Only content-hashed filenames (e.g. material-symbols-outlined-NVVFEMFN.woff2,
+ * emitted by esbuild's "file" loader) are safe to cache as immutable: their URL
+ * changes whenever the content changes. Unhashed entries (bundle.js, bundle.css,
+ * lang/*.json) MUST be revalidated on every load — marking them immutable serves
+ * users a stale UI after updates (old i18n strings + new bundle = duplicated icons).
+ */
+const HASHED_NAME = /-[A-Za-z0-9_-]{8,}\.[A-Za-z0-9]+$/;
+const IMMUTABLE_EXTS = new Set(['.woff2', '.woff', '.ttf']);
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.svg', '.ico', '.webp']);
+
+function cacheControlFor(ext: string, rel: string): string {
+  if (ext === '.html') return 'no-cache';
+  if (ext === '.json' || rel.startsWith('lang/')) return 'no-cache';
+  if (ext === '.js' || ext === '.css') return 'no-cache';
+  if (IMMUTABLE_EXTS.has(ext) || HASHED_NAME.test(rel)) {
+    return 'public, max-age=31536000, immutable';
+  }
+  if (IMAGE_EXTS.has(ext)) return 'public, max-age=3600';
+  return 'no-cache';
+}
+
 export function serveStatic(res: ServerResponse, pathname: string): void {
   const rel = pathname === '/' ? '/index.html' : pathname;
   // Packaged build: serve the UI embedded in the binary first.
@@ -25,7 +49,10 @@ export function serveStatic(res: ServerResponse, pathname: string): void {
     const content = embeddedAssets[key];
     if (content !== undefined) {
       const ext = path.extname(key);
-      res.writeHead(200, { 'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream' });
+      res.writeHead(200, {
+        'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
+        'Cache-Control': cacheControlFor(ext, key),
+      });
       // Los binarios se incrustan en base64 (prefijo "b64:") desde build-desktop.mjs.
       res.end(content.startsWith('b64:') ? Buffer.from(content.slice(4), 'base64') : content);
       return;
@@ -40,10 +67,9 @@ export function serveStatic(res: ServerResponse, pathname: string): void {
   for (const file of candidates) {
     if (fs.existsSync(file) && fs.statSync(file).isFile()) {
       const ext = path.extname(file);
-      const cacheControl = ext === '.html' ? 'no-cache' : 'public, max-age=31536000, immutable';
       res.writeHead(200, {
         'Content-Type': MIME_TYPES[ext] ?? 'application/octet-stream',
-        'Cache-Control': cacheControl,
+        'Cache-Control': cacheControlFor(ext, rel),
       });
       fs.createReadStream(file).pipe(res);
       return;

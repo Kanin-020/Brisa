@@ -20,6 +20,10 @@ const shared = {
     '.ts': 'ts' as const,
     '.tsx': 'tsx' as const,
     '.css': 'css' as const,
+    // Font files referenced by CSS url() (material-symbols woff2) → emit as assets
+    '.woff': 'file' as const,
+    '.woff2': 'file' as const,
+    '.ttf': 'file' as const,
   },
   jsxFactory: 'h',
   jsxFragment: 'Fragment',

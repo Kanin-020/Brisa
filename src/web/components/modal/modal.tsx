@@ -1,6 +1,7 @@
 import { h } from 'preact';
 import { useEffect, useCallback } from 'preact/hooks';
 import { t } from '../../helpers';
+import { MaterialIcon } from '../icons';
 import type { ModalProps } from '../../types';
 
 export function BrisaModal({ open, title, onClose, onConfirm, children }: ModalProps) {
@@ -30,7 +31,7 @@ export function BrisaModal({ open, title, onClose, onConfirm, children }: ModalP
         <div class="modal-head">
           <h3>{title}</h3>
           <button class="modal-close" title={t('settings.close')} onClick={onClose}>
-            ✕
+            <MaterialIcon name="close" size={16} />
           </button>
         </div>
         <div class="modal-body">{children}</div>

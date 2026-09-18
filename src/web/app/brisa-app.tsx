@@ -2,6 +2,8 @@ import { h } from 'preact';
 import { useState, useEffect, useRef, useCallback } from 'preact/hooks';
 import { t } from '../helpers';
 import { BrisaPortCard } from '../components/port-card/port-card';
+import { BrisaModChip } from '../components/port-card/mod-chip';
+import { MaterialIcon } from '../components/icons';
 import { BrisaRomCard } from '../components/rom-card/rom-card';
 import { BrisaToast } from '../components/toast/toast';
 import type { AppState, Port, Task, ActiveTask, I18nHelpStep } from '../types';
@@ -29,6 +31,7 @@ export function BrisaApp() {
   const [toastKind, setToastKind] = useState<'ok' | 'warn' | 'error'>('ok');
   const [busyPorts, setBusyPorts] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [modsPortId, setModsPortId] = useState<string | null>(null);
   const [dropVisible, setDropVisible] = useState(false);
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>(() => {
     try {
@@ -96,10 +99,13 @@ export function BrisaApp() {
 
   // ── Settings modal: Escape key + body.modal-open ──
   useEffect(() => {
-    if (settingsOpen) {
+    if (settingsOpen || modsPortId) {
       document.body.classList.add('modal-open');
       const onKey = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setSettingsOpen(false);
+        if (e.key === 'Escape') {
+          setSettingsOpen(false);
+          setModsPortId(null);
+        }
       };
       document.addEventListener('keydown', onKey);
       return () => {
@@ -109,7 +115,7 @@ export function BrisaApp() {
     }
     document.body.classList.remove('modal-open');
     return undefined;
-  }, [settingsOpen]);
+  }, [settingsOpen, modsPortId]);
 
   // ── Drag & drop ROMs ──
   useEffect(() => {
@@ -326,6 +332,33 @@ export function BrisaApp() {
     [loadState],
   );
 
+  // ── Mods modal helpers ──
+  const openModsModal = useCallback((port: Port) => {
+    setModsPortId(port.manifest.id);
+  }, []);
+
+  const setAllMods = useCallback(
+    async (port: Port, link: boolean) => {
+      try {
+        await fetch(link ? '/api/mods/link-all' : '/api/mods/unlink-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: port.manifest.id }),
+        });
+        showToast(
+          link
+            ? ti('toast.modsEnabledAll', port.mods.length)
+            : ti('toast.modsDisabledAll', port.mods.length),
+          'ok',
+        );
+        await loadState();
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : String(err), 'error');
+      }
+    },
+    [loadState, showToast],
+  );
+
   // ── ROM upload ──
   const uploadRom = useCallback(
     (file: File, onProgress?: (pct: number) => void): Promise<{ skipped?: boolean }> => {
@@ -484,6 +517,7 @@ export function BrisaApp() {
   const available = ports.filter((p) => !p.installed);
   const totalMods = ports.reduce((sum, p) => sum + (p.mods?.length ?? 0), 0);
   const totalUpdates = ports.filter((p) => p.updateAvailable).length;
+  const modsPort = modsPortId ? (ports.find((p) => p.manifest.id === modsPortId) ?? null) : null;
 
   const getTask = (portId: string): Task | null => {
     for (const [, entry] of activeTasks.current) {
@@ -503,7 +537,7 @@ export function BrisaApp() {
   const filteredInstalled = filterPorts(installed, queryInstalled);
   const filteredAvailable = filterPorts(available, queryAvailable);
 
-  // ── Help steps ──
+  // ── Help steps (icon = Material Symbol ligature provided by i18n) ──
   const helpSteps: I18nHelpStep[] = window.__i18n?.tRaw
     ? ((window.__i18n?.tRaw('help.steps') as I18nHelpStep[]) ?? [])
     : [];
@@ -538,7 +572,8 @@ export function BrisaApp() {
               title={ti('self.updateAvailable', state.self.latest)}
               onClick={doSelfUpdate}
             >
-              ⬆ {ti('self.updateBtn', state.self.latest)}
+              <MaterialIcon name="upload" size={14} weight={600} />{' '}
+              {ti('self.updateBtn', state.self.latest)}
             </button>
           )}
           {state?.self?.available && state.self.notes && (
@@ -552,29 +587,29 @@ export function BrisaApp() {
                 setChangelogOpen(true);
               }}
             >
-              📝
+              <MaterialIcon name="description" size={16} />
             </button>
           )}
           <button class="btn ghost" onClick={loadState}>
-            {ti('btn.refresh')}
-          </button>
+            <MaterialIcon name="refresh" size={14} /> {ti('btn.refresh')}
+          </button>{' '}
           <button
-            class="btn ghost sm"
-            title="Game Mode"
+            class="btn ghost sm icon-btn"
+            title={ti('btn.gameMode')}
             onClick={() => {
               const url = new URL(window.location.href);
               url.searchParams.set('gamemode', '');
               window.location.href = url.toString();
             }}
           >
-            🎮
+            <MaterialIcon name="sports_esports" size={16} />
           </button>
           <button
-            class="btn ghost sm settings-btn"
+            class="btn ghost sm icon-btn"
             title={ti('settings.title')}
             onClick={() => setSettingsOpen(true)}
           >
-            ⚙️
+            <MaterialIcon name="settings" size={16} />
           </button>
         </div>
       </header>
@@ -668,7 +703,7 @@ export function BrisaApp() {
                         }
                       }}
                     >
-                      ▦
+                      <MaterialIcon name="grid_view" size={14} />
                     </button>
                     <button
                       class={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
@@ -682,7 +717,7 @@ export function BrisaApp() {
                         }
                       }}
                     >
-                      ☰
+                      <MaterialIcon name="view_list" size={14} />
                     </button>
                   </div>
                 </div>
@@ -704,6 +739,7 @@ export function BrisaApp() {
                       onUninstall={uninstallPort}
                       onOpenFolder={openPortFolder}
                       onOpenMods={openPortModsFolder}
+                      onOpenModsList={openModsModal}
                       onToggleMod={toggleMod}
                       onCancelTask={cancelTask}
                     />
@@ -754,7 +790,7 @@ export function BrisaApp() {
                     }
                   }}
                 >
-                  ▦
+                  <MaterialIcon name="grid_view" size={14} />
                 </button>
                 <button
                   class={`view-btn ${romsViewMode === 'list' ? 'active' : ''}`}
@@ -768,7 +804,7 @@ export function BrisaApp() {
                     }
                   }}
                 >
-                  ☰
+                  <MaterialIcon name="view_list" size={14} />
                 </button>
               </div>
             </div>
@@ -811,7 +847,9 @@ export function BrisaApp() {
           <div id="help-steps" class="help-grid">
             {helpSteps.map((step, i) => (
               <div key={i} class="help-card">
-                <div class="help-icon">{step.icon || '•'}</div>
+                <div class="help-icon">
+                  <MaterialIcon name={step.icon || 'help'} size={22} />
+                </div>
                 <div class="help-body">
                   <h3 class="help-card-title">{step.title}</h3>
                   <p class="help-card-text">{step.text}</p>
@@ -852,7 +890,7 @@ export function BrisaApp() {
               title={ti('settings.close')}
               onClick={() => setSettingsOpen(false)}
             >
-              ✕
+              <MaterialIcon name="close" size={16} />
             </button>
           </div>
           <div id="settings-modal-body" class="modal-body">
@@ -882,7 +920,7 @@ export function BrisaApp() {
                   aria-pressed={currentTheme === 'light'}
                   onClick={() => applyTheme('light')}
                 >
-                  ☀️ {ti('settings.themeLight')}
+                  <MaterialIcon name="light_mode" size={14} /> {ti('settings.themeLight')}
                 </button>
                 <button
                   class={`seg-btn ${currentTheme === 'dark' ? 'active' : ''}`}
@@ -890,7 +928,7 @@ export function BrisaApp() {
                   aria-pressed={currentTheme === 'dark'}
                   onClick={() => applyTheme('dark')}
                 >
-                  🌙 {ti('settings.themeDark')}
+                  <MaterialIcon name="dark_mode" size={14} /> {ti('settings.themeDark')}
                 </button>
               </div>
             </div>
@@ -911,7 +949,7 @@ export function BrisaApp() {
           <div class="modal-head">
             <h3>{ti('changelog.title')}</h3>
             <button class="modal-close" onClick={() => setChangelogOpen(false)}>
-              ✕
+              <MaterialIcon name="close" size={16} />
             </button>
           </div>
           <div class="modal-body changelog-body">
@@ -937,10 +975,83 @@ export function BrisaApp() {
         </div>
       </div>
 
+      {/* Mods Modal */}
+      {modsPort && (
+        <div
+          class="modal-overlay show"
+          role="dialog"
+          aria-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setModsPortId(null);
+          }}
+        >
+          <div class="modal modal-mods">
+            <div class="modal-head">
+              <h3>{ti('mod.modalTitle', modsPort.manifest.name)}</h3>
+              <button
+                class="modal-close"
+                title={ti('mod.close')}
+                onClick={() => setModsPortId(null)}
+              >
+                <MaterialIcon name="close" size={16} />
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="mod-row mod-row-modal">
+                <button
+                  class="btn ghost sm"
+                  disabled={modsPort.mods.length === 0}
+                  onClick={() => setAllMods(modsPort, true)}
+                >
+                  {ti('mod.enableAll')}
+                </button>
+                <button
+                  class="btn ghost sm"
+                  disabled={modsPort.mods.length === 0}
+                  onClick={() => setAllMods(modsPort, false)}
+                >
+                  {ti('mod.disableAll')}
+                </button>
+                <span class="spacer" />
+                <button
+                  class="btn ghost sm"
+                  title={ti('mod.addModsHint', modsPort.modsRoot)}
+                  onClick={() => openPortModsFolder(modsPort)}
+                >
+                  {ti('mod.addMods')}
+                </button>
+              </div>
+              {modsPort.mods.length === 0 ? (
+                <p class="mods-empty">{ti('mod.empty')}</p>
+              ) : (
+                <div class="mod-row mod-row-modal mods-list">
+                  {modsPort.mods.map((mod) => (
+                    <BrisaModChip
+                      key={mod}
+                      name={mod}
+                      linked={modsPort.linkedMods.includes(mod)}
+                      portId={modsPort.manifest.id}
+                      onToggle={toggleMod}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div class="modal-foot">
+              <button class="btn ghost sm" onClick={() => setModsPortId(null)}>
+                {ti('mod.close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Drop overlay */}
       <div id="drop-overlay" class={`drop-overlay ${dropVisible ? 'show' : ''}`}>
         <div class="drop-box">
-          <div class="drop-icon">📥</div>
+          <div class="drop-icon">
+            <MaterialIcon name="download" size={44} weight={300} />
+          </div>
           <div class="drop-title">{ti('roms.dropTitle')}</div>
           <div class="drop-hint">{ti('roms.dropHint')}</div>
         </div>

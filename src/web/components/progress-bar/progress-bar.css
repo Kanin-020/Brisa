@@ -1,15 +1,21 @@
+/* Progress — flat indigo fill on hairline track, panel on lilac wash */
 .progress {
   height: 6px;
-  background: var(--bg-soft);
-  border-radius: 999px;
+  background: var(--color-mist-border);
+  border-radius: var(--radius-pill);
   overflow: hidden;
   flex: 1;
 }
 
+[data-theme='dark'] .progress {
+  background: var(--border);
+}
+
 .progress .bar {
   height: 100%;
+  border-radius: inherit;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent-2), var(--purple));
+  background: var(--color-iris-bolt);
   transition: width 0.25s ease;
 }
 
@@ -32,35 +38,85 @@
   flex-direction: column;
   gap: 8px;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg-soft);
-  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  background: var(--color-lilac-wash);
+  padding: 12px 14px;
   animation: help-pop 0.2s ease;
 }
 
-.progress-stage {
+[data-theme='dark'] .progress-wrap {
+  background: var(--bg-soft);
+}
+
+/* Info row: stage text left, cancel right (markup: .progress-info > .stage + .cancel-btn) */
+.progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.progress-info .stage {
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--color-slate-veil);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.progress-wrap .cancel-btn {
-  align-self: flex-end;
-  padding: 4px 12px;
+/* Legacy/back-compat selector (global task bar) */
+.progress-stage {
+  font-size: 11px;
+  color: var(--color-slate-veil);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Cancel — ghost outlined button, same pill as all .btn variants */
+.cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--color-paper-white);
+  color: var(--color-slate-veil);
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-caption);
+  line-height: 1.2;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cancel-btn:hover {
+  color: var(--red);
+  border-color: var(--red);
+}
+
+.cancel-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .global-task {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--bg-soft);
+  background: var(--color-lilac-wash);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  padding: 12px 16px;
   margin-bottom: 18px;
   animation: help-pop 0.2s ease;
+}
+
+[data-theme='dark'] .global-task {
+  background: var(--bg-soft);
 }
 
 .global-task[hidden] {
@@ -73,8 +129,4 @@
 
 .global-task .progress-stage {
   flex: 0 1 auto;
-}
-
-.global-task .cancel-btn {
-  padding: 4px 12px;
 }

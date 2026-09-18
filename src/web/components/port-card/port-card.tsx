@@ -2,6 +2,7 @@ import { h, Fragment } from 'preact';
 import { t, MAX_MODS_INLINE } from '../../helpers';
 import { BrisaModChip } from './mod-chip';
 import { BrisaProgressBar } from '../progress-bar/progress-bar';
+import { MaterialIcon } from '../icons';
 import type { PortCardProps } from '../../types';
 
 export function BrisaPortCard({
@@ -15,6 +16,7 @@ export function BrisaPortCard({
   onUninstall,
   onOpenFolder,
   onOpenMods,
+  onOpenModsList,
   onToggleMod,
   onCancelTask,
 }: PortCardProps) {
@@ -58,7 +60,8 @@ export function BrisaPortCard({
           )}
           {port.updateAvailable && port.updateInfo && (
             <span class="badge update">
-              ⬆ {port.updateInfo.installed} → {port.updateInfo.latest}
+              <MaterialIcon name="upload" size={12} /> {port.updateInfo.installed}
+              <MaterialIcon name="arrow_right_alt" size={12} /> {port.updateInfo.latest}
             </span>
           )}
         </div>
@@ -93,8 +96,8 @@ export function BrisaPortCard({
               onToggle={onToggleMod}
             />
           ))}
-          {port.mods.length > MAX_MODS_INLINE && (
-            <button class="btn ghost sm" onClick={() => onOpenMods?.(port)}>
+          {port.mods.length > 0 && (
+            <button class="btn ghost sm" onClick={() => onOpenModsList?.(port)}>
               {t('mod.openAll', port.mods.length)}
             </button>
           )}
@@ -140,7 +143,7 @@ export function BrisaPortCard({
               </button>
             )}
             <button class="btn green sm" disabled={isBusy} onClick={() => onLaunch?.(port)}>
-              {t('port.launch')}
+              <MaterialIcon name="play_arrow" size={14} filled weight={500} /> {t('port.launch')}
             </button>
           </Fragment>
         ) : (

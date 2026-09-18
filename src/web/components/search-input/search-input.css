@@ -1,3 +1,4 @@
+/* Section head + search — Quizlet-style pill search on canvas background */
 .section {
   margin-bottom: 36px;
 }
@@ -6,17 +7,20 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
 .section-head h2 {
-  font-size: 18px;
+  font-size: var(--text-subheading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
+  line-height: var(--leading-subheading);
 }
 
 .hint {
-  color: var(--text-dim);
-  font-size: 12px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-caption);
 }
 
 .section-tools {
@@ -26,55 +30,78 @@
   gap: 8px;
 }
 
+/* Search — pill input; white surface + hairline so it reads on the canvas */
 .search-input {
-  background: var(--bg-soft);
+  background: var(--color-paper-white);
   border: 1px solid var(--border);
-  color: var(--text);
-  font-size: 13px;
-  padding: 7px 12px;
-  border-radius: 10px;
+  color: var(--color-ink-charcoal);
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
   outline: none;
   width: 230px;
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .search-input::placeholder {
-  color: var(--text-dim);
+  color: var(--color-fog-mist);
 }
 
 .search-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+  border-color: var(--color-iris-bolt);
+  box-shadow: var(--focus-ring);
 }
 
+[data-theme='dark'] .search-input {
+  background: var(--bg-soft);
+}
+[data-theme='dark'] .search-input:focus {
+  background: var(--card);
+}
+
+/* View toggle — small segmented utility control, 4px radius (not pill) */
 .view-toggle {
   display: flex;
   gap: 2px;
-  background: var(--bg-soft);
+  background: var(--color-chalk-canvas);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 3px;
+}
+
+[data-theme='dark'] .view-toggle {
+  background: var(--bg-soft);
 }
 
 .view-btn {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-slate-veil);
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
-  padding: 5px 9px;
-  border-radius: 7px;
-  transition: all 0.15s ease;
+  padding: 5px 10px;
+  border-radius: 3px;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .view-btn:hover {
-  color: var(--text);
+  color: var(--color-ink-charcoal);
+}
+
+.view-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .view-btn.active {
-  background: var(--accent-2);
-  color: #fff;
+  background: var(--color-paper-white);
+  color: var(--color-iris-bolt);
+  box-shadow: var(--shadow-subtle);
 }

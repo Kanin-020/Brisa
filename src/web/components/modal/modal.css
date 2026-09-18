@@ -1,9 +1,10 @@
+/* Modal — paper white surface, 8px radius, gentle md elevation */
 .modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(3px);
+  background: rgba(40, 46, 62, 0.45);
+  backdrop-filter: blur(2px);
   display: grid;
   place-items: center;
   padding: 20px;
@@ -18,10 +19,10 @@
 }
 
 .modal {
-  background: var(--card);
+  background: var(--color-paper-white);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   width: min(600px, 100%);
   max-height: 80vh;
   display: flex;
@@ -38,34 +39,44 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 18px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border);
 }
 
 .modal-head h3 {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
 }
 
 .modal-close {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-slate-veil);
   cursor: pointer;
   font-size: 14px;
-  padding: 5px 9px;
-  border-radius: 8px;
-  transition: all 0.15s ease;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .modal-close:hover {
-  color: var(--text);
-  background: var(--card-hover);
+  color: var(--color-ink-charcoal);
+  background: var(--bg-soft);
 }
 
 .modal-body {
-  padding: 16px 18px;
+  padding: 18px 20px;
   overflow-y: auto;
+  color: var(--color-ink-charcoal);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
 }
 
 .modal-confirm {
@@ -76,7 +87,7 @@
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  padding: 14px 18px;
+  padding: 14px 20px;
   border-top: 1px solid var(--border);
 }
 
@@ -93,25 +104,31 @@
 }
 
 .changelog-app {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
 }
 
 .changelog-notes {
-  background: var(--bg-soft);
+  background: var(--color-chalk-canvas);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 14px 16px;
   max-height: 45vh;
   overflow-y: auto;
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   line-height: 1.6;
 }
 
+[data-theme='dark'] .changelog-notes {
+  background: var(--bg-soft);
+}
+
 .changelog-h {
-  font-size: 13px;
+  font-size: var(--text-body-sm);
   margin: 10px 0 4px;
-  color: var(--accent);
+  color: var(--color-iris-bolt);
+  font-weight: var(--font-weight-semibold);
 }
 
 .changelog-h:first-child {
@@ -127,6 +144,25 @@
 }
 
 .changelog-empty {
-  color: var(--text-dim);
-  font-size: 13px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-body-sm);
+}
+
+/* Mods modal — full chip list with bulk actions */
+.modal-mods {
+  width: min(560px, 100%);
+}
+
+.modal-mods .mods-list {
+  margin-top: 14px;
+  max-height: 45vh;
+  overflow-y: auto;
+  align-content: flex-start;
+}
+
+.mods-empty {
+  color: var(--color-slate-veil);
+  font-size: var(--text-body-sm);
+  line-height: 1.5;
+  margin-top: 14px;
 }

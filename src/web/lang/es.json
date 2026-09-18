@@ -1,7 +1,7 @@
 {
   "brand.title": "Brisa",
   "brand.tagline": "Gestor de ports nativos de PC",
-  "btn.refresh": "⟳ Refrescar",
+  "btn.refresh": "Refrescar",
 
   "stat.roms": "ROMs",
   "stat.installed": "Ports instalados",
@@ -33,9 +33,11 @@
   "roms.delete": "Eliminar ROM",
   "roms.deleteConfirm": "¿Eliminar \"{0}\" de la carpeta de ROMs? Esta acción no se puede deshacer.",
   "roms.dropTitle": "Suelta los ROMs aquí",
+  "btn.gameMode": "Game Mode",
   "roms.dropHint": "Se copiarán a la carpeta de ROMs de Brisa",
 
   "port.install": "Instalar",
+  "port.stop": "Detener",
   "port.installNoRom": "Instalar (sin ROM)",
   "port.uninstall": "Desinstalar",
   "confirm.uninstallTitle": "Desinstalar port",
@@ -44,60 +46,61 @@
   "confirm.uninstall": "Desinstalar",
   "port.update": "Actualizar",
   "port.updateAndPlay": "Actualizar y jugar",
-  "port.launch": "▶ Jugar",
-  "port.romOk": "ROM ✓",
-  "port.romMissing": "ROM ✗",
+  "port.launch": "Jugar",
+  "port.stop": "Detener",
+  "port.romOk": "ROM lista",
+  "port.romMissing": "ROM pendiente",
   "port.optional": "(opcional)",
-  "port.openFolder": "🗀 Abrir archivos",
+  "port.openFolder": "Abrir archivos",
   "port.openFolderHint": "Abre la carpeta del port en el gestor de archivos",
   "port.sourceHint": "Abrir el repositorio en el navegador ({0})",
 
   "mod.unlink": "Desenlazar",
   "mod.link": "Enlazar",
   "mod.openAll": "Abrir mods ({0})",
-  "mod.addMods": "＋ Añadir mods",
+  "mod.addMods": "Añadir mods",
   "mod.addModsHint": "Abrir carpeta de mods: {0}",
   "mod.modalTitle": "Mods de {0}",
-  "mod.enableAll": "✓ Habilitar todos",
-  "mod.disableAll": "✕ Deshabilitar todos",
+  "mod.enableAll": "Habilitar todos",
+  "mod.disableAll": "Deshabilitar todos",
   "mod.close": "Cerrar",
 
   "self.version": "Brisa v{0}",
-  "self.updateBtn": "⬆ Actualizar Brisa v{0}",
+  "self.updateBtn": "Actualizar Brisa v{0}",
   "self.updateAvailable": "Nueva versión de Brisa disponible: v{0}",
 
-  "toast.selfAvailable": "⬆ Brisa v{0} disponible. Haz clic para actualizar",
+  "toast.selfAvailable": "Brisa v{0} disponible. Haz clic para actualizar",
   "toast.selfUpdating": "Descargando Brisa v{0}…",
-  "toast.selfUpdated": "✓ Brisa v{0} lista. La app se cerrará y se relanzará sola.",
+  "toast.selfUpdated": "Brisa v{0} lista. La app se cerrará y se relanzará sola.",
 
   "toast.installing": "Instalando {0}…",
-  "toast.installed": "✓ {0} v{1} instalado",
-  "toast.uninstalled": "✓ {0} desinstalado",
-  "toast.updated": "✓ {0} → {1}",
-  "toast.cancelled": "✕ {0}: operación cancelada",
-  "toast.updatedAll": "✓ {0} ports actualizados",
+  "toast.installed": "{0} v{1} instalado",
+  "toast.uninstalled": "{0} desinstalado",
+  "toast.updated": "{0} actualizado a {1}",
+  "toast.cancelled": "{0}: operación cancelada",
+  "toast.updatedAll": "{0} ports actualizados",
   "toast.updatingAll": "Actualizando todos los ports…",
   "toast.error": "Error",
   "toast.launching": "Lanzando {0}…",
-  "toast.copied": "✓ Hash copiado al portapapeles",
-  "toast.updateAvailable": "⚠ {0}: hay versión nueva {2} (instalada: {1}). Haz clic para actualizar",
+  "toast.copied": "Hash copiado al portapapeles",
+  "toast.updateAvailable": "{0}: hay versión nueva {2} (instalada: {1}). Haz clic para actualizar",
   "toast.modUnlinked": "Mod \"{0}\" desenlazado",
   "toast.modLinked": "Mod \"{0}\" enlazado",
-  "toast.modsEnabledAll": "✓ {0} mods habilitados",
-  "toast.modsDisabledAll": "✓ {0} mods deshabilitados",
+  "toast.modsEnabledAll": "{0} mods habilitados",
+  "toast.modsDisabledAll": "{0} mods deshabilitados",
   "toast.uploading": "Subiendo {0}",
-  "toast.romsAdded": "✓ {0} ROMs añadidos",
-  "toast.romsSkipped": "⏭ {0} ya existían (sin cambios)",
-  "toast.romDeleted": "✓ {0} eliminado",
-  "toast.manifestsExported": "✓ {0} manifiestos exportados (.zip)",
-  "toast.manifestsImported": "✓ {0} manifiestos importados",
+  "toast.romsAdded": "{0} ROMs añadidos",
+  "toast.romsSkipped": "{0} ya existían (sin cambios)",
+  "toast.romDeleted": "{0} eliminado",
+  "toast.manifestsExported": "{0} manifiestos exportados (.zip)",
+  "toast.manifestsImported": "{0} manifiestos importados",
   "toast.importError": "Error al importar",
 
-  "btn.addRoms": "＋ Añadir ROMs",
-  "btn.openAppFolder": "🗀 Archivos del programa",
-  "btn.exportManifests": "⬆ Exportar manifiestos",
-  "btn.importManifests": "⬇ Importar manifiestos",
-  "btn.updateAll": "⬆ Actualizar todos",
+  "btn.addRoms": "Añadir ROMs",
+  "btn.openAppFolder": "Archivos del programa",
+  "btn.exportManifests": "Exportar manifiestos",
+  "btn.importManifests": "Importar manifiestos",
+  "btn.updateAll": "Actualizar todos",
   "btn.updateAllHint": "Actualizar todos los ports ({0} pendientes)",
 
   "task.cancel": "Cancelar",
@@ -122,12 +125,12 @@
   "changelog.empty": "Esta release no incluye notas.",
   "changelog.close": "Cerrar",
 
-  "notify.installDone": "✓ {0} v{1} instalado",
-  "notify.updateDone": "✓ {0} actualizado a v{1}",
-  "notify.updatedAll": "✓ {0} ports actualizados",
-  "notify.error": "✗ {0}: error",
+  "notify.installDone": "{0} v{1} instalado",
+  "notify.updateDone": "{0} actualizado a v{1}",
+  "notify.updatedAll": "{0} ports actualizados",
+  "notify.error": "{0}: error",
 
-  "footer.madeWith": "Hecho con ♥",
+  "footer.madeWith": "Hecho con cariño",
   "footer.legal": "Los ROMs deben obtenerse legalmente",
   "footer.romsDir": "ROMs",
 
@@ -136,42 +139,42 @@
   "help.welcome": "¡Bienvenido a Brisa!",
   "help.steps": [
     {
-      "icon": "📥",
+      "icon": "download",
       "title": "Añade tus ROMs",
-      "text": "En la pestaña ROMs, suelta tus archivos en cualquier parte de la ventana o pulsa «＋ Añadir ROMs». Se copiarán a la carpeta de ROMs de Brisa."
+      "text": "En la pestaña ROMs, suelta tus archivos en cualquier parte de la ventana o pulsa «Añadir ROMs». Se copiarán a la carpeta de ROMs de Brisa."
     },
     {
-      "icon": "🔍",
+      "icon": "search",
       "title": "Revisa las coincidencias",
       "text": "Cada ROM muestra un chip verde por cada port compatible (uno por port, o por requisito en ports multi-ROM). Si un ROM no coincide con nada, se muestra el chip rojo «Sin coincidencias»."
     },
     {
-      "icon": "⬇",
+      "icon": "download",
       "title": "Instala un port",
-      "text": "Ve a la pestaña Ports disponibles, asegúrate de que el requisito de ROM esté en verde (✓) y pulsa «Instalar». Si falta la ROM puedes instalarlo igualmente, pero no se lanzará hasta que la añadas."
+      "text": "Ve a la pestaña Ports disponibles, asegúrate de que el requisito de ROM esté en verde y pulsa «Instalar». Si falta la ROM puedes instalarlo igualmente, pero no se lanzará hasta que la añadas."
     },
     {
-      "icon": "▶",
+      "icon": "play_arrow",
       "title": "Juega y actualiza",
-      "text": "Pulsa «Jugar» para lanzar el port. Cuando haya una actualización verás un chip naranja (⬆ 1.2.3 → 1.4.0): pulsa «Actualizar» o «Actualizar y jugar»."
+      "text": "Pulsa «Jugar» para lanzar el port. Cuando haya una actualización verás un chip naranja (de 1.2.3 a 1.4.0): pulsa «Actualizar» o «Actualizar y jugar»."
     },
     {
-      "icon": "🎮",
+      "icon": "sports_esports",
       "title": "Gestiona mods",
-      "text": "«＋ Añadir mods» abre la carpeta de mods del port. Los mods aparecen como chips en la tarjeta: pulsa ＋ para activar uno o ✕ para desactivarlo. «Abrir mods» muestra la lista completa."
+      "text": "«Añadir mods» abre la carpeta de mods del port. Los mods aparecen como chips en la tarjeta: usa el botón del chip para activarlo o desactivarlo. «Abrir mods» muestra la lista completa."
     },
     {
-      "icon": "🖥",
+      "icon": "desktop_windows",
       "title": "Añade ports a Steam",
       "text": "Cada port instalado recibe un launcher (.sh / .cmd) en la carpeta launchers de Brisa. Añade esos archivos a Steam como juegos no-Steam; se mantienen actualizados automáticamente."
     },
     {
-      "icon": "🗀",
+      "icon": "folder_open",
       "title": "Abrir archivos",
       "text": "«Abrir archivos» muestra la carpeta del port instalado en tu gestor de archivos. Pulsar el icono del port abre su repositorio en el navegador."
     }
   ],
-  "help.legal": "⚠ Los ROMs deben obtenerse legalmente: usa solo copias de juegos que poseas.",
+  "help.legal": "Los ROMs deben obtenerse legalmente: usa solo copias de juegos que poseas.",
   "help.finish": "¡Vamos allá!",
 
   "loading": "Cargando…",

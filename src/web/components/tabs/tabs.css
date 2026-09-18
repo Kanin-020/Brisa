@@ -1,8 +1,9 @@
+/* Tabs — pill-shaped tab buttons with the single indigo accent on active */
 .tabs-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
@@ -10,48 +11,58 @@
   display: flex;
   gap: 4px;
   flex-wrap: wrap;
-  background: var(--bg-soft);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0;
 }
 
 .tab-btn {
-  background: none;
+  background: transparent;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-slate-veil);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 8px 14px;
-  border-radius: 9px;
+  font-family: inherit;
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-regular);
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .tab-btn:hover {
-  color: var(--text);
-  background: var(--card-hover);
+  color: var(--color-ink-charcoal);
+  background: var(--bg-soft);
+}
+
+.tab-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .tab-btn.active {
-  background: var(--accent-2);
-  color: #fff;
+  background: var(--color-iris-bolt);
+  color: #ffffff;
+  font-weight: var(--font-weight-semibold);
 }
 
 .tab-count {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
   line-height: 1;
-  background: var(--card-hover);
-  border-radius: 999px;
-  padding: 3px 7px;
+  background: var(--bg-soft);
+  border-radius: var(--radius-pill);
+  padding: 3px 8px;
 }
 
 .tab-btn.active .tab-count {
   background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
 }
 
 .tabs-actions {

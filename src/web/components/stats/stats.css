@@ -1,39 +1,45 @@
+/* Stats — Study-set style summary cards: white surface, 8px radius, ink numerals */
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 28px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-card {
-  background: var(--card);
+  background: var(--color-paper-white);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px 20px;
-  text-align: center;
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
   transition:
-    transform 0.15s ease,
-    border-color 0.15s ease;
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent);
+  border-color: var(--color-fog-mist);
+  box-shadow: var(--shadow-md);
 }
 
 .stat-value {
-  font-size: 30px;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--accent), var(--purple));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  font-size: var(--text-heading-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
+  line-height: var(--leading-heading-sm);
+}
+
+.stat-value,
+.stat-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .stat-label {
-  color: var(--text-dim);
-  font-size: 12px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-regular);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   margin-top: 4px;
 }

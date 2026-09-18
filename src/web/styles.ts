@@ -1,4 +1,5 @@
 // Global + Component CSS imports — esbuild bundles these into bundle.css
+import 'material-symbols/outlined.css';
 import './style.css';
 import './components/topbar/topbar.css';
 import './components/stats/stats.css';

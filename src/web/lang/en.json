@@ -1,7 +1,8 @@
 {
   "brand.title": "Brisa",
   "brand.tagline": "Native PC port manager",
-  "btn.refresh": "⟳ Refresh",
+  "btn.refresh": "Refresh",
+  "btn.gameMode": "Game Mode",
 
   "stat.roms": "ROMs",
   "stat.installed": "Installed ports",
@@ -44,60 +45,61 @@
   "confirm.uninstall": "Uninstall",
   "port.update": "Update",
   "port.updateAndPlay": "Update and play",
-  "port.launch": "▶ Play",
-  "port.romOk": "ROM ✓",
-  "port.romMissing": "ROM ✗",
+  "port.launch": "Play",
+  "port.stop": "Stop",
+  "port.romOk": "ROM ready",
+  "port.romMissing": "ROM missing",
   "port.optional": "(optional)",
-  "port.openFolder": "🗀 Open files",
+  "port.openFolder": "Open files",
   "port.openFolderHint": "Opens the port's folder in your file manager",
   "port.sourceHint": "Open the repository in your browser ({0})",
 
   "mod.unlink": "Unlink",
   "mod.link": "Link",
   "mod.openAll": "Open mods ({0})",
-  "mod.addMods": "＋ Add mods",
+  "mod.addMods": "Add mods",
   "mod.addModsHint": "Open mods folder: {0}",
   "mod.modalTitle": "Mods of {0}",
-  "mod.enableAll": "✓ Enable all",
-  "mod.disableAll": "✕ Disable all",
+  "mod.enableAll": "Enable all",
+  "mod.disableAll": "Disable all",
   "mod.close": "Close",
 
   "self.version": "Brisa v{0}",
-  "self.updateBtn": "⬆ Update Brisa v{0}",
+  "self.updateBtn": "Update Brisa v{0}",
   "self.updateAvailable": "New Brisa version available: v{0}",
 
-  "toast.selfAvailable": "⬆ Brisa v{0} available. Click to update",
+  "toast.selfAvailable": "Brisa v{0} available. Click to update",
   "toast.selfUpdating": "Downloading Brisa v{0}…",
-  "toast.selfUpdated": "✓ Brisa v{0} ready. The app will close and reopen automatically.",
+  "toast.selfUpdated": "Brisa v{0} ready. The app will close and reopen automatically.",
 
   "toast.installing": "Installing {0}…",
-  "toast.installed": "✓ {0} v{1} installed",
-  "toast.uninstalled": "✓ {0} uninstalled",
-  "toast.updated": "✓ {0} → {1}",
-  "toast.cancelled": "✕ {0}: operation cancelled",
-  "toast.updatedAll": "✓ {0} ports updated",
+  "toast.installed": "{0} v{1} installed",
+  "toast.uninstalled": "{0} uninstalled",
+  "toast.updated": "{0} updated to {1}",
+  "toast.cancelled": "{0}: operation cancelled",
+  "toast.updatedAll": "{0} ports updated",
   "toast.updatingAll": "Updating all ports…",
   "toast.error": "Error",
   "toast.launching": "Launching {0}…",
-  "toast.copied": "✓ Hash copied to clipboard",
-  "toast.updateAvailable": "⚠ {0}: new version {2} available (installed: {1}). Click to update",
+  "toast.copied": "Hash copied to clipboard",
+  "toast.updateAvailable": "{0}: new version {2} available (installed: {1}). Click to update",
   "toast.modUnlinked": "Mod \"{0}\" unlinked",
   "toast.modLinked": "Mod \"{0}\" linked",
-  "toast.modsEnabledAll": "✓ {0} mods enabled",
-  "toast.modsDisabledAll": "✓ {0} mods disabled",
+  "toast.modsEnabledAll": "{0} mods enabled",
+  "toast.modsDisabledAll": "{0} mods disabled",
   "toast.uploading": "Uploading {0}",
-  "toast.romsAdded": "✓ {0} ROMs added",
-  "toast.romsSkipped": "⏭ {0} already exist (unchanged)",
-  "toast.romDeleted": "✓ {0} deleted",
-  "toast.manifestsExported": "✓ {0} manifests exported (.zip)",
-  "toast.manifestsImported": "✓ {0} manifests imported",
+  "toast.romsAdded": "{0} ROMs added",
+  "toast.romsSkipped": "{0} already exist (unchanged)",
+  "toast.romDeleted": "{0} deleted",
+  "toast.manifestsExported": "{0} manifests exported (.zip)",
+  "toast.manifestsImported": "{0} manifests imported",
   "toast.importError": "Import error",
 
-  "btn.addRoms": "＋ Add ROMs",
-  "btn.openAppFolder": "🗀 Program files",
-  "btn.exportManifests": "⬆ Export manifests",
-  "btn.importManifests": "⬇ Import manifests",
-  "btn.updateAll": "⬆ Update all",
+  "btn.addRoms": "Add ROMs",
+  "btn.openAppFolder": "Program files",
+  "btn.exportManifests": "Export manifests",
+  "btn.importManifests": "Import manifests",
+  "btn.updateAll": "Update all",
   "btn.updateAllHint": "Update all ports ({0} pending)",
 
   "task.cancel": "Cancel",
@@ -122,12 +124,12 @@
   "changelog.empty": "This release has no release notes.",
   "changelog.close": "Close",
 
-  "notify.installDone": "✓ {0} v{1} installed",
-  "notify.updateDone": "✓ {0} updated to v{1}",
-  "notify.updatedAll": "✓ {0} ports updated",
-  "notify.error": "✗ {0}: error",
+  "notify.installDone": "{0} v{1} installed",
+  "notify.updateDone": "{0} updated to v{1}",
+  "notify.updatedAll": "{0} ports updated",
+  "notify.error": "{0}: error",
 
-  "footer.madeWith": "Made with ♥",
+  "footer.madeWith": "Made with care",
   "footer.legal": "ROMs must be obtained legally",
   "footer.romsDir": "ROMs",
 
@@ -136,42 +138,42 @@
   "help.welcome": "Welcome to Brisa!",
   "help.steps": [
     {
-      "icon": "📥",
+      "icon": "download",
       "title": "Add your ROMs",
-      "text": "In the ROMs tab, drop your files anywhere in the window or click \"＋ Add ROMs\". They will be copied to Brisa's ROMs folder."
+      "text": "In the ROMs tab, drop your files anywhere in the window or click \"Add ROMs\". They will be copied to Brisa's ROMs folder."
     },
     {
-      "icon": "🔍",
+      "icon": "search",
       "title": "Check the matches",
       "text": "Each ROM shows a green chip for every compatible port (one per port, or per requirement in multi-ROM ports). If a ROM matches nothing, it shows a red \"No matches\" chip."
     },
     {
-      "icon": "⬇",
+      "icon": "download",
       "title": "Install a port",
-      "text": "Go to the Available ports tab, make sure the ROM requirement is green (✓), and click \"Install\". If the ROM is missing you can still install, but the port won't run until you add it."
+      "text": "Go to the Available ports tab, make sure the ROM requirement is green, and click \"Install\". If the ROM is missing you can still install, but the port won't run until you add it."
     },
     {
-      "icon": "▶",
+      "icon": "play_arrow",
       "title": "Play and update",
-      "text": "Click \"Play\" to launch the port. When an update is available you'll see an orange chip (⬆ 1.2.3 → 1.4.0): click \"Update\" or \"Update and play\"."
+      "text": "Click \"Play\" to launch the port. When an update is available you'll see an orange chip (from 1.2.3 to 1.4.0): click \"Update\" or \"Update and play\"."
     },
     {
-      "icon": "🎮",
+      "icon": "sports_esports",
       "title": "Manage mods",
-      "text": "\"＋ Add mods\" opens the port's mods folder. Mods appear as chips in the card: click ＋ to enable one or ✕ to disable it. \"Open mods\" shows the full list."
+      "text": "\"Add mods\" opens the port's mods folder. Mods appear as chips in the card: use the chip button to enable or disable each one. \"Open mods\" shows the full list."
     },
     {
-      "icon": "🖥",
+      "icon": "desktop_windows",
       "title": "Add ports to Steam",
       "text": "Each installed port gets a launcher (.sh / .cmd) in Brisa's launchers folder. Add those files to Steam as non-Steam games; they stay up to date automatically."
     },
     {
-      "icon": "🗀",
+      "icon": "folder_open",
       "title": "Open files",
       "text": "\"Open files\" shows the installed port's folder in your file manager. Clicking the port's icon opens its repository in your browser."
     }
   ],
-  "help.legal": "⚠ ROMs must be obtained legally: only use copies of games you own.",
+  "help.legal": "ROMs must be obtained legally: only use copies of games you own.",
   "help.finish": "Let's go!",
 
   "loading": "Loading…",

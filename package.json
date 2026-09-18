@@ -1,6 +1,6 @@
 {
   "name": "brisa",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Recopilador y gestor de ports nativos de PC al estilo EmuDeck, basado en manifiestos.",
   "license": "Apache-2.0",
   "author": "Kanin",
@@ -34,6 +34,7 @@
   "dependencies": {
     "adm-zip": "^0.5.16",
     "commander": "^12.1.0",
+    "material-symbols": "^0.47.4",
     "preact": "^10.29.8",
     "tar": "^6.2.1"
   },

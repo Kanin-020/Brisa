@@ -1,3 +1,4 @@
+/* ROM cards — study set cards with hairline border and soft elevation on hover */
 .roms-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -10,55 +11,61 @@
 }
 
 .rom-card {
-  background: var(--card);
+  background: var(--color-paper-white);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   transition:
-    transform 0.15s ease,
     border-color 0.15s ease,
     box-shadow 0.15s ease;
   position: relative;
   overflow: hidden;
 }
 
-.rom-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--green), var(--accent));
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
 .rom-card:hover {
-  transform: translateY(-3px);
-  border-color: #3d444d;
-  box-shadow: var(--shadow);
-}
-
-.rom-card:hover::before {
-  opacity: 1;
+  border-color: var(--color-fog-mist);
+  box-shadow: var(--shadow-md);
 }
 
 .rom-card-head {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .rom-card .rom-name {
   flex: 1;
+  min-width: 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.rom-card .rom-icon {
+  flex-shrink: 0;
+}
+
+.rom-card .rom-meta {
+  min-width: 0;
+}
+
+.rom-card .rom-hash-row {
+  min-width: 0;
+}
+
+.rom-card .rom-hash {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rom-card .copy-btn {
+  flex-shrink: 0;
 }
 
 .rom-card .rom-meta {
@@ -71,8 +78,8 @@
 }
 
 .rom-size {
-  font-size: 12px;
-  color: var(--text-dim);
+  font-size: var(--text-caption);
+  color: var(--color-slate-veil);
 }
 
 .rom-card-foot {
@@ -82,6 +89,14 @@
   margin-top: auto;
   flex-wrap: wrap;
   padding-top: 4px;
+  min-width: 0;
+}
+
+/* Match badges truncate instead of pushing the delete button out */
+.rom-card-foot .badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .rom-card-foot .spacer {
@@ -99,33 +114,34 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background: var(--card);
+  background: var(--color-paper-white);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 14px 18px;
   min-height: 68px;
   transition: border-color 0.15s ease;
 }
 
 .rom-item:hover {
-  border-color: #3d444d;
+  border-color: var(--color-fog-mist);
 }
 
 .rom-icon {
-  font-size: 22px;
+  font-size: 20px;
   flex-shrink: 0;
 }
 
 .rom-name {
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-body-sm);
   flex: 1;
   word-break: break-all;
+  color: var(--color-ink-charcoal);
 }
 
 .rom-meta {
-  color: var(--text-dim);
-  font-size: 12px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-caption);
   text-align: right;
   display: flex;
   flex-direction: column;
@@ -143,25 +159,26 @@
 .rom-hash {
   font-family: ui-monospace, monospace;
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--color-slate-veil);
 }
 
 .copy-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--text-dim);
+  color: var(--color-fog-mist);
   font-size: 12px;
   line-height: 1;
   padding: 3px 6px;
-  border-radius: 6px;
-  transition: all 0.15s ease;
+  border-radius: var(--radius-md);
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
 
 .copy-btn:hover {
-  color: var(--accent);
-  background: rgba(88, 166, 255, 0.12);
-  transform: scale(1.1);
+  color: var(--color-iris-bolt);
+  background: var(--accent-soft);
 }
 
 .copy-btn:active {
@@ -176,5 +193,5 @@
 
 .del-btn:hover {
   color: var(--red);
-  background: rgba(248, 81, 73, 0.12);
+  background: var(--red-soft);
 }

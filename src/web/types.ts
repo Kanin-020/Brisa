@@ -184,6 +184,7 @@ export interface PortCardProps {
   onUninstall?: (port: Port) => void;
   onOpenFolder?: (port: Port) => void;
   onOpenMods?: (port: Port) => void;
+  onOpenModsList?: (port: Port) => void;
   onToggleMod?: (portId: string, mod: string, linked: boolean) => void;
   onCancelTask?: (taskId: string) => void;
 }

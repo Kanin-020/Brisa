@@ -1,3 +1,4 @@
+/* Drop overlay — deep canvas scrim with indigo dashed target */
 .drop-overlay {
   position: fixed;
   inset: 0;
@@ -5,8 +6,8 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(13, 17, 23, 0.72);
-  backdrop-filter: blur(4px);
+  background: rgba(40, 46, 62, 0.55);
+  backdrop-filter: blur(3px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.18s ease;
@@ -18,14 +19,18 @@
 }
 
 .drop-box {
-  border: 2px dashed var(--accent);
-  border-radius: 20px;
+  border: 2px dashed var(--color-iris-bolt);
+  border-radius: var(--radius-lg);
   padding: 48px 72px;
   text-align: center;
-  background: rgba(47, 129, 247, 0.08);
-  box-shadow: var(--shadow);
+  background: var(--color-lilac-wash);
+  box-shadow: var(--shadow-md);
   transform: scale(0.95);
   transition: transform 0.18s ease;
+}
+
+[data-theme='dark'] .drop-box {
+  background: var(--bg-soft);
 }
 
 .drop-overlay.show .drop-box {
@@ -33,7 +38,7 @@
 }
 
 .drop-icon {
-  font-size: 46px;
+  font-size: 44px;
   margin-bottom: 14px;
   animation: drop-bounce 1.2s ease infinite;
 }
@@ -49,12 +54,13 @@
 }
 
 .drop-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: var(--text-subheading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
 }
 
 .drop-hint {
-  color: var(--text-dim);
-  font-size: 13px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-body-sm);
   margin-top: 6px;
 }

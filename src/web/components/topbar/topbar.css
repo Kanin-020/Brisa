@@ -1,25 +1,32 @@
+/* Topbar — Quizlet-style nav bar: white bar, soft md shadow, indigo logo mark */
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 0 22px;
+  gap: 16px;
+  background: var(--color-paper-white);
+  padding: 10px 20px;
+  margin: 0 -20px 24px;
+  border-radius: 0;
+  box-shadow: var(--shadow-md);
+  min-height: 56px;
+  flex-wrap: wrap;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .logo {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-lg);
   display: grid;
   place-items: center;
-  font-size: 28px;
-  box-shadow: var(--shadow);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .logo img {
@@ -30,31 +37,41 @@
 }
 
 .brand h1 {
-  font-size: 24px;
-  letter-spacing: -0.5px;
+  font-size: 20px;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
+  line-height: var(--leading-subheading);
 }
 
 .tagline {
-  color: var(--text-dim);
-  font-size: 13px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
 }
 
 .topbar-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .settings-btn {
-  font-size: 15px;
-  padding: 6px 11px;
+  font-size: 14px;
+  padding: 6px 12px;
 }
 
 .chip {
-  background: var(--bg-soft);
+  background: var(--color-chalk-canvas);
   border: 1px solid var(--border);
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 12px;
-  color: var(--text-dim);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  color: var(--color-slate-veil);
+  white-space: nowrap;
+}
+
+.btn.update-app {
+  background: var(--color-iris-bolt);
+  color: #ffffff;
 }

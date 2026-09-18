@@ -1,4 +1,4 @@
-/* ── Game Mode (Big Picture) ── */
+/* ═══ Game Mode (Big Picture) — same token system, TV-friendly scale ═══ */
 .game-mode {
   position: fixed;
   inset: 0;
@@ -13,10 +13,10 @@
 .gm-header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 20px 32px;
-  background: var(--bg-soft);
-  border-bottom: 2px solid var(--border);
+  gap: 1rem;
+  padding: 16px 32px;
+  background: var(--color-paper-white);
+  box-shadow: var(--shadow-md);
   flex-shrink: 0;
 }
 .gm-brand {
@@ -25,95 +25,113 @@
   gap: 12px;
 }
 .gm-logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
 }
 .gm-title {
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
+  font-size: var(--text-heading-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
+  letter-spacing: -0.3px;
 }
 .gm-tabs {
   display: flex;
   gap: 8px;
-  margin-left: 32px;
+  margin-left: 24px;
 }
 .gm-tab {
   padding: 12px 24px;
   background: transparent;
-  border: 2px solid var(--border);
-  border-radius: 12px;
-  color: var(--text-dim);
-  font-size: 18px;
-  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--color-slate-veil);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
 }
 .gm-tab:hover {
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--color-iris-bolt);
+  color: var(--color-ink-charcoal);
+}
+.gm-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .gm-tab.active {
-  background: var(--accent-2);
-  border-color: var(--accent-2);
-  color: #fff;
+  background: var(--color-iris-bolt);
+  border-color: var(--color-iris-bolt);
+  color: #ffffff;
 }
 .gm-tabs-focused .gm-tab.active {
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.4);
+  box-shadow: var(--focus-ring);
 }
 .gm-count {
-  font-size: 14px;
+  font-size: 13px;
   padding: 2px 10px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
+  background: var(--accent-soft);
+  border-radius: var(--radius-pill);
 }
-.gm-layout-btn {
-  margin-left: auto;
-  padding: 10px 16px;
-  background: transparent;
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-dim);
-  font-size: 20px;
-  cursor: pointer;
-  transition: all 0.15s ease;
+.gm-tab.active .gm-count {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
 }
-.gm-layout-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
-}
+.gm-layout-btn,
 .gm-settings-btn {
   padding: 10px 16px;
   background: transparent;
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-dim);
-  font-size: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--color-slate-veil);
+  font-size: 18px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
 }
+.gm-layout-btn {
+  margin-left: auto;
+}
+.gm-layout-btn:hover,
 .gm-settings-btn:hover {
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--color-iris-bolt);
+  color: var(--color-ink-charcoal);
+}
+.gm-layout-btn:focus-visible,
+.gm-settings-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .gm-exit-btn {
   padding: 12px 20px;
   background: transparent;
-  border: 2px solid var(--red);
-  border-radius: 12px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius-pill);
   color: var(--red);
-  font-size: 16px;
-  font-weight: 700;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 .gm-exit-btn:hover {
   background: var(--red);
-  color: #fff;
+  color: #ffffff;
+}
+.gm-exit-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* ═══ Settings Modal ═══ */
@@ -121,20 +139,20 @@
   position: fixed;
   inset: 0;
   z-index: 600;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(40, 46, 62, 0.5);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 .gm-settings-modal {
-  background: var(--card);
-  border: 2px solid var(--border);
-  border-radius: 20px;
+  background: var(--color-paper-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 0;
   min-width: 420px;
   max-width: 520px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-md);
 }
 .gm-settings-head {
   display: flex;
@@ -145,21 +163,26 @@
 }
 .gm-settings-head h3 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 800;
+  font-size: var(--text-subheading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
 }
 .gm-settings-close {
   background: transparent;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-slate-veil);
   font-size: 20px;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
 }
 .gm-settings-close:hover {
-  color: var(--text);
+  color: var(--color-ink-charcoal);
   background: var(--bg-soft);
+}
+.gm-settings-close:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .gm-settings-body {
   padding: 24px 28px;
@@ -173,11 +196,11 @@
   gap: 8px;
 }
 .gm-settings-label {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-dim);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-slate-veil);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
 }
 .gm-settings-row {
   display: flex;
@@ -191,60 +214,71 @@
   flex: 1;
   min-width: 100px;
   padding: 12px 16px;
-  background: var(--bg-soft);
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  color: var(--text-dim);
+  background: var(--color-chalk-canvas);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--color-slate-veil);
+  font-family: inherit;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
   text-align: center;
 }
+[data-theme='dark'] .gm-settings-btn-opt {
+  background: var(--bg-soft);
+}
 .gm-settings-btn-opt:hover {
-  border-color: var(--accent);
-  color: var(--text);
+  border-color: var(--color-iris-bolt);
+  color: var(--color-ink-charcoal);
+}
+.gm-settings-btn-opt:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 .gm-settings-btn-opt.active {
-  background: var(--accent-2);
-  border-color: var(--accent-2);
-  color: #fff;
+  background: var(--color-paper-white);
+  border-color: var(--color-iris-bolt);
+  color: var(--color-iris-bolt);
+  box-shadow: var(--shadow-subtle);
 }
 .gm-settings-btn-opt.gm-focused,
 .gm-settings-exit-btn.gm-focused {
-  box-shadow: 0 0 0 3px rgba(188, 140, 255, 0.5);
-  border-color: var(--purple);
-  transform: scale(1.05);
-  background: rgba(188, 140, 255, 0.15);
+  box-shadow: var(--focus-ring);
+  border-color: var(--color-iris-bolt);
 }
 .gm-settings-exit-btn {
   width: 100%;
   padding: 14px;
   background: var(--red);
   border: none;
-  border-radius: 12px;
-  color: #fff;
+  border-radius: var(--radius-pill);
+  color: #ffffff;
+  font-family: inherit;
   font-size: 16px;
-  font-weight: 800;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: filter 0.15s ease;
 }
 .gm-settings-exit-btn:hover {
-  filter: brightness(1.1);
+  filter: brightness(1.08);
 }
 .gm-settings-foot {
   padding: 12px 28px;
   text-align: center;
-  font-size: 13px;
-  color: var(--text-dim);
+  font-size: var(--text-caption);
+  color: var(--color-slate-veil);
   border-top: 1px solid var(--border);
 }
 
 /* Hint bar */
 .gm-hint {
   padding: 10px 32px;
-  font-size: 14px;
-  color: var(--text-dim);
+  font-size: var(--text-body-sm);
+  color: var(--color-slate-veil);
   background: var(--bg);
   text-align: center;
   flex-shrink: 0;
@@ -264,56 +298,55 @@
   grid-column: 1 / -1;
   text-align: center;
   padding: 60px;
-  color: var(--text-dim);
-  font-size: 22px;
+  color: var(--color-slate-veil);
+  font-size: var(--text-subheading);
 }
 
 /* ═══ Card (Grid) ═══ */
 .gm-card {
-  background: var(--card);
-  border: 3px solid var(--border);
-  border-radius: 16px;
+  background: var(--color-paper-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
   padding: 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
   text-align: center;
 }
 .gm-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
+  border-color: var(--color-fog-mist);
+  box-shadow: var(--shadow-md);
 }
 .gm-card.selected {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 4px rgba(88, 166, 255, 0.25),
-    var(--shadow);
-  transform: scale(1.03);
+  border-color: var(--color-iris-bolt);
+  box-shadow: var(--focus-ring), var(--shadow-md);
+  transform: scale(1.02);
 }
 .gm-card.running {
-  border-color: rgba(63, 185, 80, 0.7);
-  box-shadow:
-    inset 0 3px 0 0 var(--green),
-    0 0 12px rgba(63, 185, 80, 0.2);
+  border-color: var(--green);
+  box-shadow: var(--shadow-sm);
 }
 .running-badge {
   background: var(--green);
-  color: #fff;
+  color: #ffffff;
 }
 .gm-card.installed {
-  border-color: rgba(63, 185, 80, 0.5);
-  box-shadow: inset 0 3px 0 0 var(--green);
+  border-color: rgba(18, 148, 107, 0.45);
+}
+[data-theme='dark'] .gm-card.installed {
+  border-color: rgba(67, 195, 152, 0.45);
 }
 .gm-card.selected.installed,
 .gm-card.selected.running {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 4px rgba(88, 166, 255, 0.25),
-    var(--shadow);
-  transform: scale(1.03);
+  border-color: var(--color-iris-bolt);
+  box-shadow: var(--focus-ring), var(--shadow-md);
+  transform: scale(1.02);
 }
 
 /* Icon centered */
@@ -325,36 +358,53 @@
 .gm-card-icon {
   width: 96px;
   height: 96px;
-  border-radius: 16px;
+  border-radius: var(--radius-lg);
   object-fit: cover;
+  background: var(--color-chalk-canvas);
+  border: 1px solid var(--border);
+}
+[data-theme='dark'] .gm-card-icon {
   background: var(--bg-soft);
-  border: 2px solid var(--border);
 }
 
 /* Title centered below */
 .gm-card-center {
   width: 100%;
+  min-width: 0;
   text-align: center;
 }
 .gm-card-name {
-  font-size: 20px;
-  font-weight: 800;
+  font-size: var(--text-subheading);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-ink-charcoal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .gm-card-game {
-  font-size: 14px;
-  color: var(--text-dim);
+  font-size: var(--text-body-sm);
+  color: var(--color-slate-veil);
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .gm-card-badges {
   display: flex;
   justify-content: center;
   gap: 6px;
   margin-top: 6px;
+  min-width: 0;
+}
+.gm-card-badges .badge {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .gm-card-desc {
-  font-size: 14px;
-  color: var(--text-dim);
+  font-size: var(--text-body-sm);
+  color: var(--color-slate-veil);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -368,33 +418,38 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 14px;
-  color: var(--text-dim);
+  font-size: var(--text-body-sm);
+  color: var(--color-slate-veil);
   width: 100%;
+  min-width: 0;
+}
+.gm-card-rom > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Action button */
+/* Action button — signature pill */
 .gm-action-btn {
   padding: 14px 28px;
   border: none;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 800;
+  border-radius: var(--radius-pill);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  background: var(--accent-2);
-  color: #fff;
+  background: var(--color-iris-bolt);
+  color: #ffffff;
   width: 100%;
-  transition: all 0.15s ease;
+  transition: filter 0.15s ease;
   text-align: center;
 }
 .gm-action-btn:hover {
-  filter: brightness(1.1);
-  transform: translateY(-1px);
+  filter: brightness(1.08);
 }
 .gm-action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
-  transform: none;
 }
 .gm-action-btn.green {
   background: var(--green);
@@ -404,7 +459,10 @@
 }
 .gm-action-btn.warn {
   background: var(--yellow);
-  color: #0d1117;
+  color: #ffffff;
+}
+[data-theme='dark'] .gm-action-btn.warn {
+  color: #14161f;
 }
 
 /* Progress */
@@ -415,14 +473,17 @@
   gap: 6px;
 }
 .gm-progress-bar {
-  height: 8px;
-  background: var(--bg-soft);
-  border-radius: 999px;
+  height: 6px;
+  background: var(--color-chalk-canvas);
+  border-radius: var(--radius-pill);
   overflow: hidden;
+}
+[data-theme='dark'] .gm-progress-bar {
+  background: var(--bg-soft);
 }
 .gm-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent-2), var(--purple));
+  background: var(--color-iris-bolt);
   transition: width 0.3s ease;
 }
 .gm-progress-fill.indeterminate {
@@ -438,9 +499,12 @@
   }
 }
 .gm-progress-label {
-  font-size: 13px;
-  color: var(--text-dim);
+  font-size: var(--text-caption);
+  color: var(--color-slate-veil);
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ═══ Carousel Layout ═══ */
@@ -487,26 +551,36 @@
 .gm-carousel-track .gm-card-icon {
   width: 140px;
   height: 140px;
-  border-radius: 20px;
+  border-radius: var(--radius-lg);
 }
 
 .gm-carousel-track .gm-card-name {
   font-size: 26px;
 }
 .gm-carousel-track .gm-card-game {
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 .gm-carousel-track .gm-action-btn {
-  font-size: 22px;
+  font-size: 20px;
   padding: 18px 32px;
+  text-align: center;
+  justify-content: center;
+  display: flex;
+  gap: 0.2rem;
+
+  .icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
 }
 
 /* Footer */
 .gm-footer {
   padding: 14px 32px;
   text-align: center;
-  font-size: 13px;
-  color: var(--text-dim);
+  font-size: var(--text-caption);
+  color: var(--color-slate-veil);
   border-top: 1px solid var(--border);
   flex-shrink: 0;
 }

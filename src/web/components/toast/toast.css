@@ -1,21 +1,23 @@
+/* Toast — paper surface, pill radius, hairline border with status color */
 .toast {
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(80px);
-  background: var(--card);
+  background: var(--color-paper-white);
   border: 1px solid var(--border);
-  color: var(--text);
+  color: var(--color-ink-charcoal);
   padding: 12px 20px;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   transition:
     transform 0.25s ease,
     opacity 0.25s ease;
   opacity: 0;
   z-index: 99;
   max-width: 90vw;
-  font-size: 13px;
+  font-size: var(--text-body-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .toast.show {
@@ -25,14 +27,17 @@
 
 .toast.error {
   border-color: var(--red);
+  color: var(--red);
 }
 
 .toast.ok {
   border-color: var(--green);
+  color: var(--green);
 }
 
 .toast.warn {
   border-color: var(--yellow);
+  color: var(--yellow);
 }
 
 .toast.clickable {
@@ -40,6 +45,6 @@
 }
 
 .toast.clickable:hover {
-  border-color: var(--yellow);
-  filter: brightness(1.1);
+  filter: brightness(1.05);
+  box-shadow: var(--shadow-md);
 }
