@@ -2,6 +2,13 @@
 
 Todas las versiones notables de Brisa.
 
+## 0.7.1 (2026-10-13)
+
+### 🐛 Correcciones
+- SOH rename in repository. (`70f686c`)
+
+[Ver diff](https://github.com/Kanin-020/Brisa/compare/0.7.0...0.7.1)
+
 ## 0.7.0 (2026-09-18)
 
 ### 🚀 Novedades
