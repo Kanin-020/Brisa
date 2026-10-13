@@ -45,24 +45,14 @@
   ],
   "assets": {
     "linux-x64": {
-      "pattern": "SoH-*-Linux.zip",
-      "type": "zip",
-      "executable": "soh.appimage"
-    },
-    "linux-arm64": {
-      "pattern": "SoH-*-Linux.zip",
-      "type": "zip",
-      "executable": "soh.appimage"
+      "pattern": "*.appimage",
+      "type": "appimage",
+      "executable": "*.appimage"
     },
     "windows-x64": {
       "pattern": "SoH-*-Win64.zip",
       "type": "zip",
       "executable": "soh.exe"
-    },
-    "macos-arm64": {
-      "pattern": "SoH-*-Mac.zip",
-      "type": "zip",
-      "executable": "SoH.app/Contents/MacOS/SoH"
     },
     "macos-x64": {
       "pattern": "SoH-*-Mac.zip",
